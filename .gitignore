@@ -1,0 +1,48 @@
+# Quarto
+_site/
+.quarto/
+*.html
+/.quarto/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Data files (to prevent accidental commits of sensitive data)
+viz/data/**/*.csv
+viz/data/**/*.xlsx
+viz/data/**/*.json
+viz/data/**/*.parquet
+!viz/data/**/.gitkeep
+!viz/data/**/README.md
+
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak

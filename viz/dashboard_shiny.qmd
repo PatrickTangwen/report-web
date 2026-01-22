@@ -1,0 +1,327 @@
+---
+title: "Interactive Data Visualization Dashboard"
+format:
+  dashboard:
+    orientation: columns
+    theme: cosmo
+    nav-buttons:
+      - icon: github
+        href: https://github.com/yourusername/EHR_website
+server: shiny
+---
+
+<!--
+NOTE: This is the Shiny version of the dashboard.
+It CANNOT be included in the static website and must be deployed separately to shinyapps.io
+
+To deploy:
+1. Install rsconnect: pip install rsconnect-python
+2. Configure your account: rsconnect add --account <ACCOUNT> --token <TOKEN> --secret <SECRET>
+3. Deploy: rsconnect deploy quarto viz/dashboard_shiny.qmd
+
+To preview locally:
+quarto preview viz/dashboard_shiny.qmd
+-->
+
+```{python}
+#| context: setup
+#| include: false
+
+from shiny import reactive, render, ui
+import plotly.graph_objects as go
+import plotly.express as px
+from pathlib import Path
+
+# Note: This is a placeholder setup
+# When real data is available, uncomment and modify the following:
+# import pandas as pd
+# data_path = Path(__file__).parent / "data" / "processed"
+# model_performance = pd.read_csv(data_path / "model_performance.csv")
+```
+
+## {.tabset}
+
+### Introduction
+
+#### Column {width=100%}
+
+```{python}
+#| title: "Welcome to the EHR Multimorbidity Dashboard"
+
+ui.markdown("""
+## Interactive Data Visualization Platform
+
+This dashboard provides comprehensive visualization and analysis tools for exploring multimorbidity
+patterns and disease risk prediction models.
+
+### Dashboard Capabilities
+
+Once data is loaded, this dashboard will feature:
+
+#### 1. Model Performance Analysis
+- Compare predictive accuracy across different machine learning models
+- Visualize performance metrics (AUC, accuracy, F1-score) by disease category
+- Interactive filtering by disease type and model selection
+
+#### 2. Variable Importance
+- Explore key risk factors contributing to disease prediction
+- Rank variables by importance scores
+- Analyze feature contributions across different models
+
+#### 3. Multimorbidity Network Analysis
+- Visualize disease co-occurrence patterns
+- Interactive network graphs showing disease relationships
+- Cluster analysis of frequently co-occurring conditions
+
+#### 4. Individual Risk Prediction
+- Calculate personalized disease risk scores
+- Interactive questionnaire for patient characteristics
+- Real-time risk assessment with explanations
+
+### Inspiration & Reference
+
+This dashboard design is inspired by the [UKB-MDRMF Dashboard](https://luminite.shinyapps.io/ukb-mdrmf/),
+which demonstrates sophisticated interactive visualization of multimorbidity data.
+
+### Current Status
+
+::: {.callout-note}
+#### Development in Progress
+
+The dashboard framework is now established and ready for data integration. Visualizations will be
+populated as analysis progresses and datasets become available.
+
+**Next Steps:**
+- Prepare and load model performance data
+- Integrate variable importance rankings
+- Build disease co-occurrence networks
+- Implement risk prediction models
+
+Check back for updates as new interactive features are added!
+:::
+
+### Data Sources
+
+When operational, this dashboard will utilize:
+
+- **Electronic Health Records**: Large-scale EHR data from cohort studies
+- **Machine Learning Models**: Random Forest, XGBoost, Deep Neural Networks
+- **Disease Categories**: 21+ major disease groups
+- **Predictor Variables**: Demographics, lifestyle, clinical measurements, genetic data
+
+### Technical Framework
+
+Built with:
+- **Quarto**: Document and website generation
+- **Shiny for Python**: Interactive server-side reactivity
+- **Plotly**: High-quality interactive visualizations
+- **pandas**: Data manipulation and analysis
+
+### Questions or Feedback?
+
+Visit our [GitHub repository](https://github.com/yourusername/EHR_website) to report issues,
+suggest features, or contribute to the project.
+""")
+```
+
+### Example Interactive Section
+
+#### Column {.sidebar width=300}
+
+```{python}
+#| title: "Interactive Controls"
+
+ui.h4("Dashboard Controls")
+
+ui.markdown("""
+*These are placeholder controls demonstrating the Shiny framework.
+Functionality will be activated when data is loaded.*
+""")
+
+ui.input_select(
+    "example_category",
+    "Select Category:",
+    choices=["Category A", "Category B", "Category C"],
+    selected="Category A"
+)
+
+ui.input_slider(
+    "example_parameter",
+    "Adjust Parameter:",
+    min=0,
+    max=100,
+    value=50,
+    step=5
+)
+
+ui.input_radio_buttons(
+    "example_option",
+    "Choose Option:",
+    choices={
+        "opt1": "Option 1",
+        "opt2": "Option 2",
+        "opt3": "Option 3"
+    },
+    selected="opt1"
+)
+
+ui.input_action_button(
+    "example_button",
+    "Update Visualization",
+    class_="btn-primary"
+)
+
+ui.markdown("""
+---
+
+#### How This Will Work:
+
+When real data is integrated:
+
+1. **Select controls** will filter datasets
+2. **Sliders** will adjust visualization parameters
+3. **Buttons** will trigger computations
+4. **Charts** will update reactively based on selections
+""")
+```
+
+#### Column {width=700}
+
+```{python}
+#| title: "Interactive Visualization Area"
+
+@render.ui
+def placeholder_info():
+    return ui.div(
+        ui.h4("Placeholder Visualization", style="color: #495057;"),
+        ui.p(
+            "Interactive charts and plots will appear here when data is loaded.",
+            style="color: #6c757d; font-size: 1.1rem;"
+        ),
+        ui.p(
+            f"Selected Category: {input.example_category()}",
+            style="color: #6c757d;"
+        ),
+        ui.p(
+            f"Parameter Value: {input.example_parameter()}",
+            style="color: #6c757d;"
+        ),
+        ui.p(
+            f"Selected Option: {input.example_option()}",
+            style="color: #6c757d;"
+        ),
+        style="""
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin: 1rem 0;
+        """
+    )
+```
+
+```{python}
+#| title: "Example Chart Framework"
+
+@render_plotly
+def example_chart():
+    """
+    This demonstrates the Plotly charting framework.
+    Replace with real data visualization when available.
+    """
+
+    # Placeholder data
+    categories = ['A', 'B', 'C', 'D', 'E']
+    values = [23, 45, 56, 78, 32]
+
+    fig = go.Figure(data=[
+        go.Bar(
+            x=categories,
+            y=values,
+            marker_color='indianred',
+            text=values,
+            textposition='auto',
+        )
+    ])
+
+    fig.update_layout(
+        title="Example Bar Chart (Placeholder)",
+        xaxis_title="Categories",
+        yaxis_title="Values",
+        template="plotly_white",
+        height=400,
+        annotations=[
+            dict(
+                text="This is a placeholder chart.<br>Real visualizations will appear when data is loaded.",
+                xref="paper",
+                yref="paper",
+                x=0.5,
+                y=0.5,
+                xanchor="center",
+                yanchor="middle",
+                showarrow=False,
+                font=dict(size=14, color="gray"),
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="gray",
+                borderwidth=1,
+                borderpad=10
+            )
+        ]
+    )
+
+    return fig
+```
+
+```{python}
+#| title: "Code Structure Example"
+
+ui.markdown("""
+### Implementation Pattern
+
+When integrating real data, the code structure will follow this pattern:
+
+```python
+# 1. Load data
+@reactive.Calc
+def filtered_data():
+    # Load dataset
+    df = load_dataset()
+
+    # Apply filters based on user inputs
+    category = input.example_category()
+    threshold = input.example_parameter()
+
+    # Filter and process
+    filtered = df[df['category'] == category]
+    filtered = filtered[filtered['value'] >= threshold]
+
+    return filtered
+
+# 2. Create visualization
+@render_plotly
+def interactive_plot():
+    # Get filtered data
+    data = filtered_data()
+
+    # Create Plotly chart
+    fig = px.scatter(
+        data,
+        x='variable_x',
+        y='variable_y',
+        color='group',
+        title="Dynamic Visualization"
+    )
+
+    return fig
+
+# 3. Compute statistics
+@render.text
+def summary_stats():
+    data = filtered_data()
+    return f"Showing {len(data)} records"
+```
+
+This reactive pattern ensures visualizations update automatically when users change inputs.
+""")
+```

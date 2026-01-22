@@ -1,0 +1,41 @@
+---
+title: "Research Reports & Publications"
+subtitle: "Academic papers and findings from the EHR Research Project"
+date: last-modified
+listing:
+  contents:
+    - "*.qmd"
+  type: grid
+  sort: "date desc"
+  categories: true
+  fields: [title, date, author, description, categories, image]
+  image-height: 200px
+  grid-columns: 3
+  filter-ui: true
+  sort-ui: true
+---
+
+## Published Research
+
+This section contains our published papers, methodologies, and research findings. Each report is presented in an accessible format with full citations, reproducible code, and interactive visualizations where applicable.
+
+### Research Areas
+
+Our work spans multiple interconnected research areas:
+
+- **Methodology Development**: Novel approaches to multimorbidity prediction and risk stratification
+- **Epidemiological Analysis**: Population-level patterns of disease co-occurrence and progression
+- **Clinical Applications**: Tools and insights for clinical decision support and preventive care
+- **Technical Reports**: Implementation details, validation studies, and methodological comparisons
+
+::: {.callout-tip}
+### How to Navigate
+
+Use the filters and search functionality below to find papers by topic, date, or author. Click on any paper card to read the full report with detailed methods, results, and references.
+:::
+
+## Papers
+
+<div style="margin-top: 2rem;">
+
+</div>

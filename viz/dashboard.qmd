@@ -1,0 +1,185 @@
+---
+title: "Interactive Data Visualization Dashboard"
+subtitle: "Multimorbidity Analysis and Risk Prediction Platform"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 2
+---
+
+## Welcome to the EHR Visualization Dashboard
+
+This dashboard provides comprehensive visualization and analysis tools for exploring multimorbidity patterns and disease risk prediction models.
+
+::: {.callout-important}
+### Dashboard Status: Development in Progress
+
+The interactive dashboard framework is established and ready for data integration. Once data becomes available, this page will be deployed as a fully interactive Shiny application on [shinyapps.io](https://www.shinyapps.io/).
+
+**Current deployment:** Static preview page
+**Future deployment:** Interactive Shiny dashboard with real-time reactivity
+:::
+
+## Planned Dashboard Features
+
+### 1. Model Performance Analysis {#model-performance}
+
+<div class="placeholder-viz">
+
+**Interactive Controls:**
+
+- Disease category dropdown (Cardiovascular, Diabetes, Respiratory, etc.)
+- Model selection (Random Forest, XGBoost, Deep Neural Network)
+- Performance metric selector (AUC, Accuracy, F1-Score, Precision, Recall)
+
+**Visualizations:**
+
+- Boxplots showing performance metric distributions across disease categories
+- Comparison tables with summary statistics
+- Calibration curves for model validation
+
+</div>
+
+### 2. Variable Importance {#variable-importance}
+
+<div class="placeholder-viz">
+
+**Interactive Controls:**
+
+- Disease-specific variable rankings
+- Top N variables slider (5-50)
+- Variable category filters (demographic, lifestyle, clinical, genetic)
+
+**Visualizations:**
+
+- Horizontal bar charts showing feature importance scores
+- Grouped importance by variable categories
+- Cross-disease importance comparisons
+
+</div>
+
+### 3. Multimorbidity Network Analysis {#network}
+
+<div class="placeholder-viz">
+
+**Interactive Controls:**
+
+- Correlation threshold slider (0.0 - 1.0)
+- Community detection toggle
+- Node highlighting by disease category
+
+**Visualizations:**
+
+- Network graph with diseases as nodes and co-occurrences as edges
+- Scatter plots showing disease relationship patterns
+- Cluster visualization for disease communities
+
+</div>
+
+### 4. Individual Risk Prediction {#risk}
+
+<div class="placeholder-viz">
+
+**Interactive Controls (Patient Questionnaire):**
+
+- Age slider (40-80 years)
+- Gender selection (Male/Female)
+- BMI slider (15-45 kg/m²)
+- Waist-hip ratio slider (0.6-1.2)
+- Risk factors checkboxes (smoking, diabetes, hypertension)
+
+**Output:**
+
+- Real-time risk score calculation
+- Risk category classification (Low/Moderate/High)
+- Contributing factors breakdown chart
+- Survival probability curves
+
+</div>
+
+## Technical Architecture
+
+### Framework
+
+This dashboard is built with:
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Document Generation** | Quarto | Scientific publishing and website generation |
+| **Interactive Server** | Shiny for Python | Reactive user interface and server-side computation |
+| **Visualizations** | Plotly | High-quality interactive charts |
+| **Data Processing** | pandas | Data manipulation and analysis |
+| **Machine Learning** | scikit-learn | Model training and predictions |
+
+### Code Structure Preview
+
+When the dashboard is deployed with data, it will use this reactive pattern:
+
+```python
+# Example: Model Performance Section
+
+from shiny import reactive, render, ui
+import plotly.express as px
+
+# User inputs
+ui.input_select("disease", "Disease Category:",
+                choices=["All", "Cardiovascular", "Diabetes", ...])
+ui.input_select("model", "Model:",
+                choices=["RandomForest", "XGBoost", "DNN"])
+
+# Reactive data filtering
+@reactive.Calc
+def filtered_data():
+    df = load_model_performance()
+    if input.disease() != "All":
+        df = df[df['disease'] == input.disease()]
+    return df[df['model'] == input.model()]
+
+# Interactive visualization
+@render_plotly
+def performance_boxplot():
+    data = filtered_data()
+    fig = px.box(data, x='disease', y='auc',
+                 title="Model Performance by Disease")
+    return fig
+```
+
+### Data Requirements
+
+See the [data documentation](data/README.md) for expected data formats:
+
+- `model_performance.csv` - Performance metrics by disease and model
+- `variable_importance.csv` - Feature importance rankings
+- `multimorbidity_network.csv` - Disease co-occurrence data
+
+## Reference & Inspiration
+
+This dashboard design is inspired by the [UKB-MDRMF Dashboard](https://luminite.shinyapps.io/ukb-mdrmf/), which demonstrates sophisticated interactive visualization of multimorbidity data from the UK Biobank.
+
+Key features adapted from the reference:
+
+- Tabbed navigation for different analysis sections
+- Sidebar controls with dropdowns, sliders, and toggles
+- Real-time visualization updates
+- Card-based modular layout
+
+## Next Steps
+
+1. **Data Preparation**: Process and format datasets according to specifications
+2. **Shiny Development**: Implement interactive components in Python
+3. **Local Testing**: Test dashboard with `quarto preview viz/dashboard.qmd`
+4. **Deployment**: Deploy to shinyapps.io for public access
+
+## Questions or Feedback?
+
+- **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/EHR_website/issues)
+- **Repository**: [View source code](https://github.com/yourusername/EHR_website)
+
+---
+
+<div style="text-align: center; color: #6c757d; font-size: 0.9rem; margin-top: 2rem;">
+
+*This page will be upgraded to a fully interactive Shiny dashboard when data becomes available.*
+
+</div>

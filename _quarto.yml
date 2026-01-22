@@ -1,0 +1,60 @@
+project:
+  type: website
+  output-dir: _site
+  preview:
+    port: 4200
+    browser: true
+  render:
+    - "*.qmd"
+    - "!viz/dashboard_shiny.qmd"
+
+website:
+  title: "EHR Research Project"
+  description: "Electronic Health Records research platform for academic reporting and data visualization"
+  site-url: https://yourusername.github.io/EHR_website
+  repo-url: https://github.com/yourusername/EHR_website
+  repo-actions: [edit, issue]
+
+  navbar:
+    background: primary
+    search: true
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Report"
+        href: report/index.qmd
+      - text: "Viz"
+        href: viz/dashboard.qmd
+    right:
+      - icon: github
+        href: https://github.com/yourusername/EHR_website
+        aria-label: GitHub
+
+  page-footer:
+    left: "© 2026 EHR Research Project. Licensed under CC BY 4.0."
+    right:
+      - icon: github
+        href: https://github.com/yourusername/EHR_website
+
+format:
+  html:
+    theme:
+      light: [cosmo, styles/custom.scss]
+      dark: [darkly, styles/custom.scss]
+    css: styles/styles.css
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    code-copy: true
+    link-external-newwindow: true
+    grid:
+      sidebar-width: 250px
+      body-width: 900px
+      margin-width: 250px
+
+bibliography: references.bib
+csl: styles/nature.csl
+link-citations: true

@@ -1,0 +1,87 @@
+---
+title: "Electronic Health Records Research Project"
+subtitle: "Advancing multimorbidity prediction and disease risk analysis"
+date: last-modified
+format:
+  html:
+    toc: false
+---
+
+<div class="hero-section">
+
+# Welcome to the EHR Research Platform
+
+A comprehensive platform for academic research reporting and interactive data visualization in electronic health records analysis.
+
+</div>
+
+## Project Overview
+
+This research project focuses on developing predictive models for multimorbidity patterns and individual disease risk using large-scale electronic health records (EHR) data. Our work combines machine learning approaches with epidemiological insights to advance understanding of complex disease interactions.
+
+### Research Goals
+
+- **Predictive Modeling**: Develop and validate machine learning models for multimorbidity prediction across diverse disease categories
+- **Risk Stratification**: Identify key risk factors and create individualized risk assessment tools
+- **Disease Networks**: Map and analyze co-occurrence patterns and temporal relationships between diseases
+- **Clinical Translation**: Provide actionable insights for clinical decision-making and preventive care strategies
+
+## Key Features
+
+<div class="card-grid">
+
+<div class="card">
+
+### Research Reports
+
+Access our published papers, methodologies, and findings. Each report includes detailed methods, results, and interactive visualizations.
+
+[Explore Reports →](report/index.qmd){.btn .btn-primary}
+
+</div>
+
+<div class="card">
+
+### Interactive Visualizations
+
+Explore our interactive dashboard featuring model performance comparisons, variable importance analysis, multimorbidity networks, and individual risk prediction tools.
+
+[View Dashboard →](viz/dashboard.qmd){.btn .btn-primary}
+
+</div>
+
+<div class="card">
+
+### Data & Methods
+
+Our research utilizes large-scale EHR datasets with advanced machine learning techniques including Random Forest, XGBoost, and deep learning approaches.
+
+</div>
+
+</div>
+
+## Latest Updates
+
+::: {.callout-note}
+### Dashboard Development in Progress
+
+The interactive visualization dashboard framework is now established. Visualizations will be populated as data analysis progresses. Check back for updates on model performance metrics, variable importance rankings, and risk prediction tools.
+:::
+
+## Research Team
+
+This project is conducted by researchers specializing in biomedical informatics, epidemiology, and machine learning. Our interdisciplinary approach combines clinical expertise with computational methods to advance precision medicine.
+
+## Contact & Collaboration
+
+Interested in collaborating or learning more about our research? Visit our [GitHub repository](https://github.com/yourusername/EHR_website) or reach out through the issues page.
+
+---
+
+<div style="text-align: center; color: #6c757d; font-size: 0.9rem; margin-top: 3rem;">
+
+Last updated: `r Sys.Date()`
+
+*This is a research project website. All findings are for academic purposes and should be interpreted by qualified healthcare professionals.*
+
+</div>
