@@ -1,86 +1,102 @@
 ---
-title: "Electronic Health Records Research Project"
-subtitle: "Advancing multimorbidity prediction and disease risk analysis"
-date: last-modified
+pagetitle: "ALIGATEHR-Gen"
 format:
   html:
     toc: false
+    body-classes: homepage
 ---
 
-<div class="hero-section">
+::: {.hero-section}
 
-# Welcome to the EHR Research Platform
+[ALIGATEHR-Gen]{.hero-title}
 
-A comprehensive platform for academic research reporting and interactive data visualization in electronic health records analysis.
+[Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank]{.hero-subtitle}
 
-</div>
+[A graph attention network that integrates EHR, genetic data, and external medical ontology to improve disease risk prediction.]{.hero-desc}
 
-## Project Overview
+:::
 
-This research project focuses on developing predictive models for multimorbidity patterns and individual disease risk using large-scale electronic health records (EHR) data. Our work combines machine learning approaches with epidemiological insights to advance understanding of complex disease interactions.
+## About This Project
 
-### Research Goals
+ALIGATEHR-Gen (ALIgning Graph Attention neTworks for EHR using Genetic kinship) is a deep learning framework that integrates electronic health records (EHR), genetic data, and external medical ontology knowledge into an attention-based predictive model. By leveraging genetically inferred first-degree relationships, ALIGATEHR-Gen addresses the underutilization of family health history in disease risk prediction, where such information is often missing or incomplete in clinical records.
 
-- **Predictive Modeling**: Develop and validate machine learning models for multimorbidity prediction across diverse disease categories
-- **Risk Stratification**: Identify key risk factors and create individualized risk assessment tools
-- **Disease Networks**: Map and analyze co-occurrence patterns and temporal relationships between diseases
-- **Clinical Translation**: Provide actionable insights for clinical decision-making and preventive care strategies
+Our model constructs unified patient representations by incorporating genetically inferred first-degree relationships and disease ontology embeddings. Evaluated on **118 diseases** across the UK Biobank, ALIGATEHR-Gen outperforms state-of-the-art baseline models by an average of at least **6% in AUC**.
 
-## Key Features
+## Key Highlights
 
 <div class="card-grid">
 
 <div class="card">
 
-### Research Reports
+### Graph Attention Network
 
-Access our published papers, methodologies, and findings. Each report includes detailed methods, results, and interactive visualizations.
-
-[Explore Reports →](report/index.qmd){.btn .btn-primary}
+The first attention-based GNN model that integrates clinical features and genetic data for disease risk prediction, using genetically inferred first-degree relationships as graph edges.
 
 </div>
 
 <div class="card">
 
-### Interactive Visualizations
+### Multimodal Data Integration
 
-Explore our interactive dashboard featuring model performance comparisons, variable importance analysis, multimorbidity networks, and individual risk prediction tools.
+Integrates multimodal patient data including genetic information, diagnosis codes, demographics, along with external medical ontology knowledge for enhanced patient representation.
+
+</div>
+
+<div class="card">
+
+### Superior Predictive Performance
+
+Achieves an average AUC of **0.76** across 118 diseases, outperforming five baseline models including Logistic Regression, XGBoost, RNN, Dipole, and GRAM.
+
+</div>
+
+</div>
+
+## Research Reports & Visualizations
+
+<div class="card-grid">
+
+<div class="card">
+
+### Research Paper
+
+Read the full paper with detailed methods, results, and discussion on ALIGATEHR-Gen's framework and evaluation.
+
+[Read Paper →](report/paper1.qmd){.btn .btn-primary}
+
+</div>
+
+<div class="card">
+
+### Interactive Dashboard
+
+Explore interactive visualizations of model performance comparisons, patient subgroup analysis, and risk stratification results.
 
 [View Dashboard →](viz/dashboard.qmd){.btn .btn-primary}
 
 </div>
 
-<div class="card">
-
-### Data & Methods
-
-Our research utilizes large-scale EHR datasets with advanced machine learning techniques including Random Forest, XGBoost, and deep learning approaches.
-
 </div>
 
-</div>
+## Case Study: Fibrotic Diseases
 
-## Latest Updates
-
-::: {.callout-note}
-### Dashboard Development in Progress
-
-The interactive visualization dashboard framework is now established. Visualizations will be populated as data analysis progresses. Check back for updates on model performance metrics, variable importance rankings, and risk prediction tools.
-:::
+A case study on five primary fibrotic and closely related diseases — coronary artery disease (CAD), chronic kidney disease (CKD), metabolic dysfunction-associated steatohepatitis (MASH), pulmonary fibrosis (PF), and Crohn's disease (CD) — reveals that ALIGATEHR-Gen effectively distinguishes patient subgroups based on clinical and genetic features. High-risk patients consistently have a greater number of affected family members and elevated BMI, demonstrating the model's capacity to capture interactions between genetic factors, demographics, and clinical features.
 
 ## Research Team
 
-This project is conducted by researchers specializing in biomedical informatics, epidemiology, and machine learning. Our interdisciplinary approach combines clinical expertise with computational methods to advance precision medicine.
+Xiayuan Huang^1^, Hang Zhou^1^, Yitao Hong^1^, Xin Zhou^1^, Johann de Jong^2,\*^, Zuoheng Wang^1,\*^
 
-## Contact & Collaboration
+^1^Yale University, New Haven, CT, USA
+^2^UCB Biosciences GmbH, Monheim am Rhein, Germany
+^\*^Equal contribution as co-senior authors
 
-Interested in collaborating or learning more about our research? Visit our [GitHub repository](https://github.com/yourusername/EHR_website) or reach out through the issues page.
+## Funding & Data
+
+This study uses data from the UK Biobank (project ID: 41910) and is supported by the National Institutes of Health (NIH) grant R01LM014087.
 
 ---
 
 <div style="text-align: center; color: #6c757d; font-size: 0.9rem; margin-top: 3rem;">
-
-Last updated: `r Sys.Date()`
 
 *This is a research project website. All findings are for academic purposes and should be interpreted by qualified healthcare professionals.*
 

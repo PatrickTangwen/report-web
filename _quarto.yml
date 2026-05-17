@@ -9,8 +9,8 @@ project:
     - "!viz/dashboard_shiny.qmd"
 
 website:
-  title: "EHR Research Project"
-  description: "Electronic Health Records research platform for academic reporting and data visualization"
+  title: "ALIGATEHR-Gen"
+  description: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank"
   site-url: https://yourusername.github.io/EHR_website
   repo-url: https://github.com/yourusername/EHR_website
   repo-actions: [edit, issue]
@@ -22,7 +22,7 @@ website:
       - text: "Home"
         href: index.qmd
       - text: "Report"
-        href: report/index.qmd
+        href: report/paper1.qmd
       - text: "Viz"
         href: viz/dashboard.qmd
     right:

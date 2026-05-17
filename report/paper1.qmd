@@ -1,315 +1,214 @@
 ---
-title: "Predictive Modeling of Multimorbidity Risk Using Machine Learning"
-description: "A comprehensive study applying machine learning to predict multimorbidity patterns in large-scale EHR data"
+title: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank"
+description: "ALIGATEHR-Gen: a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction across 118 diseases"
 author:
-  - name: First Author
-    affiliation: Department of Biomedical Informatics, University
-    email: first.author@university.edu
-  - name: Second Author
-    affiliation: Department of Epidemiology, Medical School
-date: "2026-01-15"
-categories: [machine-learning, multimorbidity, risk-prediction, EHR]
+  - name: Xiayuan Huang
+    affiliations:
+      - name: Yale University
+        department: Department of Biostatistics
+        city: New Haven
+        region: CT
+        country: USA
+  - name: Hang Zhou
+    affiliations:
+      - name: Yale University
+  - name: Yitao Hong
+    affiliations:
+      - name: Yale University
+  - name: Xin Zhou
+    affiliations:
+      - name: Yale University
+  - name: Johann de Jong
+    affiliations:
+      - name: UCB Biosciences GmbH
+        city: Monheim am Rhein
+        country: Germany
+  - name: Zuoheng Wang
+    affiliations:
+      - name: Yale University
+date: "2025-01-01"
+categories: [graph-neural-network, EHR, genetic-data, disease-risk-prediction, UK-Biobank]
 bibliography: ../references.bib
-citation: true
+citation:
+  type: article-journal
+  container-title: "AMIA Annual Symposium Proceedings"
+  url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12919468/"
 abstract: |
-  **Background:** Multimorbidity, the co-occurrence of multiple chronic conditions, is increasingly prevalent and poses significant challenges for healthcare systems. Traditional risk prediction models often focus on single diseases, overlooking complex disease interactions.
-
-  **Methods:** We analyzed electronic health records from 500,000 participants, applying machine learning algorithms (Random Forest, XGBoost, and deep neural networks) to predict multimorbidity patterns across 21 disease categories. Models incorporated demographic, lifestyle, clinical, and genetic variables.
-
-  **Results:** Our models achieved strong predictive performance with AUC values ranging from 0.78 to 0.92 across disease categories. Key predictors included age, body mass index, genetic risk scores, and pre-existing conditions. Disease network analysis revealed distinct clusters of co-occurring conditions.
-
-  **Conclusions:** Machine learning approaches can effectively predict multimorbidity risk, providing insights for targeted prevention strategies and personalized care pathways. The identified disease networks suggest shared pathophysiological mechanisms warranting further investigation.
+  Family health history is an important component to assess risk for common chronic diseases. The integration of electronic health records and genetic data offers great potential to improve disease risk prediction by capturing both clinical and genetic risk factors. We present ALIGATEHR-Gen, a graph attention network that integrates multimodal patient data including genetic information, diagnosis codes, and demographics, along with external medical ontology knowledge. ALIGATEHR-Gen constructs unified patient representations by incorporating genetically inferred first-degree relationships and disease ontology embeddings to enhance disease risk prediction. We evaluate the predictive performance of ALIGATEHR-Gen across 118 diseases in the UK Biobank and demonstrate that it outperforms state-of-the-art baseline models by an average of at least 6%. A case study on five primary fibrotic and closely related diseases reveals that ALIGATEHR-Gen effectively distinguishes patient subgroups based on clinical and genetic features. These findings illustrate the potential of ALIGATEHR-Gen to advance predictive and interpretable modeling in healthcare.
 ---
 
 ## Introduction
 
-Multimorbidity, defined as the presence of two or more chronic health conditions in an individual, affects approximately 25% of adults and over 65% of those aged 65 and older [@barnett2012epidemiology]. The complexity of managing multiple conditions simultaneously poses significant challenges for both patients and healthcare providers, leading to increased healthcare utilization, medication burden, and reduced quality of life [@fortin2007multimorbidity].
+The modern healthcare system has been transformed by the proliferation of diverse data sources and multimodal patient information [@liu2025challenges; @acosta2022multimodal]. Advances in digital health technologies and biomedical research have fostered a data-rich environment where electronic health records (EHR) and genetic data offer unprecedented opportunities to advance genomic medicine. EHRs serve as digitized repositories of patients' medical histories, including consultations, diagnoses, procedures, laboratory tests, and prescribed medications, while genetic data provides a comprehensive view of patients' genomic profiles, enabling the assessment of genetic contributions to disease risk [@xu2021quantitative].
 
-Traditional epidemiological approaches have typically focused on understanding and predicting individual diseases in isolation. However, this single-disease paradigm fails to capture the intricate relationships between conditions and the cumulative impact of disease interactions [@tinetti2012potential]. Recent advances in machine learning and the availability of large-scale electronic health records (EHR) data provide unprecedented opportunities to model multimorbidity patterns comprehensively [@goldstein2017opportunities].
+The integration of multimodal data in EHR has facilitated the development of machine learning-based disease risk prediction models. In particular, deep learning architectures, such as recurrent neural networks (RNN) [@choi2016doctor; @choi2016multi], graph neural networks (GNN) [@khemani2024review], and transformers [@yang2023transformehr], have demonstrated great potential in enhancing diagnostic predictions from EHR, suggesting the power of multimodal data integration in predictive healthcare analytics. Despite the considerable progress in predictive modeling across data modalities in EHR [@waqas2024deep], the use of genetic information into clinical risk assessment remains limited. The convergence of EHR and genetic data presents a unique opportunity for a synergistic approach to patient modeling, where clinical insights from EHR are enriched by genetic contributions to disease susceptibility.
 
-### Study Objectives
+Family health history is an important component to assess risk for common chronic diseases, because families share genetic variations, environmental exposures, common lifestyle, and health-related social factors. Unfortunately, family health history is often missing or inconsistently recorded in EHR databases [@ginsburg2019family]. To address this limitation, we previously developed ALIGATEHR, which models the inferred family relations from de-identified demographic data in a graph attention network augmented with an attention-based medical ontology representation [@huang2025enhancing]. By accounting for the complex influence of genetics, shared environmental exposures, and disease dependencies, ALIGATEHR enhances patient representation learning.
 
-This study aims to:
+Large-scale biobanks, such as the UK Biobank (UKB) [@bycroft2018uk], have become invaluable resources for investigating the role of genetics and its interplay with other factors in human health. By linking decades of EHR with genetic data, these biobanks provide a robust platform for assessing the risk of common diseases. The availability of genome-wide single nucleotide polymorphism (SNP) data enables the identification of familial relationships among participants.
 
-1. Develop and validate machine learning models for predicting multimorbidity across multiple disease categories
-2. Identify key risk factors contributing to multimorbidity development
-3. Characterize disease co-occurrence networks and temporal patterns
-4. Assess model performance across demographic subgroups to ensure equitable prediction
+In this work, we introduce **ALIGATEHR-Gen** (ALIgning Graph Attention neTworks for EHR using Genetic kinship), a generic framework for learning patient representations to enhance disease risk prediction by integrating EHR and genetic data. ALIGATEHR-Gen learns patient representations in a graph attention network to account for family health history based on genetically inferred relationships. To further enhance the quality of the learned representations by accounting for misdiagnosis and disease dependencies, we additionally integrate a medical ontology of embedded diagnosis codes into the attention mechanism.
+
+### Core Contributions
+
+- We introduce an attention-based GNN framework, ALIGATEHR-Gen, for disease risk prediction. To the best of our knowledge, it is the first attention-based GNN model that integrates clinical features and genetic data for disease risk prediction, using genetically inferred first-degree relationships as graph edges.
+- We demonstrate that ALIGATEHR-Gen outperforms state-of-the-art baseline models across a broad spectrum of diseases in a large-scale real-world biobank dataset, the UKB. The ablation experiment confirms the robustness of our model.
+- We show ALIGATEHR-Gen's ability to distinguish patient subgroups across five primary fibrotic or closely related diseases: coronary artery disease, chronic kidney disease, metabolic dysfunction-associated steatohepatitis, pulmonary fibrosis, and Crohn's disease.
 
 ## Methods
 
-### Study Population
+@fig-architecture presents an overview of the ALIGATEHR-Gen framework, which consists of four main components: data processing, graph construction, an attention layer, and a prediction layer.
 
-We utilized data from the UK Biobank, a large prospective cohort study of approximately 500,000 participants aged 40-69 years recruited between 2006 and 2010 [@sudlow2015uk]. The UK Biobank has approval from the North West Multi-centre Research Ethics Committee, and all participants provided informed consent.
+![Illustrative diagram of ALIGATEHR-Gen. The data processing component extracts clinical features from EHR and leverages genetic data to identify first-degree relatives. Two graphs are constructed: a patient graph linking first-degree relatives and an ontology graph encoding hierarchical relationships among medical concepts. The attention layer processes both graphs, and the final visit representation feeds into an LSTM-based prediction layer.](figures/fig1_architecture.png){#fig-architecture}
 
-**Inclusion Criteria:**
+### Data Processing
 
-- Complete baseline assessment data
-- No missing values for key predictor variables
-- Follow-up data for outcome ascertainment
+We use data from the UKB, which includes over 500,000 participants. Among them, 206,831 have both de-identified EHR, including both primary care and hospital inpatient data, and genetic data. Primary care data, released in 2019, capture participants' diagnosis history up to 2016 or 2017, while hospital inpatient data provide information on hospital admissions through 2022. Genetic data were released in 2017. Within this cohort, 63,693 participants have genetically inferred third-degree or closer relatives, and 22,364 have genetically inferred first-degree relatives.
 
-**Exclusion Criteria:**
+### Demographics of Experimental Population {#sec-demographics}
 
-- Participants who withdrew consent
-- Incomplete medical history records
+| Statistics | UKB | CAD | CKD | MASH | PF | CD |
+|:-----------|:---:|:---:|:---:|:----:|:--:|:--:|
+| Number of participants | 22,364 | 5003 | 1275 | 220 | 456 | 71 |
+| Female | 60% | 33% | 51% | 46% | 48% | 53% |
+| Male | 40% | 67% | 49% | 54% | 52% | 47% |
+| Age at recruitment (mean) | 56.9 | 61.3 | 62.1 | 58.3 | 56.8 | 56.3 |
+| Age at first diagnosis (mean) | -- | 64.6 | 69.9 | 64.6 | 69.5 | 60.2 |
+| Number of visits per patient (mean) | 23.3 | 36.1 | 52.6 | 44.4 | 40.4 | 40.0 |
+| Number of unique ICD codes per patient (mean) | 24.5 | 43.8 | 54.5 | 52.9 | 46.1 | 41.3 |
+| Number of ICD codes per visit (mean) | 2.4 | 3.2 | 3.4 | 3.5 | 3.2 | 2.7 |
 
-### Disease Definitions
+: Demographics of experimental population. UKB: participants with first-degree relatives in UK Biobank; CAD: coronary artery disease; CKD: chronic kidney disease; MASH: metabolic dysfunction-associated steatohepatitis; PF: pulmonary fibrosis; CD: Crohn's disease. {#tbl-demographics}
 
-We defined 21 major disease categories based on International Classification of Diseases (ICD-10) codes and self-reported diagnoses, including:
+### Graph Construction
 
-- Cardiovascular diseases (hypertension, coronary artery disease, stroke)
-- Metabolic conditions (diabetes, obesity, dyslipidemia)
-- Respiratory diseases (asthma, COPD)
-- Mental health disorders (depression, anxiety)
-- Musculoskeletal conditions (osteoarthritis, osteoporosis)
-- Cancer (site-specific malignancies)
+ALIGATEHR-Gen constructs two graphs: a **patient graph** constructed from genetic kinship and an **ontology graph** derived from medical ontology.
 
-Multimorbidity was defined as the presence of two or more conditions from distinct disease categories [@academy2018multimorbidity].
+**Patient Graph.** To characterize familial relatedness within the UKB participants, kinship coefficients are estimated by UKB for all pairs of samples using genome-wide SNP data. The kinship coefficient represents the probability that a randomly selected allele from one individual is identical by descent (IBD) with an allele at the same locus from another individual and provides a measure of relatedness between pairs of individuals. First-degree relatives are defined as pairs with a kinship coefficient larger than or equal to 0.177. Based on these inferred relationships, a patient graph is then built by connecting first-degree relatives within the cohort.
 
-### Predictor Variables
+**Ontology Graph.** In medical ontologies, the hierarchy of various medical concepts is often represented through a parent-child relationship, with diagnosis codes serving as leaf nodes. The ontology graph is modeled as a directed acyclic graph (DAG), in which parent nodes represent more general medical concepts, while child nodes represent more specific subcategories.
 
-Our models incorporated several categories of predictors:
+### Attention Layer
 
-**Demographic Variables:**
+**Patient Graph Attention.** In the patient graph, each node (patient) has an associated feature vector representing a patient's disease status, denoted as $h_i \in \mathbb{R}^C$, with $|C|$ being the total number of unique diagnosis codes in the EHR data. Between the nodes, an attention mechanism links a patient's representation to the clinical profiles of their relatives:
 
-- Age, sex, ethnicity, socioeconomic status (Townsend deprivation index)
+$$h'_i = \sigma\left(\sum_{j \in \mathcal{N}_i} \alpha'_{ij} W_e h_j\right)$$
 
-**Lifestyle Factors:**
+where $h'_i \in \mathbb{R}^C$ denotes the final representation of patient $i$, $\sigma$ applies a ReLU activation function, $\mathcal{N}_i$ contains indices of patient $i$'s first-degree relatives, $W_e$ is the weight matrix, and the attention coefficient $\alpha'_{ij}$ is calculated by the softmax function:
 
-- Smoking status, alcohol consumption, physical activity levels, dietary patterns
+$$\alpha'_{ij} = \text{softmax}(e'_{ij}) = \frac{\exp(e'_{ij})}{\sum_{k \in \mathcal{N}_i} \exp(e'_{ik})}$$
 
-**Clinical Measurements:**
+where $e'_{ij} = a(W_e h_i, W_e h_j)$. The attention mechanism is a single-layer feedforward neural network. Here $e'_{ij}$ indicates the importance of first-degree relative $j$'s disease features to patient $i$.
 
-- Body mass index (BMI), waist-hip ratio, blood pressure, grip strength
-- Laboratory biomarkers (glucose, cholesterol, inflammatory markers)
+**Ontology Graph Attention.** In the ontology DAG, each node is assigned a basic embedding vector $e_i \in \mathbb{R}^m$. Let $g_i \in \mathbb{R}^m$ denote the final representation of the diagnosis code $d_i$, as a convex combination of the basic embeddings of itself and its ancestors:
 
-**Genetic Data:**
+$$g_i = \sum_{j \in \mathcal{A}(i)} \alpha_{ij} e_j, \quad \text{where} \quad \sum_{j \in \mathcal{A}(i)} \alpha_{ij} = 1, \quad \alpha_{ij} \geq 0$$
 
-- Polygenic risk scores for major diseases calculated from genome-wide association study (GWAS) data [@khera2018genome]
+The attention weight $\alpha_{ij}$ is calculated by the softmax function over a compatibility function $f(e_i, e_j)$ computed via a feed-forward network.
 
-### Machine Learning Models
+### Prediction Layer
 
-We implemented and compared three machine learning approaches:
+Following the attention layer, the final representation $v_t$ for each patient at visit $t$ is constructed by aggregating the representation of the patient's diagnosis status infused with information from first-degree relatives, ontology representation from the ontology graph, and patient demographic embedding including age and sex. The visit representation $v_t$ is then used as input to a predictive model for predicting the target label $Y_t$ using long short-term memory (LSTM) networks [@hochreiter1997long]. The prediction task is to predict disease risk at the next visit, denoted as $Y_{t+1}$ at timestep $t+1$, given all the previous visit history up to the current timestep $v_1, v_2, \ldots, v_t$.
 
-#### 1. Random Forest (RF)
+### Experimental Setting
 
-Random Forest is an ensemble learning method that constructs multiple decision trees during training and outputs the mode of classes [@breiman2001random]. We used the following hyperparameters:
+In this study, we define the prediction of disease onset at a patient's next clinical visit as a binary classification task. A total of 118 predictive models are developed, each corresponding to a unique disease code. These 118 diseases are common diseases from ten ICD coding categories: Diseases of the Blood and Blood-Forming Organs, Diseases of the Circulatory System, Diseases of the Digestive System, Diseases of the Genitourinary System, Diseases of the Musculoskeletal System and Connective Tissue, Diseases of the Nervous System and Sense Organs, Diseases of the Respiratory System, Endocrine Nutritional Metabolic Diseases and Immunity Disorders, Mental Disorders, and Neoplasms.
 
-```python
-RandomForestClassifier(
-    n_estimators=500,
-    max_depth=15,
-    min_samples_split=50,
-    min_samples_leaf=20,
-    class_weight='balanced',
-    random_state=42
-)
-```
+For all models, we randomly partition the dataset into three parts, training data (70%), validation data (10%), and testing data (20%). The best-performing model on the validation data is selected and its performance is further evaluated on the test data in a 3-fold cross validation by calculating the area under a receiver operating characteristic curve (AUC), precision, recall and F1 score.
 
-#### 2. XGBoost
+### Baseline Models
 
-XGBoost (Extreme Gradient Boosting) is a scalable gradient boosting framework known for high performance [@chen2016xgboost]:
+We evaluate five baseline models, categorized into two groups:
 
-```python
-XGBClassifier(
-    n_estimators=500,
-    max_depth=6,
-    learning_rate=0.01,
-    subsample=0.8,
-    colsample_bytree=0.8,
-    random_state=42
-)
-```
-
-#### 3. Deep Neural Network (DNN)
-
-We implemented a fully connected neural network with the following architecture:
-
-- Input layer: Variable count matching feature dimensions
-- Hidden layers: 3 layers with 256, 128, and 64 neurons
-- Activation: ReLU for hidden layers, sigmoid for output
-- Dropout: 0.3 for regularization
-- Optimizer: Adam with learning rate 0.001
-
-### Model Training and Evaluation
-
-**Data Splitting:**
-
-- Training set: 60% (n ≈ 300,000)
-- Validation set: 20% (n ≈ 100,000)
-- Test set: 20% (n ≈ 100,000)
-
-**Performance Metrics:**
-
-- Area Under the Receiver Operating Characteristic Curve (AUC-ROC)
-- Precision, Recall, and F1-score
-- Calibration curves and Brier scores
-
-**Cross-Validation:**
-
-5-fold stratified cross-validation was performed on the training set to optimize hyperparameters and prevent overfitting.
-
-### Disease Network Analysis
-
-We constructed disease co-occurrence networks using:
-
-- **Nodes:** Individual disease categories
-- **Edges:** Significant co-occurrence patterns (adjusted for age, sex, and socioeconomic status)
-- **Edge weights:** Odds ratios from logistic regression models
-
-Community detection algorithms (Louvain method) identified clusters of diseases with frequent co-occurrence [@blondel2008fast].
-
-### Statistical Analysis
-
-All statistical analyses were conducted using Python 3.9 with scikit-learn 1.3.0, XGBoost 2.0.0, and TensorFlow 2.13.0. Statistical significance was set at p < 0.05 with Bonferroni correction for multiple comparisons.
+- **Group 1** (no attention mechanism): Logistic Regression (LR), XGBoost [@chen2016xgboost], and Recurrent Neural Networks (RNN).
+- **Group 2** (attention-based): GRAM [@choi2017gram] and Dipole [@ma2017dipole]. GRAM leverages disease taxonomy and relies solely on patients' historical diagnosis codes as input.
 
 ## Results
 
 ### Model Performance
 
-All three machine learning models demonstrated strong predictive performance for multimorbidity risk, with XGBoost achieving the highest overall AUC (0.87, 95% CI: 0.86-0.88), followed by Random Forest (0.85, 95% CI: 0.84-0.86) and the deep neural network (0.84, 95% CI: 0.83-0.85).
+@tbl-performance shows the performance comparison between ALIGATEHR-Gen and five baseline models. ALIGATEHR-Gen outperformed all baseline methods and achieved an improvement of 6% in the average AUC across 118 diseases compared to the best-performing baseline model (0.76 for ALIGATEHR-Gen vs. 0.72 for GRAM). Additionally, ALIGATEHR-Gen demonstrated the highest average precision, recall and F1 score.
 
-::: {.callout-note}
-### Performance Summary
+| Model | AUC | Precision | Recall | F1 |
+|:------|:---:|:---------:|:------:|:--:|
+| Logistic Regression | 0.60±0.05 | 0.60±0.05 | 0.58±0.05 | 0.59±0.05 |
+| Recurrent Neural Networks | 0.62±0.05 | 0.56±0.05 | 0.63±0.05 | 0.59±0.05 |
+| XGBoost | 0.68±0.05 | 0.64±0.06 | 0.69±0.05 | 0.66±0.05 |
+| Dipole | 0.71±0.07 | 0.72±0.07 | 0.68±0.07 | 0.70±0.07 |
+| GRAM | 0.72±0.06 | 0.74±0.05 | 0.68±0.06 | 0.71±0.06 |
+| ALIGATEHR-Gen^a^ | 0.64±0.05 | 0.64±0.05 | 0.61±0.05 | 0.62±0.05 |
+| ALIGATEHR-Gen^b^ | 0.65±0.06 | 0.67±0.06 | 0.61±0.06 | 0.64±0.06 |
+| **ALIGATEHR-Gen** | **0.76±0.06** | **0.78±0.06** | **0.71±0.06** | **0.74±0.06** |
 
-| Model | AUC | Accuracy | Precision | Recall | F1-Score |
-|-------|-----|----------|-----------|--------|----------|
-| XGBoost | 0.87 | 0.82 | 0.79 | 0.85 | 0.82 |
-| Random Forest | 0.85 | 0.80 | 0.77 | 0.83 | 0.80 |
-| Deep Neural Network | 0.84 | 0.79 | 0.76 | 0.82 | 0.79 |
-:::
+: Comparison of model performance. Average performance on disease risk prediction tasks with 95% confidence interval. ^a^Without patient graph. ^b^With constant weights on edges of the patient graph. {#tbl-performance}
 
-Performance varied across disease categories, with cardiovascular and metabolic conditions showing the highest predictability (AUC > 0.90), while mental health disorders and certain cancers were more challenging to predict (AUC 0.75-0.80).
+### Ablation Study
 
-### Variable Importance
+To evaluate the robustness of our proposed model, we performed an ablation experiment to evaluate the impact of the patient graph on the performance of ALIGATEHR-Gen:
 
-Feature importance analysis revealed several key predictors of multimorbidity:
+1. **ALIGATEHR-Gen^a^**: the patient graph is removed.
+2. **ALIGATEHR-Gen^b^**: the patient graph is retained, but all edges are assigned constant weights.
 
-**Top 10 Predictors (by importance score):**
+Removing the patient graph or assigning constant weights to first-degree relatives significantly affected the performance (@tbl-performance). These results confirm the importance of incorporating first-degree relatives' health information in disease risk prediction. Moreover, merely linking patients to their relatives in a graph is insufficient if attention weights remain constant --- ALIGATEHR-Gen effectively identifies and prioritizes the most influential first-degree relatives for each patient.
 
-1. Age (importance: 0.18)
-2. Number of pre-existing conditions (0.14)
-3. Body mass index (0.11)
-4. Cardiovascular polygenic risk score (0.09)
-5. Inflammatory markers (C-reactive protein) (0.08)
-6. Socioeconomic status (Townsend index) (0.07)
-7. Smoking status (0.06)
-8. Waist-hip ratio (0.06)
-9. Physical activity level (0.05)
-10. Diabetes polygenic risk score (0.05)
+@fig-auc-kde shows the kernel density estimate (KDE) of the AUC difference between ALIGATEHR-Gen and five baseline models across all 118 diseases. ALIGATEHR-Gen achieved a higher AUC than all five baseline models across all individual diseases.
 
-Notably, age and pre-existing conditions showed strong non-linear relationships with multimorbidity risk, highlighting the importance of flexible modeling approaches.
+![Performance evaluation of ALIGATEHR-Gen using area under the curve (AUC). Kernel density estimate (KDE) of the AUC difference between ALIGATEHR-Gen and five baseline models across diseases.](figures/fig2_auc_kde.jpeg){#fig-auc-kde}
 
-### Disease Co-occurrence Networks
+### Case Study: Fibrotic and Closely Related Diseases
 
-Network analysis identified four major disease clusters:
+To illustrate the utility of ALIGATEHR-Gen in analyzing individual diseases, we applied it to distinguish among five primary fibrotic or closely related diseases: coronary artery disease (CAD), chronic kidney disease (CKD), metabolic-associated steatohepatitis (MASH), pulmonary fibrosis (PF), and Crohn's disease (CD). We trained a multi-class classifier using ALIGATEHR-Gen to predict the likelihood of each disease in patients diagnosed with exactly one of the five conditions.
 
-1. **Cardiometabolic Cluster:** Diabetes, hypertension, coronary artery disease, stroke, chronic kidney disease
-2. **Respiratory-Inflammatory Cluster:** Asthma, COPD, allergic conditions
-3. **Mental Health Cluster:** Depression, anxiety, substance use disorders
-4. **Musculoskeletal Cluster:** Osteoarthritis, osteoporosis, chronic pain conditions
+A t-SNE plot of patient representations learned by ALIGATEHR-Gen reveals a distinct separation between patients with PF and CD from those with the other three diseases (@fig-tsne). In contrast, CAD, CKD and MASH patients exhibit partial overlap, likely reflecting their shared risk factors and underlying pathophysiological correlations [@theodorakis2025cardiometabolic; @villarroel2024advanced; @targher2024masld; @ostrominski2023prevalence].
 
-Strong connections were observed between cardiovascular and metabolic diseases (OR = 3.8, 95% CI: 3.6-4.0) and between mental health conditions and chronic pain (OR = 2.9, 95% CI: 2.7-3.1).
+![t-SNE plot of patients with one of the five primary fibrotic or closely related diseases using learned latent patient representation, showing the separation and clustering of these diseases.](figures/fig3_tsne.jpeg){#fig-tsne}
 
-### Subgroup Analysis
+### Interpretability Analysis
 
-Model performance remained consistent across sex and age groups, though slightly lower AUC values were observed in the youngest age group (40-50 years) due to lower disease prevalence. Importantly, performance was similar across ethnic groups, suggesting good generalizability.
+We examined the influence of first-degree relatives on the risk of developing each of the five fibrotic or closely related diseases. After applying the risk prediction model, patients were stratified into high-risk (predicted risk > 75%), moderate-risk (predicted risk 25-75%), and low-risk (predicted risk < 25%) groups.
+
+Across all five conditions, high-risk patients consistently had a greater number of affected family members compared to those in the moderate- and low-risk groups, emphasizing the critical role of family health history in fibrotic disease susceptibility (@fig-family-risk).
+
+![Association of the number of affected family members and risk groups for each disease. High-risk patients consistently show more affected first-degree relatives.](figures/fig4a_family_risk.png){#fig-family-risk}
+
+Since obesity is a common risk factor for CAD, CKD and MASH [@arvanitakis2023obesity], we further examined the relationship between body mass index (BMI) and disease risk, where BMI was not used in the prediction model. High-risk patients with CAD, CKD and MASH generally had higher BMI than those in the moderate- and low-risk groups (@fig-bmi-risk). Notably, patients with MASH had the highest BMI among all five diseases, aligning with obesity as a major risk factor for MASH.
+
+![Association between Body Mass Index (BMI) and risk groups for each disease. BMI was not used in the prediction model, yet high-risk patients for CAD, CKD and MASH show elevated BMI.](figures/fig4b_bmi_risk.png){#fig-bmi-risk}
 
 ## Discussion
 
-This study demonstrates that machine learning approaches can effectively predict multimorbidity risk using readily available clinical and demographic data. The strong predictive performance achieved (AUC 0.84-0.87) suggests potential utility for risk stratification in clinical practice and population health management.
+In this study, we present ALIGATEHR-Gen, a deep learning framework that integrates EHR, genetic data, and external medical ontology into an attention-based predictive model. By leveraging genetically inferred first-degree relationships, ALIGATEHR-Gen addresses the underutilization of family health history in disease risk prediction, where such information is often missing or incomplete [@ginsburg2019family]. Our experimental results across 118 diseases in the UKB demonstrate that explicitly modeling genetically inferred first-degree relationships leads to substantial improvement in both predictive accuracy and model robustness.
 
-### Key Findings
+This improvement is mostly driven by two important factors:
 
-Our analysis identified several important insights:
+1. Incorporating genetically inferred relationships captures the latent genetic predispositions that can be overlooked by EHR-centric models, thereby enhancing risk stratification for diseases with strong familial components.
+2. The attention mechanisms employed in both the patient graph and medical ontology graph enable ALIGATEHR-Gen to prioritize the most influential first-degree relatives and identify clinically relevant features for improving disease risk prediction.
 
-**1. Modifiable Risk Factors:** BMI, smoking, and physical activity emerged as key modifiable predictors, suggesting opportunities for targeted prevention interventions.
-
-**2. Disease Clustering:** The identification of distinct disease clusters provides evidence for shared pathophysiological mechanisms and suggests potential for cluster-specific treatment approaches [@prados-torres2014multimorbidity].
-
-**3. Genetic Contribution:** Polygenic risk scores contributed significantly to prediction, particularly for cardiometabolic conditions, highlighting the role of genetic predisposition in multimorbidity development [@abraham2019genomic].
-
-### Clinical Implications
-
-The predictive models developed in this study could be integrated into electronic health record systems to:
-
-- Identify high-risk individuals for proactive monitoring and early intervention
-- Personalize prevention strategies based on individual risk profiles
-- Optimize resource allocation in healthcare systems
-- Guide clinical decision-making for patients with complex care needs
-
-### Comparison with Previous Research
-
-Our findings align with previous multimorbidity research demonstrating strong associations between cardiometabolic conditions [@kivimaki2017body]. However, we extend this work by:
-
-- Incorporating a broader range of predictor variables including genetic data
-- Applying advanced machine learning techniques for improved prediction
-- Characterizing disease networks at a population scale
-- Demonstrating consistent performance across demographic subgroups
+Our case studies on five primary fibrotic and closely related diseases further highlight the potential of multimodal learning for complex conditions, with or without overlapping risk factors and pathophysiological mechanisms. The identified high-risk patients, characterized by both familial predisposition and elevated BMI, demonstrates ALIGATEHR-Gen's capacity to capture interactions between genetic factors, demographics, and clinical features. These insights can inform targeted interventions, personalized disease management, and improved resource allocation in clinical settings.
 
 ### Limitations
 
-Several limitations should be considered when interpreting our results:
-
-1. **Selection Bias:** UK Biobank participants are healthier and more affluent than the general UK population, potentially limiting generalizability [@fry2017comparison].
-
-2. **Missing Data:** Despite exclusion criteria, some predictor variables had missing values requiring imputation.
-
-3. **Outcome Definition:** Multimorbidity definitions vary across studies; our choice of 21 disease categories may not capture all clinically relevant conditions.
-
-4. **Temporal Relationships:** Our analysis focused on prevalent multimorbidity; future work should examine incident disease patterns and temporal sequencing.
-
-5. **External Validation:** Models require validation in independent cohorts from diverse healthcare settings.
+- While ALIGATEHR-Gen focuses on genetically inferred first-degree relationships, it may miss valuable information from more distant relatives, such as second- and third-degree relationships.
+- Although kinship coefficients offer a statistically robust approach for inferring family relationships, they do not fully capture shared environmental or lifestyle factors among relatives.
+- While disease-specific polygenic risk scores (PRS) estimate an individual's genetic liability to disease, their integration with family health history and clinical risk factors could further improve disease risk assessment.
 
 ### Future Directions
 
-Several avenues for future research emerge from this work:
-
-- **Temporal Modeling:** Develop longitudinal models to predict multimorbidity trajectories and disease progression patterns
-- **Intervention Studies:** Test whether risk prediction models can guide effective prevention interventions
-- **Mechanistic Research:** Investigate biological pathways underlying disease clusters
-- **Clinical Implementation:** Conduct implementation science studies to integrate predictive models into clinical workflows
-- **Patient-Centered Outcomes:** Evaluate impact on quality of life, healthcare utilization, and patient satisfaction
+Future work will focus on validating the model in more diverse and heterogeneous populations, such as the All of Us Research Program [@allofus2019] or regional health systems with available genetic data. Successful integration of ALIGATEHR-Gen into clinical decision support systems will require addressing computational scalability, interoperability with existing EHR systems, and alignment of model outputs with clinical workflows.
 
 ## Conclusions
 
-This study demonstrates that machine learning approaches can effectively predict multimorbidity risk, achieving strong performance across diverse disease categories and demographic groups. The identification of key risk factors and disease networks provides actionable insights for prevention and management strategies. Implementation of these predictive models in clinical practice holds promise for personalized, proactive healthcare delivery.
+In this work, we present ALIGATEHR-Gen, an attention-based graph neural network that integrates EHR, genetic data, and external medical ontology to improve disease risk prediction. Our model achieves superior predictive performance across a broad spectrum of diseases, highlighting the importance of incorporating genetic information in patient representation learning. By leveraging an attention mechanism at both the patient and ontology levels, ALIGATEHR-Gen robustly identifies influential clinical features and first-degree relatives, offering enhanced interpretability and predictive accuracy. Furthermore, this framework effectively addresses practical challenges in clinical settings, such as distinguishing among five primary fibrotic or closely related diseases.
 
-Further research is needed to validate these models in diverse populations, understand causal mechanisms underlying disease clustering, and evaluate the impact of risk-stratified interventions on patient outcomes.
+## Ethics Statements
 
-## Acknowledgments
-
-This research has been conducted using the UK Biobank Resource under Application Number [XXXXX]. We thank all UK Biobank participants and the coordinating team for their contributions.
+This study uses data from the UK Biobank (project ID: 41910), a large-scale biomedical database and research resource. UK Biobank received research ethics approval from the North West Multi-centre Research Ethics Committee (MREC). All participants provided informed consent at the time of enrollment.
 
 ## Funding
 
-This work was supported by [Grant Information].
-
-## Data Availability
-
-UK Biobank data are available to bona fide researchers through application at https://www.ukbiobank.ac.uk/. Analysis code is available at [GitHub repository link].
-
-## Conflicts of Interest
-
-The authors declare no conflicts of interest.
+This work was supported by the National Institutes of Health (NIH) grant R01LM014087.
 
 ## References
 
 ::: {#refs}
 :::
-
----
-
-## Supplementary Materials
-
-### Supplementary Figure 1: Model Calibration Curves
-
-[Placeholder for calibration curves showing predicted vs. observed probabilities]
-
-### Supplementary Table 1: Complete Feature Importance Rankings
-
-[Placeholder for full variable importance table]
-
-### Supplementary Table 2: Disease Co-occurrence Matrix
-
-[Placeholder for pairwise disease association matrix]

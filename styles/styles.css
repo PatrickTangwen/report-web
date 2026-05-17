@@ -1,21 +1,40 @@
 /* Additional custom styles */
 
+/* Homepage: hide Quarto-generated title block and code tools */
+.homepage #title-block-header,
+.homepage .quarto-title-block {
+  display: none;
+}
+
 /* Homepage hero section */
 .hero-section {
-  padding: 3rem 0;
+  padding: 1.5rem 0 2rem;
   text-align: center;
 }
 
-.hero-section h1 {
-  font-size: 2.5rem;
+.hero-section .hero-title {
+  display: block;
+  font-size: 2.8rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.6rem;
+  color: #2c3e50;
 }
 
-.hero-section p {
-  font-size: 1.2rem;
+.hero-section .hero-subtitle {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #2c5aa0;
+  margin-bottom: 0.8rem;
+}
+
+.hero-section .hero-desc {
+  display: block;
+  font-size: 1.05rem;
   color: #6c757d;
-  margin-bottom: 2rem;
+  max-width: 700px;
+  margin: 0 auto 1rem;
+  line-height: 1.6;
 }
 
 /* Card grid for quick links */
@@ -102,8 +121,12 @@ figcaption {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .hero-section h1 {
+  .hero-section .hero-title {
     font-size: 2rem;
+  }
+
+  .hero-section .hero-subtitle {
+    font-size: 1rem;
   }
 
   .card-grid {

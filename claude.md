@@ -1,64 +1,56 @@
-# EHR Website Project
+# ALIGATEHR-Gen Research Website
 
 ## Project Overview
 
-This project aims to build a website for academic paper reporting with plans to expand into interactive data visualization dashboards. The site will be built using Quarto as the primary framework.
+A Quarto-based website for the ALIGATEHR-Gen research project — a graph attention network that integrates EHR, genetic data, and external medical ontology to improve disease risk prediction. The site serves as an academic paper reporting platform with interactive data visualization dashboards.
 
-## Goals
-
-### Phase 1: Academic Paper Reporting
-- Create a professional website to showcase academic papers
-- Include paper abstracts, methodologies, and findings
-- Organize content by topics or publication dates
-- Support citations and references
-
-### Phase 2: Data Visualization Dashboard
-- Add interactive dashboards for data exploration
-- Integrate visualization libraries (e.g., Observable, Plotly, D3.js)
-- Enable dynamic filtering and exploration of research data
-- Provide reproducible analysis examples
+The paper: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank" by Xiayuan Huang, Hang Zhou, Yitao Hong, Xin Zhou, Johann de Jong, Zuoheng Wang (Yale University & UCB Biosciences).
 
 ## Technical Stack
 
-### Core Framework
-- **Quarto**: Main framework for content authoring and site generation
-  - Supports multiple formats: HTML, PDF, presentations
-  - Native integration with R, Python, Julia, and Observable
-  - Built-in support for academic citations and references
-  - Responsive design themes
-
-### Planned Integrations
-- **Observable JS**: For interactive data visualizations
-- **Python/R**: For data analysis and chart generation
-- **GitHub Pages / Netlify**: For hosting (to be decided)
+- **Quarto**: Site generation framework (website project type)
+- **SCSS/CSS**: `styles/custom.scss` (theme variables, component rules) + `styles/styles.css` (layout, hero, cards)
+- **Nature CSL**: Citation style via `styles/nature.csl`
+- **Python**: Dashboard visualizations in `viz/`
+- **Bibliography**: `references.bib` for all citations
 
 ## Project Structure
 
 ```
-EHR_website/
-├── _quarto.yml           # Main configuration file
-├── index.qmd             # Homepage
-├── papers/               # Academic papers directory
-│   ├── paper1.qmd
-│   └── paper2.qmd
-├── dashboard/            # Future dashboard directory
-│   └── viz1.qmd
-├── about.qmd             # About page
-├── references.bib        # Bibliography file
-└── _site/                # Generated site (gitignored)
+report-web/
+├── _quarto.yml            # Site config: navbar, theme, format, bibliography
+├── index.qmd              # Homepage (hero + project overview)
+├── references.bib         # BibTeX bibliography
+├── paper_v1.pdf           # Source PDF of the paper
+├── report/
+│   ├── index.qmd          # Report listing page
+│   ├── paper1.qmd         # Full paper content
+│   └── figures/           # Paper figures (PNG/JPEG)
+├── viz/
+│   ├── dashboard.qmd      # Interactive dashboard
+│   ├── dashboard.ipynb    # Dashboard notebook
+│   ├── dashboard_shiny.*  # Shiny dashboard variant (excluded from render)
+│   ├── data/              # Raw and processed data
+│   ├── modules/           # Visualization modules
+│   └── utils/             # Utility scripts
+├── styles/
+│   ├── custom.scss        # SCSS theme: colors ($primary: #2c5aa0), typography, components
+│   ├── styles.css         # CSS: hero section, card grid, homepage layout
+│   └── nature.csl         # Nature citation format
+└── _site/                 # Generated output (gitignored)
 ```
 
-## Next Steps
+## Key Conventions
 
-1. Initialize Quarto project structure
-2. Configure _quarto.yml for website settings
-3. Create initial homepage and navigation
-4. Set up paper template structure
-5. Plan dashboard integration strategy
+- Homepage (`index.qmd`) uses `pagetitle` instead of `title` to avoid Quarto's auto-generated title block; the hero section is the sole visual title. The `body-classes: homepage` enables CSS-targeted hiding of `#title-block-header` and `.quarto-title-block`.
+- Navbar is defined in `_quarto.yml` with three tabs: Home, Report, Viz.
+- `dashboard_shiny.qmd` is excluded from render in `_quarto.yml` (`render: ["!viz/dashboard_shiny.qmd"]`).
+- Dual theme support: light (cosmo) and dark (darkly), both extended by `custom.scss`.
 
-## Resources
+## Build & Preview
 
-- [Quarto Documentation](https://quarto.org)
-- [Quarto Websites Guide](https://quarto.org/docs/websites/)
-- [Quarto Dashboards](https://quarto.org/docs/dashboards/)
-- [Observable JS in Quarto](https://quarto.org/docs/interactive/ojs/)
+```bash
+quarto preview          # Dev server on port 4200
+quarto render           # Full site build to _site/
+quarto render index.qmd # Render single page
+```

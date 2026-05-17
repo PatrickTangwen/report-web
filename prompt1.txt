@@ -1,0 +1,162 @@
+现在我想为研究网站规划一组 interactive visualization 页面。请你基于当前仓库中的 `spec_spec.md`、`@paper_v1.pdf`，以及我上传的若干示意图和 note，帮我写一份新的 Markdown 文档，专门用于规划这些 interactive visualization 的页面结构、交互设计和实施细节。
+
+背景说明：
+- 这是一个 academic research website，不是 SaaS dashboard，也不是商业 leaderboard。
+- 整体视觉和交互风格需要遵循 `spec_spec.md` 中的设计规范。
+- `@paper_v1.pdf` 是当前论文版本，后续 model architecture 可能还会调整，但研究目标、任务设定和主要实验逻辑大体不会变。
+- 我上传的图片只是 early-stage 示例和讨论 note，不是最终图，请不要简单照抄视觉样式，而是提炼其中的交互需求和展示意图。
+
+目前预计会有几个主要页面：
+1. Overall model performance
+   - Patient embedding UMAP
+   - ICD code UMAP
+   - Evaluation metrics comparison
+
+2. Ablation study
+
+3. Use Case study
+   - Patient embedding UMAP of 7 fibrotic diseases
+   - Risk factor ranking / feature importance ranking
+   - Pathway enrichment analysis
+
+请输出一份 Markdown 文档，内容包括：
+
+## 1. Overall interactive visualization structure
+- 按页面级别规划，例如：
+  - Overall model performance 是一个独立页面
+  - Ablation study 是一个独立页面
+  - Use Case study 是一个独立页面
+- 每个页面下面包含哪些 interactive viz module
+- 每个 module 的主要展示目标是什么
+- 用户进入页面后应当先看到什么，再探索什么
+
+## 2. Per-page visualization planning
+请对每个页面分别规划：
+
+### Page purpose
+说明这个页面要帮助读者理解什么科研问题。
+
+### Visualization modules
+对每个子图 / 子模块说明：
+- module name
+- 对应论文中的实验或分析目的
+- 输入数据需要什么
+- 推荐的图表类型
+- 主要交互方式
+- tooltip 需要展示哪些字段
+- filter / zoom / selection / linked brushing 是否需要
+- 默认视图应该展示什么
+- 点击某个点、某个 cluster、某个 model、某个 feature 后应该展开什么信息
+
+### Interpretation guidance
+说明这个 visualization 应该帮助读者得出什么结论，不要只做“好看”的图。
+
+## 3. Specific interaction requirements
+请重点考虑以下交互：
+
+### UMAP / t-SNE patient embedding
+- 每个点代表一个 patient
+- hover tooltip 展示 patient-level summary，例如 patient id、age、sex、disease status、risk score、cluster assignment 等
+- 支持 zoom in / zoom out / pan
+- 支持按 disease、sex、age group、risk group、cluster 进行 coloring
+- 支持点击单个 patient 后打开 patient detail panel
+- detail panel 中展示该 patient 的 disease status、top risk factors、model prediction、nearest cluster / similar patients
+- 如果是 use case 页面，点击 patient 后可以触发或展示 agent-style explanation：该 patient 属于哪个 disease-related cluster，主要依据是什么
+
+### ICD code embedding
+- 每个点代表一个 ICD-10 code
+- hover tooltip 展示 ICD code、description、ICD chapter、frequency、related disease group
+- 支持 zoom / pan
+- 支持按 ICD chapter coloring
+- 支持点击某个 ICD code 后展示相关 patient cohort 或 co-occurring codes
+- 可以考虑 cluster-level summary
+
+### Evaluation metrics comparison
+- 用于展示不同模型在多个任务 / disease / metric 上的表现
+- 不要做成商业 leaderboard
+- 推荐更 academic 的 comparison table + compact bar / dot plot / heatmap
+- 支持按 task、metric、model family 筛选
+- 支持查看 confidence interval / standard deviation / p-value，如果论文中有相关数据
+- 点击某个模型或任务后展示 detailed breakdown
+
+### Ablation study
+- 目标是说明不同模块或设计选择对性能的影响
+- 推荐使用 grouped bar chart、delta plot、line chart 或 small multiples
+- 重点突出“移除某模块后性能如何变化”，而不是单纯排名
+- 支持选择 metric / task / disease
+- tooltip 展示 full setting、metric value、delta from full model
+- 如果可以，设计一个 explanation area，用文字解释主要 ablation conclusion
+
+### Use case: 7 fibrotic diseases
+- 展示 patient embeddings coloured by true first-onset fibrotic disease
+- hover 展示 patient summary
+- 点击 patient 后展示该 patient 的 disease prediction / disease status / risk factors
+- 点击 cluster 后展示该 cluster 的 dominant disease composition、representative patients、risk profile
+
+### Risk factor ranking / feature importance
+- 展示 global feature importance 和 patient-specific explanation
+- 支持切换 disease type
+- 支持切换 global vs individual patient
+- 推荐 bar chart / ranked list / lollipop chart
+- tooltip 展示 feature name、importance score、direction、clinical interpretation
+- 如果和 patient embedding 联动，点击 patient 后更新该 patient 的 feature ranking
+
+### Pathway enrichment analysis
+- 展示 pathway-level enrichment results
+- 推荐 dot plot / bubble plot / ranked table
+- 支持按 disease / cluster / feature group 筛选
+- tooltip 展示 pathway name、p-value、adjusted p-value、gene count、enrichment ratio
+- 点击 pathway 后展示 involved genes / related risk factors
+
+## 4. Data schema planning
+请规划前端需要的数据文件结构，例如：
+- `patients_embedding.json`
+- `icd_embedding.json`
+- `model_metrics.json`
+- `ablation_results.json`
+- `feature_importance.json`
+- `pathway_enrichment.json`
+
+对每个文件说明：
+- 每一行 / 每个 object 需要哪些字段
+- 字段类型
+- 示例数据结构
+- 该数据服务于哪个 visualization module
+
+## 5. Frontend implementation plan
+请给出较具体的实施建议，包括：
+- 推荐使用的技术栈，例如 React + TypeScript + D3 / Plotly / ECharts
+- 哪些图适合用 Plotly，哪些适合用 D3 或 ECharts
+- 页面组件如何拆分
+- 状态管理如何设计，例如 selectedPatient、selectedDisease、selectedMetric、selectedCluster
+- 各 visualization module 之间如何联动
+- 如何处理大规模点云数据，例如 100k+ patients 的 UMAP
+- 是否需要 sampling、WebGL scatter、server-side aggregation、progressive loading
+
+## 6. Academic website design constraints
+请特别注意：
+- 页面要保持 academic、clean、professional、content-first
+- 不要设计成 SaaS dashboard、Kaggle leaderboard 或商业产品页
+- 不要使用夸张渐变、大面积彩色背景、装饰性 icon
+- 颜色、字体、边框、surface 等必须遵循 `spec_spec.md`
+- 交互的目的是帮助科研解释，不是制造炫技效果
+
+## 7. Implementation milestones
+请把开发过程拆成几个阶段：
+- Phase 1: static page + mock data
+- Phase 2: interactive UMAP and metrics plots
+- Phase 3: linked patient detail panel
+- Phase 4: ablation and use case modules
+- Phase 5: performance optimization and polish
+
+每个 phase 说明：
+- 需要完成什么
+- 输入数据是什么
+- 验收标准是什么
+- 可能的技术风险是什么
+
+最终输出：
+- 只输出一份完整的 Markdown 文档内容
+- 文档标题可以叫 `interactive_visualization_plan.md`
+- 不需要直接写完整前端代码
+- 但要让后续开发者可以根据这份 md 开始实现

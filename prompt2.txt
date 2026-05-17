@@ -1,0 +1,247 @@
+下面是一个更清晰、可执行的 revised prompt，可以直接发给另一个 AI/agent 使用：
+
+---
+
+请基于我提供的 `spec_spec.md`、`@paper_v1.pdf`，以及我上传的一些示意图和 notes，帮我设计一份 **专门用于 interactive visualization 的 Markdown 文档**，并同时规划这些 visualizations 的具体实施细节。
+
+背景说明：
+
+目前项目大致会包含以下几个主要页面。像 **Overall Model Performance**、**Ablation Study** 等会各自作为独立页面。每个页面下面的子编号项目对应一个不同的 interactive visualization。
+我上传的示意图只是参考，不是最终设计。后续 model architecture 可能会有所变化，但项目的整体目标、展示逻辑和分析方向基本不会变。
+
+请你阅读并综合以下材料：
+
+1. `spec_spec.md`
+2. `@paper_v1.pdf`
+3. 我上传的示意图和 notes
+
+然后完成以下任务：
+
+## 1. 生成 interactive visualization 专用 Markdown 文档
+
+请新写一个 Markdown 文件，专门描述每个 interactive visualization 的设计。文档需要覆盖：
+
+* visualization 的目标和要回答的问题
+* 适合放在哪个 page / section
+* 推荐的 chart type / interactive visualization type
+* 需要的数据字段
+* 用户可以进行哪些 interaction
+* hover tooltip / click / filter / search / zoom / brush 等交互细节
+* 默认视图应该如何呈现
+* visual encoding 设计，例如 color、shape、size、opacity、layout 等
+* 每个 visualization 如何服务于 paper / model 的核心 narrative
+* 可能的 edge cases 或数据限制
+* 前端实现建议
+
+## 2. 页面和 visualization 初步结构
+
+目前预期页面结构如下：
+
+### Page 1: Overall Model Performance
+
+这个页面用于整体展示 model 的 representation quality、prediction performance，以及模型在 patient-level 和 code-level embedding 上的表现。
+
+需要设计以下 interactive visualizations：
+
+#### 1.1 Patient Embedding UMAP
+
+请设计一个 interactive UMAP visualization，用于展示 patient embedding 的分布。
+
+需要考虑：
+
+* 每个点代表什么
+* 默认 color by 什么变量
+* 是否支持按 disease、cohort、label、risk group、time window 等筛选
+* hover 时显示哪些 patient-level summary 信息
+* click 某个 patient 后是否显示右侧详情 panel
+* 如何避免 patient privacy 风险
+* 如何体现模型学到的 clinical structure
+
+#### 1.2 ICD Code UMAP
+
+请设计一个 interactive UMAP visualization，用于展示 ICD code embedding 的结构。
+
+需要考虑：
+
+* 每个点代表一个 ICD code
+* 是否按 ICD chapter / disease category / semantic group 着色
+* hover tooltip 显示 ICD code、description、category、frequency 等信息
+* 是否支持搜索 ICD code
+* 是否支持点击某个 code 后高亮相近 codes
+* 如何体现模型对 code-level semantics 的捕捉能力
+
+#### 1.3 Evaluation Metrics Comparison
+
+请设计一个 interactive metrics comparison visualization，用于展示 model 与 baselines 的性能比较。
+
+需要考虑：
+
+* 支持哪些 metrics，例如 AUROC、AUPRC、F1、precision、recall、calibration 等
+* 是否按 task / disease / cohort / time horizon 分组
+* 推荐使用 bar chart、dot plot、line chart 或 small multiples
+* 是否显示 confidence interval / bootstrap interval
+* 用户如何切换 metric
+* 如何突出 proposed model 相比 baseline 的提升
+
+---
+
+### Page 2: Ablation Study
+
+这个页面用于展示不同 model component 对最终性能的影响。
+
+请设计一个或多个 interactive ablation visualizations。
+
+需要考虑：
+
+* 不同 ablation setting 如何展示
+* model variants 如何命名和解释
+* 每个组件被移除或替换后，对 performance 的影响如何可视化
+* 是否支持按 disease / task / metric / cohort 筛选
+* 是否显示 delta relative to full model
+* 如何帮助用户理解哪些 architecture component 最关键
+* 如果后续 model architecture 变化，visualization 设计如何保持可扩展
+
+---
+
+### Page 3: Use Case Study
+
+这个页面用于通过具体 clinical use case 展示 model 的解释性和实际应用价值。
+
+#### 3.1 Patient Embedding UMAP of 7 Fibrotic Diseases
+
+请设计一个 focused UMAP visualization，用于展示 7 种 fibrotic diseases 的 patient embedding 分布。
+
+需要考虑：
+
+* 7 种 fibrotic diseases 如何编码和着色
+* 是否支持单独选择某一种或多种 disease
+* 是否支持显示 overlap / comorbidity
+* 是否支持 disease trajectory 或 temporal progression
+* hover / click 时显示哪些 summary
+* 如何体现 shared fibrosis phenotype 或 disease-specific pattern
+* 如何和 paper 中的 use case narrative 对齐
+
+#### 3.2 Risk Factor Ranking / Feature Importance
+
+请设计一个 interactive risk factor ranking 或 feature importance visualization，用于展示模型识别出的关键 risk factors。
+
+需要考虑：
+
+* 推荐使用 horizontal bar chart、ranked list、beeswarm plot、SHAP summary plot 或其他方式
+* 是否支持按 disease、patient subgroup、time window、prediction horizon 筛选
+* 是否显示 global importance 和 patient-level local explanation
+* hover 时显示 feature definition、importance score、directionality、confidence 等
+* 是否支持点击某个 feature 后查看相关患者分布或 subgroup effect
+* 如何避免把 correlation 误解为 causation
+* 如何和 clinical interpretation 结合
+
+---
+
+## 3. Implementation Planning
+
+请在 Markdown 文档后半部分加入 implementation plan，至少包括：
+
+### Data requirements
+
+列出每个 visualization 所需的数据表、字段、预处理步骤和数据格式。
+例如：
+
+* patient embedding table
+* ICD code embedding table
+* model evaluation metrics table
+* ablation results table
+* fibrotic disease cohort table
+* feature importance / risk factor table
+
+### Suggested frontend architecture
+
+请建议如何组织前端组件，例如：
+
+* page-level layout
+* reusable UMAP component
+* reusable metrics comparison component
+* filter panel component
+* detail drawer / side panel
+* tooltip component
+* data loading strategy
+
+### Recommended technology stack
+
+请根据 interactive visualization 的需求推荐技术栈，例如：
+
+* React / Next.js
+* D3.js
+* Observable Plot
+* Plotly
+* Deck.gl / regl-scatterplot
+* Vega-Lite
+* Apache Arrow / Parquet
+* DuckDB-WASM
+
+并说明每个库适合用在哪类 visualization 上。
+
+### Interaction design
+
+请总结跨页面统一的交互规范，例如：
+
+* hover
+* click
+* selection
+* brushing
+* zoom / pan
+* legend interaction
+* search
+* filters
+* reset view
+* linked highlighting
+
+### Performance considerations
+
+请考虑大规模 patient embedding 和 ICD code embedding 的渲染性能，包括：
+
+* 数据量较大时如何 downsampling
+* 是否需要 WebGL rendering
+* tooltip 和 hover 如何优化
+* 是否需要 server-side aggregation
+* 是否使用 precomputed UMAP coordinates
+* 是否需要 lazy loading / progressive loading
+
+### Privacy and clinical safety
+
+请说明如何避免泄露 patient-level sensitive information，并提醒：
+
+* 不显示可识别个人身份的信息
+* patient-level tooltip 只显示 aggregate 或 de-identified summary
+* feature importance 不能直接解释为因果关系
+* clinical claims 需要与 paper 和实验结果保持一致
+
+### Milestones
+
+请给出一个合理的实施规划，例如：
+
+1. Data schema finalization
+2. Static prototype
+3. Interactive prototype
+4. Model result integration
+5. Performance optimization
+6. User testing / review
+7. Final polish and documentation
+
+每个 milestone 请列出主要 deliverables。
+
+## 4. Output format
+
+请输出一个完整的 Markdown 文档草稿，结构清晰，可直接保存为类似：
+
+`interactive_visualization_plan.md`
+
+文档风格要求：
+
+* 面向 research + engineering team
+* 既要有 high-level rationale，也要有 implementation-ready details
+* 不要只写概念描述，要尽量具体到数据字段、交互行为和组件设计
+* 对当前不确定的地方，请明确标注为 `TBD`
+* 对依赖后续 model architecture 变化的地方，请设计成 modular / extensible
+* 尽量让前端工程师可以根据这份文档开始实现 prototype
+
+最终请只输出 Markdown 文档正文，不需要额外解释。
