@@ -1,4 +1,6 @@
-现在我想大致会有这个几个page,像Overall model performance，Ablation study etc会是单独一个page, 
-然后下面的每个子number会是不同的interactive viz（我上传了一些示意图(非最终)和note）,
-请你基于claude.md,style_spec.md和paper_v1.pdf的内容（后续model arch会有变化，但大致目标不会变）,
+现在我想给这个webiste加上interactive visualization，目前的viz只是个place holder, 我的计划是会有这个几个page,
+像Overall model performance，Ablation study etc会是单独一个page, 
+然后下面的每个子number会是不同的interactive viz（我上传了一些示意图(非最终)和note）在viz_planning folder
+我在想让LLM基于claude.md,style_spec.md和paper_v1.pdf的内容（后续model arch会有变化，但大致目标不会变）,
 再写一个md专门给这些interactive visualization， 用来帮我planning下实施细节给LLM. 作图的Tech stack可以不限于plotly,只要它能在quarto这个网站里嵌入就好。
+先将第一个新page planning好，后续的几个page待定，你觉得怎么样
