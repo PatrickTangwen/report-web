@@ -9,9 +9,11 @@ The paper: "Multimodal Data Integration Improves Disease Risk Prediction in the 
 ## Technical Stack
 
 - **Quarto**: Site generation framework (website project type)
-- **SCSS/CSS**: `styles/custom.scss` (theme variables, component rules) + `styles/styles.css` (layout, hero, cards)
+- **OJS (Observable JS)**: All interactive charts are OJS cells in `.qmd` files
+- **Observable Plot**: SVG-based charts (bar charts, dot plots, ICD UMAP, Fibrotic UMAP)
+- **regl-scatterplot**: WebGL point cloud renderer (Sex/Age UMAPs on Performance page)
+- **SCSS/CSS**: `styles/custom.scss` (theme variables, component rules) + `styles/styles.css` (layout, hero, cards, dark mode overrides)
 - **Nature CSL**: Citation style via `styles/nature.csl`
-- **Python**: Dashboard visualizations in `viz/`
 - **Bibliography**: `references.bib` for all citations
 
 ## Project Structure
@@ -27,15 +29,16 @@ report-web/
 │   ├── paper1.qmd         # Full paper content
 │   └── figures/           # Paper figures (PNG/JPEG)
 ├── viz/
-│   ├── dashboard.qmd      # Interactive dashboard
-│   ├── dashboard.ipynb    # Dashboard notebook
-│   ├── dashboard_shiny.*  # Shiny dashboard variant (excluded from render)
-│   ├── data/              # Raw and processed data
-│   ├── modules/           # Visualization modules
-│   └── utils/             # Utility scripts
+│   ├── overall-performance.qmd  # Page 1: Patient UMAP (sex/age), ICD UMAP, Eval Metrics
+│   ├── ablation.qmd             # Page 2: Ablation delta bar chart
+│   ├── use-case.qmd             # Page 3: Fibrotic UMAP, Risk Factors, Pathway Enrichment
+│   └── data/                    # 7 mock CSV files
+├── viz_planning/          # Design specs (to be archived after real data)
+│   ├── INTERACTIVE_VIZ_PLAN.md
+│   └── PRD_INTERACTIVE_VIZ.md
 ├── styles/
 │   ├── custom.scss        # SCSS theme: colors ($primary: #2c5aa0), typography, components
-│   ├── styles.css         # CSS: hero section, card grid, homepage layout
+│   ├── styles.css         # CSS: hero, cards, dark mode chart overrides
 │   └── nature.csl         # Nature citation format
 └── _site/                 # Generated output (gitignored)
 ```
@@ -43,9 +46,11 @@ report-web/
 ## Key Conventions
 
 - Homepage (`index.qmd`) uses `pagetitle` instead of `title` to avoid Quarto's auto-generated title block; the hero section is the sole visual title. The `body-classes: homepage` enables CSS-targeted hiding of `#title-block-header` and `.quarto-title-block`.
-- Navbar is defined in `_quarto.yml` with three tabs: Home, Report, Viz.
-- `dashboard_shiny.qmd` is excluded from render in `_quarto.yml` (`render: ["!viz/dashboard_shiny.qmd"]`).
+- Navbar is defined in `_quarto.yml` with five items: Home, Report, Performance, Ablation, Use Case.
 - Dual theme support: light (cosmo) and dark (darkly), both extended by `custom.scss`.
+- Dark mode CSS uses `.quarto-dark` selector (NOT `[data-bs-theme="dark"]`).
+- Viz pages use wider layout: `body-width: 1100px` with `sidebar-width: 0px`.
+- All chart data lives in `viz/data/*.csv`; currently mock data, to be replaced with real experimental results.
 
 ## Build & Preview
 
