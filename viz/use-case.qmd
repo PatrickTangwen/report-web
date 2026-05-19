@@ -1,0 +1,208 @@
+---
+title: "Use Case Study"
+subtitle: "Fibrotic Disease Analysis"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    grid:
+      body-width: 1100px
+      sidebar-width: 0px
+      margin-width: 200px
+---
+
+This page demonstrates the clinical utility of ALIGATEHR-Gen through a focused case study on seven fibrotic diseases: CKD, IPF, NASH, Pulmonary Fibrosis, SSc/Connective Tissue, Crohn's Disease, and Fibrosis of Skin.
+
+## Patient Embeddings — 7 Fibrotic Diseases
+
+```{ojs}
+//| echo: false
+
+fibroticData = {
+  const text = await FileAttachment("data/fibrotic_patient_embeddings.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+fibroticUmap = {
+  const diseaseList = [...new Set(fibroticData.map(d => d.fibrotic_disease))];
+  const tableau7 = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+    "#9467bd", "#8c564b", "#e377c2"
+  ];
+  const diseaseColorMap = {};
+  diseaseList.forEach((d, i) => { diseaseColorMap[d] = tableau7[i]; });
+
+  const chart = Plot.plot({
+    width: 1000,
+    height: 650,
+    marginLeft: 40,
+    marginRight: 20,
+    marginTop: 20,
+    marginBottom: 40,
+    x: { label: "UMAP 1" },
+    y: { label: "UMAP 2" },
+    marks: [
+      Plot.dot(fibroticData, {
+        x: "umap_x",
+        y: "umap_y",
+        fill: d => diseaseColorMap[d.fibrotic_disease],
+        fillOpacity: 0.7,
+        r: 3,
+        tip: true,
+        title: d => `${d.patient_id}\nFibrotic Disease: ${d.fibrotic_disease}\nAge: ${d.age} · Sex: ${d.sex}\n${d.primary_diagnosis} — ${d.primary_diagnosis_desc}\nDisease count: ${d.disease_count}`,
+      }),
+    ],
+  });
+
+  const container = document.createElement("div");
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Patient Embeddings — 7 Fibrotic Diseases</strong><br><span style="font-size:0.9rem;color:#6c757d;">Coloured by true first-onset fibrotic disease (${fibroticData.length.toLocaleString()} patients)</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+  container.appendChild(chart);
+
+  const legendDiv = document.createElement("div");
+  legendDiv.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;";
+  for (const disease of diseaseList) {
+    const count = fibroticData.filter(d => d.fibrotic_disease === disease).length;
+    const color = diseaseColorMap[disease];
+    legendDiv.innerHTML += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle;"></span>${disease} (n=${count.toLocaleString()})</span>`;
+  }
+  container.appendChild(legendDiv);
+
+  return container;
+}
+```
+
+## Top Risk Factors by Disease
+
+```{ojs}
+//| echo: false
+
+featureData = {
+  const text = await FileAttachment("data/feature_importance.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+fibroticDiseaseList = [...new Set(featureData.map(d => d.disease))]
+```
+
+```{ojs}
+//| echo: false
+
+viewof featureDisease = Inputs.select(fibroticDiseaseList, { label: "Disease", value: fibroticDiseaseList[0] })
+```
+
+```{ojs}
+//| echo: false
+
+featureChart = {
+  const filtered = featureData
+    .filter(d => d.disease === featureDisease && d.rank <= 15)
+    .sort((a, b) => a.rank - b.rank);
+
+  const chart = Plot.plot({
+    width: 1000,
+    height: 420,
+    marginLeft: 220,
+    marginRight: 20,
+    x: { label: "Importance Score", grid: true },
+    y: { label: null, domain: filtered.map(d => d.feature) },
+    marks: [
+      Plot.barX(filtered, {
+        x: "importance_score",
+        y: "feature",
+        fill: "#2c5aa0",
+        tip: true,
+        title: d => `${d.feature}\nImportance: ${d.importance_score.toFixed(4)}\nRank: #${d.rank}\nDisease: ${d.disease}`,
+      }),
+    ],
+  });
+
+  const container = document.createElement("div");
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Top Risk Factors — ${featureDisease}</strong><br><span style="font-size:0.9rem;color:#6c757d;">Top 15 features by global importance score</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+  container.appendChild(chart);
+
+  return container;
+}
+```
+
+## Pathway Enrichment Analysis
+
+```{ojs}
+//| echo: false
+
+pathwayData = {
+  const text = await FileAttachment("data/pathway_enrichment.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+viewof pathwayDisease = Inputs.select(fibroticDiseaseList, { label: "Disease", value: fibroticDiseaseList[0] })
+```
+
+```{ojs}
+//| echo: false
+
+pathwayChart = {
+  const filtered = pathwayData
+    .filter(d => d.disease === pathwayDisease && d.rank <= 15)
+    .sort((a, b) => a.rank - b.rank);
+
+  // Compute -log10(p_adjusted) for color encoding
+  const withLogP = filtered.map(d => ({
+    ...d,
+    neg_log10_padj: -Math.log10(d.p_adjusted),
+  }));
+
+  const chart = Plot.plot({
+    width: 1000,
+    height: 480,
+    marginLeft: 280,
+    marginRight: 20,
+    x: { label: "Enrichment Ratio", grid: true },
+    y: {
+      label: null,
+      domain: withLogP.map(d => d.pathway),
+    },
+    r: { range: [4, 16], label: "Gene Count" },
+    color: { scheme: "YlOrRd", label: "-log₁₀(p adjusted)", legend: true },
+    marks: [
+      Plot.dot(withLogP, {
+        x: "enrichment_ratio",
+        y: "pathway",
+        r: "gene_count",
+        fill: "neg_log10_padj",
+        stroke: "#dee2e6",
+        strokeWidth: 0.5,
+        tip: true,
+        title: d => `${d.pathway}\nSource: ${d.source}\nGene Count: ${d.gene_count}\nEnrichment Ratio: ${d.enrichment_ratio.toFixed(2)}\nP-value: ${Number(d.p_value).toExponential(2)}\nAdj. P-value: ${Number(d.p_adjusted).toExponential(2)}`,
+      }),
+    ],
+  });
+
+  const container = document.createElement("div");
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Pathway Enrichment — ${pathwayDisease}</strong><br><span style="font-size:0.9rem;color:#6c757d;">Top 15 pathways by significance · Dot size = gene count · Color = -log₁₀(adj. p-value)</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+  container.appendChild(chart);
+
+  return container;
+}
+```

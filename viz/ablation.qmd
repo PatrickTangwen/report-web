@@ -1,0 +1,104 @@
+---
+title: "Ablation Study"
+subtitle: "Component Contribution Analysis"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    grid:
+      body-width: 1100px
+      sidebar-width: 0px
+      margin-width: 200px
+---
+
+This page shows how each architectural component of ALIGATEHR-Gen contributes to overall performance. Each bar represents the change in performance when a specific module is removed from the full model.
+
+## Performance Impact of Removing Model Components
+
+```{ojs}
+//| echo: false
+
+ablationData = {
+  const text = await FileAttachment("data/ablation_results.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+ablationDiseases = [...new Set(ablationData.map(d => d.disease))]
+ablationMetrics = [...new Set(ablationData.map(d => d.metric))]
+```
+
+```{ojs}
+//| echo: false
+
+viewof ablationDisease = Inputs.select(ablationDiseases, { label: "Disease", value: ablationDiseases[0] })
+```
+
+```{ojs}
+//| echo: false
+
+viewof ablationMetric = Inputs.select(ablationMetrics, { label: "Metric", value: "AUROC" })
+```
+
+```{ojs}
+//| echo: false
+
+ablationChart = {
+  const filtered = ablationData.filter(d => d.disease === ablationDisease && d.metric === ablationMetric);
+  filtered.sort((a, b) => a.delta - b.delta);
+
+  const chart = Plot.plot({
+    width: 1000,
+    height: 350,
+    marginLeft: 220,
+    marginRight: 80,
+    x: {
+      label: `Δ ${ablationMetric} (relative to full model)`,
+      grid: true,
+    },
+    y: {
+      label: null,
+      domain: filtered.map(d => d.variant),
+    },
+    color: {
+      type: "diverging",
+      scheme: "RdBu",
+      domain: [-0.06, 0.06],
+      reverse: true,
+    },
+    marks: [
+      Plot.ruleX([0], { stroke: "#2c3e50", strokeWidth: 1.5, strokeDasharray: "4,3" }),
+      Plot.barX(filtered, {
+        x: "delta",
+        y: "variant",
+        fill: "delta",
+        tip: true,
+        title: d => `${d.variant}\n${d.disease} · ${d.metric}\nFull model: ${d.full_model_value.toFixed(4)}\nVariant: ${d.value.toFixed(4)}\nΔ: ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`,
+      }),
+      Plot.text(filtered, {
+        x: "delta",
+        y: "variant",
+        text: d => (d.delta >= 0 ? "+" : "") + d.delta.toFixed(4),
+        dx: d => d.delta < 0 ? -6 : 6,
+        textAnchor: d => d.delta < 0 ? "end" : "start",
+        fontSize: 11,
+        fill: "#2c3e50",
+      }),
+    ],
+  });
+
+  const container = document.createElement("div");
+  const titleDiv = document.createElement("div");
+  const fullVal = filtered[0]?.full_model_value?.toFixed(4) || "N/A";
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Performance Impact of Removing Model Components</strong><br><span style="font-size:0.9rem;color:#6c757d;">${ablationDisease} · ${ablationMetric} · Full model baseline: ${fullVal}</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+  container.appendChild(chart);
+
+  return container;
+}
+```
