@@ -2,29 +2,23 @@
 title: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank"
 description: "ALIGATEHR-Gen: a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction across 118 diseases"
 author:
-  - name: Xiayuan Huang
-    affiliations:
+  - affiliations:
       - name: Yale University
         department: Department of Biostatistics
         city: New Haven
         region: CT
         country: USA
-  - name: Hang Zhou
-    affiliations:
+  - affiliations:
       - name: Yale University
-  - name: Yitao Hong
-    affiliations:
+  - affiliations:
       - name: Yale University
-  - name: Xin Zhou
-    affiliations:
+  - affiliations:
       - name: Yale University
-  - name: Johann de Jong
-    affiliations:
+  - affiliations:
       - name: UCB Biosciences GmbH
         city: Monheim am Rhein
         country: Germany
-  - name: Zuoheng Wang
-    affiliations:
+  - affiliations:
       - name: Yale University
 date: "2025-01-01"
 categories: [graph-neural-network, EHR, genetic-data, disease-risk-prediction, UK-Biobank]
