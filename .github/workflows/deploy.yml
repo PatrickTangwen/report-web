@@ -22,6 +22,9 @@ jobs:
 
       - uses: quarto-dev/quarto-actions/setup@v2
 
+      - name: Check OJS assets
+        run: python scripts/check_ojs_assets.py
+
       - name: Render site
         run: quarto render
 

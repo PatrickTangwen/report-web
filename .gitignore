@@ -15,8 +15,9 @@ env/
 ENV/
 .venv
 
-# Data files (to prevent accidental commits of sensitive data)
-viz/data/**/*.csv
+# Data files (keep published viz assets tracked; ignore raw/private sources)
+viz/data/raw/**
+viz/data/processed/**
 viz/data/**/*.xlsx
 viz/data/**/*.json
 viz/data/**/*.parquet

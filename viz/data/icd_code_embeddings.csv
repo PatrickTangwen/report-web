@@ -1,0 +1,1663 @@
+icd_code,description,icd_chapter,icd_chapter_name,frequency,umap_x,umap_y
+A00,Infectious diseases condition 1,A,Infectious diseases,3331,8.039,0.974
+A01,Infectious diseases condition 2,A,Infectious diseases,2019,8.835,0.611
+A02,Infectious diseases condition 3,A,Infectious diseases,4929,8.878,0.016
+A03,Infectious diseases condition 4,A,Infectious diseases,21596,6.912,-0.33
+A04,Infectious diseases condition 5,A,Infectious diseases,7784,8.949,1.829
+A05,Infectious diseases condition 6,A,Infectious diseases,24305,8.636,1.838
+A06,Infectious diseases condition 7,A,Infectious diseases,28934,8.017,-1.187
+A07,Infectious diseases condition 8,A,Infectious diseases,4033,7.719,-1.685
+A08,Infectious diseases condition 9,A,Infectious diseases,7333,7.861,0.082
+A09,Infectious diseases condition 10,A,Infectious diseases,17661,6.367,-0.711
+A10,Infectious diseases condition 11,A,Infectious diseases,2866,6.889,-1.499
+A11,Infectious diseases condition 12,A,Infectious diseases,8095,7.88,-1.621
+A12,Infectious diseases condition 13,A,Infectious diseases,15315,7.991,-1.608
+A13,Infectious diseases condition 14,A,Infectious diseases,10085,7.241,-1.017
+A14,Infectious diseases condition 15,A,Infectious diseases,6085,8.249,0.074
+A15,Infectious diseases condition 16,A,Infectious diseases,4290,9.624,0.904
+A16,Infectious diseases condition 17,A,Infectious diseases,3317,8.597,-3.07
+A17,Infectious diseases condition 18,A,Infectious diseases,29977,8.59,0.033
+A18,Infectious diseases condition 19,A,Infectious diseases,7961,7.864,1.136
+A19,Infectious diseases condition 20,A,Infectious diseases,26076,9.723,0.302
+A20,Infectious diseases condition 21,A,Infectious diseases,17519,8.554,-0.898
+A21,Infectious diseases condition 22,A,Infectious diseases,5958,8.028,0.133
+A22,Infectious diseases condition 23,A,Infectious diseases,12217,8.506,0.282
+A23,Infectious diseases condition 24,A,Infectious diseases,25644,7.575,-0.248
+A24,Infectious diseases condition 25,A,Infectious diseases,8727,8.307,-0.974
+A25,Infectious diseases condition 26,A,Infectious diseases,8554,9.149,-0.5
+B00,Infectious diseases condition 1,B,Infectious diseases,15536,8.365,3.408
+B01,Infectious diseases condition 2,B,Infectious diseases,11139,7.153,2.852
+B02,Infectious diseases condition 3,B,Infectious diseases,6146,6.258,2.878
+B03,Infectious diseases condition 4,B,Infectious diseases,7793,5.795,3.201
+B04,Infectious diseases condition 5,B,Infectious diseases,26620,9.108,3.816
+B05,Infectious diseases condition 6,B,Infectious diseases,16467,5.61,2.466
+B06,Infectious diseases condition 7,B,Infectious diseases,27786,6.188,3.188
+B07,Infectious diseases condition 8,B,Infectious diseases,13183,9.158,3.698
+B08,Infectious diseases condition 9,B,Infectious diseases,25114,8.907,0.08
+B09,Infectious diseases condition 10,B,Infectious diseases,14488,4.87,1.697
+B10,Infectious diseases condition 11,B,Infectious diseases,12248,7.073,3.091
+B11,Infectious diseases condition 12,B,Infectious diseases,3275,8.387,4.659
+B12,Infectious diseases condition 13,B,Infectious diseases,17245,6.632,2.609
+B13,Infectious diseases condition 14,B,Infectious diseases,1574,7.941,3.041
+B14,Infectious diseases condition 15,B,Infectious diseases,22574,6.539,0.892
+B15,Infectious diseases condition 16,B,Infectious diseases,9509,6.087,-0.185
+B16,Infectious diseases condition 17,B,Infectious diseases,9943,7.26,3.615
+B17,Infectious diseases condition 18,B,Infectious diseases,12543,8.174,3.599
+B18,Infectious diseases condition 19,B,Infectious diseases,23889,7.807,3.46
+B19,Infectious diseases condition 20,B,Infectious diseases,22331,9.278,3.861
+B20,Infectious diseases condition 21,B,Infectious diseases,13684,7.94,0.681
+B21,Infectious diseases condition 22,B,Infectious diseases,5755,7.217,2.075
+B22,Infectious diseases condition 23,B,Infectious diseases,6130,7.366,3.298
+B23,Infectious diseases condition 24,B,Infectious diseases,19742,6.43,3.365
+B24,Infectious diseases condition 25,B,Infectious diseases,13861,8.33,5.092
+B25,Infectious diseases condition 26,B,Infectious diseases,8632,5.324,2.772
+B26,Infectious diseases condition 27,B,Infectious diseases,12773,7.031,3.849
+B27,Infectious diseases condition 28,B,Infectious diseases,18576,6.518,3.404
+B28,Infectious diseases condition 29,B,Infectious diseases,15878,8.36,2.101
+B29,Infectious diseases condition 30,B,Infectious diseases,18111,4.754,1.368
+B30,Infectious diseases condition 31,B,Infectious diseases,147,9.083,2.737
+B31,Infectious diseases condition 32,B,Infectious diseases,15989,6.503,0.008
+B32,Infectious diseases condition 33,B,Infectious diseases,7515,6.907,2.971
+B33,Infectious diseases condition 34,B,Infectious diseases,27671,8.579,2.996
+B34,Infectious diseases condition 35,B,Infectious diseases,5985,7.595,1.801
+B35,Infectious diseases condition 36,B,Infectious diseases,23215,9.215,2.349
+B36,Infectious diseases condition 37,B,Infectious diseases,21720,6.756,1.39
+B37,Infectious diseases condition 38,B,Infectious diseases,1939,6.404,3.557
+B38,Infectious diseases condition 39,B,Infectious diseases,9230,10.017,3.504
+B39,Infectious diseases condition 40,B,Infectious diseases,1684,5.589,4.439
+C00,Neoplasms condition 1,C,Neoplasms,4806,6.036,4.466
+C01,Neoplasms condition 2,C,Neoplasms,14850,7.163,5.966
+C02,Neoplasms condition 3,C,Neoplasms,9250,5.033,4.886
+C03,Neoplasms condition 4,C,Neoplasms,719,6.976,5.011
+C04,Neoplasms condition 5,C,Neoplasms,22873,3.355,2.901
+C05,Neoplasms condition 6,C,Neoplasms,13172,5.127,2.801
+C06,Neoplasms condition 7,C,Neoplasms,15793,5.808,5.83
+C07,Neoplasms condition 8,C,Neoplasms,20130,6.173,2.438
+C08,Neoplasms condition 9,C,Neoplasms,17110,5.211,2.816
+C09,Neoplasms condition 10,C,Neoplasms,15682,7.72,3.727
+C10,Neoplasms condition 11,C,Neoplasms,14756,6.18,4.413
+C11,Neoplasms condition 12,C,Neoplasms,5333,7.056,4.427
+C12,Neoplasms condition 13,C,Neoplasms,16117,7.162,5.386
+C13,Neoplasms condition 14,C,Neoplasms,28022,5.559,5.288
+C14,Neoplasms condition 15,C,Neoplasms,13730,5.26,6.246
+C15,Neoplasms condition 16,C,Neoplasms,18167,5.181,3.492
+C16,Neoplasms condition 17,C,Neoplasms,29258,7.724,4.446
+C17,Neoplasms condition 18,C,Neoplasms,16188,6.992,6.794
+C18,Neoplasms condition 19,C,Neoplasms,28038,8.285,4.207
+C19,Neoplasms condition 20,C,Neoplasms,13366,6.817,4.293
+C20,Neoplasms condition 21,C,Neoplasms,13417,6.637,5.21
+C21,Neoplasms condition 22,C,Neoplasms,19592,3.572,5.428
+C22,Neoplasms condition 23,C,Neoplasms,27339,5.143,6.474
+C23,Neoplasms condition 24,C,Neoplasms,24457,7.303,3.78
+C24,Neoplasms condition 25,C,Neoplasms,13765,5.122,3.764
+C25,Neoplasms condition 26,C,Neoplasms,7190,4.938,4.818
+C26,Neoplasms condition 27,C,Neoplasms,2377,8.419,5.915
+C27,Neoplasms condition 28,C,Neoplasms,6972,4.66,4.409
+C28,Neoplasms condition 29,C,Neoplasms,19382,4.977,2.691
+C29,Neoplasms condition 30,C,Neoplasms,1804,3.891,6.784
+C30,Neoplasms condition 31,C,Neoplasms,5512,6.282,4.144
+C31,Neoplasms condition 32,C,Neoplasms,6838,6.351,4.551
+C32,Neoplasms condition 33,C,Neoplasms,2568,5.221,5.33
+C33,Neoplasms condition 34,C,Neoplasms,6227,6.992,2.926
+C34,Neoplasms condition 35,C,Neoplasms,3815,4.815,6.09
+C35,Neoplasms condition 36,C,Neoplasms,22694,7.396,7.243
+C36,Neoplasms condition 37,C,Neoplasms,26340,6.723,4.293
+C37,Neoplasms condition 38,C,Neoplasms,20166,7.161,3.88
+C38,Neoplasms condition 39,C,Neoplasms,19002,8.74,5.234
+C39,Neoplasms condition 40,C,Neoplasms,10223,5.624,2.589
+C40,Neoplasms condition 41,C,Neoplasms,8001,5.763,4.809
+C41,Neoplasms condition 42,C,Neoplasms,11756,6.47,3.546
+C42,Neoplasms condition 43,C,Neoplasms,25495,6.046,5.445
+C43,Neoplasms condition 44,C,Neoplasms,22818,3.707,6.198
+C44,Neoplasms condition 45,C,Neoplasms,28478,6.63,6.314
+C45,Neoplasms condition 46,C,Neoplasms,19251,4.313,4.028
+C46,Neoplasms condition 47,C,Neoplasms,5068,5.509,4.813
+C47,Neoplasms condition 48,C,Neoplasms,24053,6.813,6.365
+C48,Neoplasms condition 49,C,Neoplasms,4817,8.233,3.597
+C49,Neoplasms condition 50,C,Neoplasms,29278,5.768,5.781
+C50,Neoplasms condition 51,C,Neoplasms,8973,7.944,5.392
+C51,Neoplasms condition 52,C,Neoplasms,24290,7.087,6.106
+C52,Neoplasms condition 53,C,Neoplasms,28825,8.269,5.503
+C53,Neoplasms condition 54,C,Neoplasms,29646,7.344,4.411
+C54,Neoplasms condition 55,C,Neoplasms,16222,8.2,2.807
+C55,Neoplasms condition 56,C,Neoplasms,29692,8.508,3.822
+C56,Neoplasms condition 57,C,Neoplasms,6020,6.143,3.523
+C57,Neoplasms condition 58,C,Neoplasms,1272,7.556,5.739
+C58,Neoplasms condition 59,C,Neoplasms,7693,5.631,4.297
+C59,Neoplasms condition 60,C,Neoplasms,8510,7.142,5.174
+C60,Neoplasms condition 61,C,Neoplasms,25365,5.483,4.347
+C61,Neoplasms condition 62,C,Neoplasms,3124,6.143,5.476
+C62,Neoplasms condition 63,C,Neoplasms,1777,6.346,4.607
+C63,Neoplasms condition 64,C,Neoplasms,25340,6.982,3.165
+C64,Neoplasms condition 65,C,Neoplasms,17132,5.897,3.777
+C65,Neoplasms condition 66,C,Neoplasms,20423,8.002,5.159
+C66,Neoplasms condition 67,C,Neoplasms,22848,5.872,3.735
+C67,Neoplasms condition 68,C,Neoplasms,25879,5.293,4.061
+C68,Neoplasms condition 69,C,Neoplasms,20681,6.138,6.613
+C69,Neoplasms condition 70,C,Neoplasms,18478,8.115,4.55
+C70,Neoplasms condition 71,C,Neoplasms,28435,6.729,5.214
+C71,Neoplasms condition 72,C,Neoplasms,15891,4.81,2.792
+C72,Neoplasms condition 73,C,Neoplasms,10818,5.289,3.055
+C73,Neoplasms condition 74,C,Neoplasms,3095,5.226,5.403
+C74,Neoplasms condition 75,C,Neoplasms,2230,7.072,4.119
+C75,Neoplasms condition 76,C,Neoplasms,20421,3.72,5.219
+C76,Neoplasms condition 77,C,Neoplasms,14888,8.285,5.034
+C77,Neoplasms condition 78,C,Neoplasms,4015,5.62,4.816
+C78,Neoplasms condition 79,C,Neoplasms,9675,8.327,4.404
+C79,Neoplasms condition 80,C,Neoplasms,5956,5.876,6.337
+C80,Neoplasms condition 81,C,Neoplasms,21229,7.591,6.759
+C81,Neoplasms condition 82,C,Neoplasms,8909,7.852,5.628
+C82,Neoplasms condition 83,C,Neoplasms,28871,6.972,2.849
+C83,Neoplasms condition 84,C,Neoplasms,26616,6.923,3.551
+C84,Neoplasms condition 85,C,Neoplasms,29946,6.526,6.653
+C85,Neoplasms condition 86,C,Neoplasms,14267,5.48,7.09
+C86,Neoplasms condition 87,C,Neoplasms,3134,6.9,4.356
+C87,Neoplasms condition 88,C,Neoplasms,25966,6.123,5.584
+C88,Neoplasms condition 89,C,Neoplasms,9766,6.575,3.183
+C89,Neoplasms condition 90,C,Neoplasms,28001,6.24,6.473
+C90,Neoplasms condition 91,C,Neoplasms,21944,8.282,5.057
+C91,Neoplasms condition 92,C,Neoplasms,8066,7.194,2.827
+D00,Blood / Neoplasms condition 1,D,Blood / Neoplasms,289,4.37,5.498
+D01,Blood / Neoplasms condition 2,D,Blood / Neoplasms,13529,3.193,8.521
+D02,Blood / Neoplasms condition 3,D,Blood / Neoplasms,3027,6.146,7.795
+D03,Blood / Neoplasms condition 4,D,Blood / Neoplasms,14002,2.859,3.67
+D04,Blood / Neoplasms condition 5,D,Blood / Neoplasms,13698,4.855,6.462
+D05,Blood / Neoplasms condition 6,D,Blood / Neoplasms,26353,4.205,6.215
+D06,Blood / Neoplasms condition 7,D,Blood / Neoplasms,16269,3.707,7.815
+D07,Blood / Neoplasms condition 8,D,Blood / Neoplasms,20367,4.014,4.006
+D08,Blood / Neoplasms condition 9,D,Blood / Neoplasms,15367,5.707,6.723
+D09,Blood / Neoplasms condition 10,D,Blood / Neoplasms,20899,6.227,8.184
+D10,Blood / Neoplasms condition 11,D,Blood / Neoplasms,3108,4.03,4.935
+D11,Blood / Neoplasms condition 12,D,Blood / Neoplasms,16714,5.337,6.065
+D12,Blood / Neoplasms condition 13,D,Blood / Neoplasms,28233,6.998,7.662
+D13,Blood / Neoplasms condition 14,D,Blood / Neoplasms,25605,6.258,7.211
+D14,Blood / Neoplasms condition 15,D,Blood / Neoplasms,10480,3.468,7.584
+D15,Blood / Neoplasms condition 16,D,Blood / Neoplasms,5988,4.696,4.862
+D16,Blood / Neoplasms condition 17,D,Blood / Neoplasms,5798,7.637,7.133
+D17,Blood / Neoplasms condition 18,D,Blood / Neoplasms,7975,2.826,6.706
+D18,Blood / Neoplasms condition 19,D,Blood / Neoplasms,14231,2.26,5.067
+D19,Blood / Neoplasms condition 20,D,Blood / Neoplasms,13924,3.024,5.254
+D20,Blood / Neoplasms condition 21,D,Blood / Neoplasms,18722,4.204,7.187
+D21,Blood / Neoplasms condition 22,D,Blood / Neoplasms,12623,5.461,6.976
+D22,Blood / Neoplasms condition 23,D,Blood / Neoplasms,27403,6.748,7.364
+D23,Blood / Neoplasms condition 24,D,Blood / Neoplasms,25688,4.749,4.829
+D24,Blood / Neoplasms condition 25,D,Blood / Neoplasms,582,5.795,4.644
+D25,Blood / Neoplasms condition 26,D,Blood / Neoplasms,25721,4.873,5.871
+D26,Blood / Neoplasms condition 27,D,Blood / Neoplasms,21470,4.239,5.973
+D27,Blood / Neoplasms condition 28,D,Blood / Neoplasms,122,3.405,7.713
+D28,Blood / Neoplasms condition 29,D,Blood / Neoplasms,16839,4.67,5.52
+D29,Blood / Neoplasms condition 30,D,Blood / Neoplasms,6319,5.006,7.439
+D30,Blood / Neoplasms condition 31,D,Blood / Neoplasms,17003,3.86,6.263
+D31,Blood / Neoplasms condition 32,D,Blood / Neoplasms,7853,4.64,7.828
+D32,Blood / Neoplasms condition 33,D,Blood / Neoplasms,3409,6.523,5.739
+D33,Blood / Neoplasms condition 34,D,Blood / Neoplasms,12542,3.181,7.117
+D34,Blood / Neoplasms condition 35,D,Blood / Neoplasms,24024,5.949,6.77
+D35,Blood / Neoplasms condition 36,D,Blood / Neoplasms,26538,4.062,7.226
+D36,Blood / Neoplasms condition 37,D,Blood / Neoplasms,9365,4.711,8.014
+D37,Blood / Neoplasms condition 38,D,Blood / Neoplasms,12623,7.412,5.473
+D38,Blood / Neoplasms condition 39,D,Blood / Neoplasms,18219,4.584,6.688
+D39,Blood / Neoplasms condition 40,D,Blood / Neoplasms,8864,5.334,8.607
+D40,Blood / Neoplasms condition 41,D,Blood / Neoplasms,761,3.723,5.953
+D41,Blood / Neoplasms condition 42,D,Blood / Neoplasms,24924,5.724,5.113
+E00,Endocrine / Metabolic condition 1,E,Endocrine / Metabolic,17189,3.731,4.243
+E01,Endocrine / Metabolic condition 2,E,Endocrine / Metabolic,19998,1.991,11.067
+E02,Endocrine / Metabolic condition 3,E,Endocrine / Metabolic,15765,3.805,5.608
+E03,Endocrine / Metabolic condition 4,E,Endocrine / Metabolic,8200,0.5,6.691
+E04,Endocrine / Metabolic condition 5,E,Endocrine / Metabolic,19876,3.353,6.712
+E05,Endocrine / Metabolic condition 6,E,Endocrine / Metabolic,10757,2.881,9.183
+E06,Endocrine / Metabolic condition 7,E,Endocrine / Metabolic,27558,3.263,6.676
+E07,Endocrine / Metabolic condition 8,E,Endocrine / Metabolic,1518,2.439,8.227
+E08,Endocrine / Metabolic condition 9,E,Endocrine / Metabolic,18054,2.359,7.592
+E09,Endocrine / Metabolic condition 10,E,Endocrine / Metabolic,25019,1.132,6.735
+E10,Endocrine / Metabolic condition 11,E,Endocrine / Metabolic,9027,3.409,8.69
+E11,Endocrine / Metabolic condition 12,E,Endocrine / Metabolic,14970,2.698,8.543
+E12,Endocrine / Metabolic condition 13,E,Endocrine / Metabolic,9382,2.364,5.964
+E13,Endocrine / Metabolic condition 14,E,Endocrine / Metabolic,13221,1.751,6.355
+E14,Endocrine / Metabolic condition 15,E,Endocrine / Metabolic,14259,1.025,8.293
+E15,Endocrine / Metabolic condition 16,E,Endocrine / Metabolic,20080,1.308,6.974
+E16,Endocrine / Metabolic condition 17,E,Endocrine / Metabolic,13438,2.068,6.344
+E17,Endocrine / Metabolic condition 18,E,Endocrine / Metabolic,28012,2.628,7.407
+E18,Endocrine / Metabolic condition 19,E,Endocrine / Metabolic,28338,3.327,6.657
+E19,Endocrine / Metabolic condition 20,E,Endocrine / Metabolic,1737,3.275,8.083
+E20,Endocrine / Metabolic condition 21,E,Endocrine / Metabolic,14478,2.885,7.34
+E21,Endocrine / Metabolic condition 22,E,Endocrine / Metabolic,24911,2.792,9.034
+E22,Endocrine / Metabolic condition 23,E,Endocrine / Metabolic,26137,4.288,7.036
+E23,Endocrine / Metabolic condition 24,E,Endocrine / Metabolic,14731,3.429,8.328
+E24,Endocrine / Metabolic condition 25,E,Endocrine / Metabolic,27223,1.668,8.6
+E25,Endocrine / Metabolic condition 26,E,Endocrine / Metabolic,10725,3.563,7.609
+E26,Endocrine / Metabolic condition 27,E,Endocrine / Metabolic,17837,2.299,6.363
+E27,Endocrine / Metabolic condition 28,E,Endocrine / Metabolic,705,2.011,6.52
+E28,Endocrine / Metabolic condition 29,E,Endocrine / Metabolic,21748,2.064,9.098
+E29,Endocrine / Metabolic condition 30,E,Endocrine / Metabolic,23747,2.141,6.868
+E30,Endocrine / Metabolic condition 31,E,Endocrine / Metabolic,22800,3.294,10.613
+E31,Endocrine / Metabolic condition 32,E,Endocrine / Metabolic,20061,5.086,5.379
+E32,Endocrine / Metabolic condition 33,E,Endocrine / Metabolic,18907,2.241,7.583
+E33,Endocrine / Metabolic condition 34,E,Endocrine / Metabolic,9167,1.29,9.957
+E34,Endocrine / Metabolic condition 35,E,Endocrine / Metabolic,21208,1.845,8.667
+E35,Endocrine / Metabolic condition 36,E,Endocrine / Metabolic,28127,1.911,5.561
+E36,Endocrine / Metabolic condition 37,E,Endocrine / Metabolic,7564,1.442,7.709
+E37,Endocrine / Metabolic condition 38,E,Endocrine / Metabolic,4497,3.377,5.829
+E38,Endocrine / Metabolic condition 39,E,Endocrine / Metabolic,8710,4.211,6.365
+E39,Endocrine / Metabolic condition 40,E,Endocrine / Metabolic,14292,4.508,8.6
+E40,Endocrine / Metabolic condition 41,E,Endocrine / Metabolic,17648,0.282,6.26
+E41,Endocrine / Metabolic condition 42,E,Endocrine / Metabolic,26314,1.516,7.948
+E42,Endocrine / Metabolic condition 43,E,Endocrine / Metabolic,1140,3.073,6.718
+E43,Endocrine / Metabolic condition 44,E,Endocrine / Metabolic,28302,2.106,6.797
+E44,Endocrine / Metabolic condition 45,E,Endocrine / Metabolic,10657,5.55,4.384
+E45,Endocrine / Metabolic condition 46,E,Endocrine / Metabolic,14069,2.403,5.595
+E46,Endocrine / Metabolic condition 47,E,Endocrine / Metabolic,28707,3.174,6.349
+E47,Endocrine / Metabolic condition 48,E,Endocrine / Metabolic,25923,3.585,8.144
+E48,Endocrine / Metabolic condition 49,E,Endocrine / Metabolic,24818,2.479,9.34
+E49,Endocrine / Metabolic condition 50,E,Endocrine / Metabolic,18825,2.541,9.602
+E50,Endocrine / Metabolic condition 51,E,Endocrine / Metabolic,28212,2.108,7.466
+E51,Endocrine / Metabolic condition 52,E,Endocrine / Metabolic,12677,2.952,8.964
+E52,Endocrine / Metabolic condition 53,E,Endocrine / Metabolic,7283,4.753,7.881
+E53,Endocrine / Metabolic condition 54,E,Endocrine / Metabolic,762,2.762,5.288
+E54,Endocrine / Metabolic condition 55,E,Endocrine / Metabolic,4680,1.009,8.195
+E55,Endocrine / Metabolic condition 56,E,Endocrine / Metabolic,19746,0.904,10.32
+E56,Endocrine / Metabolic condition 57,E,Endocrine / Metabolic,20051,2.433,7.555
+E57,Endocrine / Metabolic condition 58,E,Endocrine / Metabolic,9682,1.585,6.499
+E58,Endocrine / Metabolic condition 59,E,Endocrine / Metabolic,12137,3.924,9.54
+E59,Endocrine / Metabolic condition 60,E,Endocrine / Metabolic,23253,1.36,7.68
+E60,Endocrine / Metabolic condition 61,E,Endocrine / Metabolic,12372,2.494,7.23
+E61,Endocrine / Metabolic condition 62,E,Endocrine / Metabolic,7135,1.528,8.417
+E62,Endocrine / Metabolic condition 63,E,Endocrine / Metabolic,1741,4.346,6.938
+E63,Endocrine / Metabolic condition 64,E,Endocrine / Metabolic,7115,2.43,9.419
+E64,Endocrine / Metabolic condition 65,E,Endocrine / Metabolic,6973,1.833,6.937
+F00,Mental disorders condition 1,F,Mental disorders,16718,0.225,6.853
+F01,Mental disorders condition 2,F,Mental disorders,24257,-0.17,7.144
+F02,Mental disorders condition 3,F,Mental disorders,17653,2.772,9.346
+F03,Mental disorders condition 4,F,Mental disorders,6478,0.223,9.272
+F04,Mental disorders condition 5,F,Mental disorders,13867,1.611,9.005
+F05,Mental disorders condition 6,F,Mental disorders,24389,1.07,7.245
+F06,Mental disorders condition 7,F,Mental disorders,7253,1.316,5.874
+F07,Mental disorders condition 8,F,Mental disorders,9928,-0.211,9.109
+F08,Mental disorders condition 9,F,Mental disorders,15174,0.558,7.515
+F09,Mental disorders condition 10,F,Mental disorders,13598,0.917,7.243
+F10,Mental disorders condition 11,F,Mental disorders,12908,-0.978,8.355
+F11,Mental disorders condition 12,F,Mental disorders,1398,-2.58,7.847
+F12,Mental disorders condition 13,F,Mental disorders,18212,1.408,7.165
+F13,Mental disorders condition 14,F,Mental disorders,26713,-2.099,8.054
+F14,Mental disorders condition 15,F,Mental disorders,25392,1.044,6.717
+F15,Mental disorders condition 16,F,Mental disorders,22467,-0.204,8.864
+F16,Mental disorders condition 17,F,Mental disorders,9397,1.009,6.395
+F17,Mental disorders condition 18,F,Mental disorders,4583,-1.988,6.783
+F18,Mental disorders condition 19,F,Mental disorders,14668,-0.001,5.889
+F19,Mental disorders condition 20,F,Mental disorders,28826,0.13,7.748
+F20,Mental disorders condition 21,F,Mental disorders,24732,0.289,6.666
+F21,Mental disorders condition 22,F,Mental disorders,15311,-1.194,8.657
+F22,Mental disorders condition 23,F,Mental disorders,869,-0.065,8.682
+F23,Mental disorders condition 24,F,Mental disorders,28445,-1.336,8.169
+F24,Mental disorders condition 25,F,Mental disorders,2688,-0.465,9.217
+F25,Mental disorders condition 26,F,Mental disorders,6594,-0.142,8.456
+F26,Mental disorders condition 27,F,Mental disorders,24769,-0.805,8.147
+F27,Mental disorders condition 28,F,Mental disorders,25509,0.437,9.616
+F28,Mental disorders condition 29,F,Mental disorders,1956,0.416,6.328
+F29,Mental disorders condition 30,F,Mental disorders,1574,-0.873,7.582
+F30,Mental disorders condition 31,F,Mental disorders,1147,0.332,6.89
+F31,Mental disorders condition 32,F,Mental disorders,11750,-0.103,7.324
+F32,Mental disorders condition 33,F,Mental disorders,24457,-0.236,8.908
+F33,Mental disorders condition 34,F,Mental disorders,8050,-2.99,7.52
+F34,Mental disorders condition 35,F,Mental disorders,10979,-0.709,6.961
+F35,Mental disorders condition 36,F,Mental disorders,8110,-0.413,8.634
+F36,Mental disorders condition 37,F,Mental disorders,6612,0.419,7.524
+F37,Mental disorders condition 38,F,Mental disorders,13537,-0.276,8.13
+F38,Mental disorders condition 39,F,Mental disorders,22448,1.543,7.093
+F39,Mental disorders condition 40,F,Mental disorders,491,0.212,7.749
+F40,Mental disorders condition 41,F,Mental disorders,15333,4.627,8.85
+G00,Nervous system condition 1,G,Nervous system,24195,-2.101,7.809
+G01,Nervous system condition 2,G,Nervous system,8095,-1.841,6.148
+G02,Nervous system condition 3,G,Nervous system,24739,-3.603,5.677
+G03,Nervous system condition 4,G,Nervous system,2599,-0.857,8.479
+G04,Nervous system condition 5,G,Nervous system,19640,-4.078,7.59
+G05,Nervous system condition 6,G,Nervous system,13127,-0.56,4.307
+G06,Nervous system condition 7,G,Nervous system,2893,-4.21,7.072
+G07,Nervous system condition 8,G,Nervous system,10479,-4.467,7.579
+G08,Nervous system condition 9,G,Nervous system,14724,-2.246,6.669
+G09,Nervous system condition 10,G,Nervous system,14021,-0.75,8.507
+G10,Nervous system condition 11,G,Nervous system,15463,-5.052,8.47
+G11,Nervous system condition 12,G,Nervous system,16785,-3.553,6.253
+G12,Nervous system condition 13,G,Nervous system,16798,-2.485,7.61
+G13,Nervous system condition 14,G,Nervous system,23660,-4.014,7.988
+G14,Nervous system condition 15,G,Nervous system,13153,-3.599,5.52
+G15,Nervous system condition 16,G,Nervous system,27375,-4.329,9.279
+G16,Nervous system condition 17,G,Nervous system,23255,-3.958,6.313
+G17,Nervous system condition 18,G,Nervous system,23381,-1.654,8.515
+G18,Nervous system condition 19,G,Nervous system,19723,-2.661,7.495
+G19,Nervous system condition 20,G,Nervous system,21083,-3.18,6.953
+G20,Nervous system condition 21,G,Nervous system,5426,-3.026,5.853
+G21,Nervous system condition 22,G,Nervous system,168,-2.669,6.053
+G22,Nervous system condition 23,G,Nervous system,6142,-5.094,7.668
+G23,Nervous system condition 24,G,Nervous system,28078,-1.509,7.714
+G24,Nervous system condition 25,G,Nervous system,15817,-3.182,6.09
+G25,Nervous system condition 26,G,Nervous system,13888,-2.154,8.23
+G26,Nervous system condition 27,G,Nervous system,8352,-2.051,7.76
+G27,Nervous system condition 28,G,Nervous system,28743,-1.46,8.235
+G28,Nervous system condition 29,G,Nervous system,1106,-2.841,8.569
+G29,Nervous system condition 30,G,Nervous system,28480,-2.411,9.127
+G30,Nervous system condition 31,G,Nervous system,27509,-1.359,8.318
+G31,Nervous system condition 32,G,Nervous system,24319,-3.199,7.607
+G32,Nervous system condition 33,G,Nervous system,14966,-2.782,8.579
+G33,Nervous system condition 34,G,Nervous system,4250,-1.404,7.626
+G34,Nervous system condition 35,G,Nervous system,8650,-2.516,7.824
+G35,Nervous system condition 36,G,Nervous system,29449,-2.514,5.817
+G36,Nervous system condition 37,G,Nervous system,23708,-2.258,9.014
+G37,Nervous system condition 38,G,Nervous system,21189,-2.3,8.724
+G38,Nervous system condition 39,G,Nervous system,2739,-4.409,7.146
+G39,Nervous system condition 40,G,Nervous system,22977,-2.435,6.384
+G40,Nervous system condition 41,G,Nervous system,10211,-0.33,6.528
+G41,Nervous system condition 42,G,Nervous system,15748,-2.734,8.375
+G42,Nervous system condition 43,G,Nervous system,6720,-2.055,7.375
+G43,Nervous system condition 44,G,Nervous system,22145,-2.22,8.221
+G44,Nervous system condition 45,G,Nervous system,16896,-3.137,8.283
+G45,Nervous system condition 46,G,Nervous system,13760,-2.264,6.139
+G46,Nervous system condition 47,G,Nervous system,2623,-4.193,10.0
+G47,Nervous system condition 48,G,Nervous system,17326,-2.288,6.48
+G48,Nervous system condition 49,G,Nervous system,5548,-2.953,6.304
+G49,Nervous system condition 50,G,Nervous system,19786,-3.626,9.776
+G50,Nervous system condition 51,G,Nervous system,26484,-4.065,6.115
+G51,Nervous system condition 52,G,Nervous system,17171,-3.299,9.97
+G52,Nervous system condition 53,G,Nervous system,26056,0.166,7.165
+G53,Nervous system condition 54,G,Nervous system,18203,-1.407,7.468
+G54,Nervous system condition 55,G,Nervous system,26515,-4.961,7.313
+G55,Nervous system condition 56,G,Nervous system,28405,-1.448,8.462
+G56,Nervous system condition 57,G,Nervous system,24884,-3.078,7.033
+H00,Eye / Ear condition 1,H,Eye / Ear,6784,-4.195,6.28
+H01,Eye / Ear condition 2,H,Eye / Ear,7270,-5.463,8.358
+H02,Eye / Ear condition 3,H,Eye / Ear,18791,-2.581,7.85
+H03,Eye / Ear condition 4,H,Eye / Ear,25131,-4.31,6.576
+H04,Eye / Ear condition 5,H,Eye / Ear,6475,-4.276,6.364
+H05,Eye / Ear condition 6,H,Eye / Ear,8510,-4.184,5.893
+H06,Eye / Ear condition 7,H,Eye / Ear,4215,-5.681,3.214
+H07,Eye / Ear condition 8,H,Eye / Ear,5720,-4.968,7.121
+H08,Eye / Ear condition 9,H,Eye / Ear,22631,-5.599,5.747
+H09,Eye / Ear condition 10,H,Eye / Ear,15231,-4.733,5.579
+H10,Eye / Ear condition 11,H,Eye / Ear,25056,-3.386,4.587
+H11,Eye / Ear condition 12,H,Eye / Ear,24151,-4.045,6.131
+H12,Eye / Ear condition 13,H,Eye / Ear,16925,-5.236,7.719
+H13,Eye / Ear condition 14,H,Eye / Ear,6380,-5.724,9.974
+H14,Eye / Ear condition 15,H,Eye / Ear,9740,-4.787,5.964
+H15,Eye / Ear condition 16,H,Eye / Ear,8224,-2.555,7.721
+H16,Eye / Ear condition 17,H,Eye / Ear,11727,-6.217,8.247
+H17,Eye / Ear condition 18,H,Eye / Ear,2106,-4.848,6.778
+H18,Eye / Ear condition 19,H,Eye / Ear,1979,-4.341,5.532
+H19,Eye / Ear condition 20,H,Eye / Ear,14788,-5.182,6.659
+H20,Eye / Ear condition 21,H,Eye / Ear,23387,-4.399,6.692
+H21,Eye / Ear condition 22,H,Eye / Ear,29147,-4.771,5.339
+H22,Eye / Ear condition 23,H,Eye / Ear,18040,-5.374,8.411
+H23,Eye / Ear condition 24,H,Eye / Ear,10528,-6.603,7.003
+H24,Eye / Ear condition 25,H,Eye / Ear,23247,-6.52,7.297
+H25,Eye / Ear condition 26,H,Eye / Ear,10058,-5.846,8.698
+H26,Eye / Ear condition 27,H,Eye / Ear,3971,-4.295,4.539
+H27,Eye / Ear condition 28,H,Eye / Ear,6071,-5.149,6.158
+H28,Eye / Ear condition 29,H,Eye / Ear,13373,-2.506,5.583
+H29,Eye / Ear condition 30,H,Eye / Ear,19643,-4.776,7.159
+H30,Eye / Ear condition 31,H,Eye / Ear,13713,-4.876,6.937
+H31,Eye / Ear condition 32,H,Eye / Ear,20304,-2.822,5.398
+H32,Eye / Ear condition 33,H,Eye / Ear,800,-5.196,6.746
+H33,Eye / Ear condition 34,H,Eye / Ear,22816,-4.741,3.066
+H34,Eye / Ear condition 35,H,Eye / Ear,12519,-4.898,5.978
+H35,Eye / Ear condition 36,H,Eye / Ear,1979,-2.716,4.935
+H36,Eye / Ear condition 37,H,Eye / Ear,27896,-5.135,5.07
+H37,Eye / Ear condition 38,H,Eye / Ear,4388,-4.215,7.241
+H38,Eye / Ear condition 39,H,Eye / Ear,26266,-4.779,5.253
+H39,Eye / Ear condition 40,H,Eye / Ear,4683,-5.935,7.176
+H40,Eye / Ear condition 41,H,Eye / Ear,4176,-4.412,6.882
+H41,Eye / Ear condition 42,H,Eye / Ear,26610,-7.454,6.486
+H42,Eye / Ear condition 43,H,Eye / Ear,13226,-3.699,8.311
+H43,Eye / Ear condition 44,H,Eye / Ear,27432,-6.238,5.061
+H44,Eye / Ear condition 45,H,Eye / Ear,4834,-3.93,6.622
+H45,Eye / Ear condition 46,H,Eye / Ear,8929,-6.853,6.519
+H46,Eye / Ear condition 47,H,Eye / Ear,23263,-4.612,6.527
+H47,Eye / Ear condition 48,H,Eye / Ear,11363,-5.299,6.197
+H48,Eye / Ear condition 49,H,Eye / Ear,26253,-6.508,4.446
+H49,Eye / Ear condition 50,H,Eye / Ear,20810,-5.079,6.979
+H50,Eye / Ear condition 51,H,Eye / Ear,4397,-5.958,6.053
+H51,Eye / Ear condition 52,H,Eye / Ear,23100,-4.499,7.114
+H52,Eye / Ear condition 53,H,Eye / Ear,1577,-2.992,6.035
+H53,Eye / Ear condition 54,H,Eye / Ear,29962,-3.837,5.204
+H54,Eye / Ear condition 55,H,Eye / Ear,20224,-5.332,6.498
+H55,Eye / Ear condition 56,H,Eye / Ear,26430,-4.22,7.721
+H56,Eye / Ear condition 57,H,Eye / Ear,4050,-4.019,7.351
+H57,Eye / Ear condition 58,H,Eye / Ear,9724,-6.011,8.696
+H58,Eye / Ear condition 59,H,Eye / Ear,26638,-2.969,6.972
+H59,Eye / Ear condition 60,H,Eye / Ear,16818,-3.084,5.038
+H60,Eye / Ear condition 61,H,Eye / Ear,805,-4.885,5.82
+H61,Eye / Ear condition 62,H,Eye / Ear,20751,-3.555,6.081
+H62,Eye / Ear condition 63,H,Eye / Ear,26461,-5.424,7.149
+H63,Eye / Ear condition 64,H,Eye / Ear,989,-3.404,8.962
+H64,Eye / Ear condition 65,H,Eye / Ear,6011,-4.798,7.718
+H65,Eye / Ear condition 66,H,Eye / Ear,11801,-3.267,4.422
+H66,Eye / Ear condition 67,H,Eye / Ear,8684,-6.77,7.127
+H67,Eye / Ear condition 68,H,Eye / Ear,22744,-1.606,6.076
+H68,Eye / Ear condition 69,H,Eye / Ear,1415,-4.754,6.217
+H69,Eye / Ear condition 70,H,Eye / Ear,28578,-3.474,7.182
+H70,Eye / Ear condition 71,H,Eye / Ear,23927,-5.629,5.928
+H71,Eye / Ear condition 72,H,Eye / Ear,12899,-3.797,6.257
+H72,Eye / Ear condition 73,H,Eye / Ear,1205,-3.712,7.134
+H73,Eye / Ear condition 74,H,Eye / Ear,20595,-4.012,5.4
+H74,Eye / Ear condition 75,H,Eye / Ear,4458,-4.42,7.981
+H75,Eye / Ear condition 76,H,Eye / Ear,17444,-6.134,6.394
+H76,Eye / Ear condition 77,H,Eye / Ear,23905,-3.893,5.713
+H77,Eye / Ear condition 78,H,Eye / Ear,22897,-1.433,6.112
+H78,Eye / Ear condition 79,H,Eye / Ear,20478,-4.477,6.059
+H79,Eye / Ear condition 80,H,Eye / Ear,12808,-4.915,6.141
+H80,Eye / Ear condition 81,H,Eye / Ear,21255,-2.795,8.452
+H81,Eye / Ear condition 82,H,Eye / Ear,27684,-6.795,5.115
+H82,Eye / Ear condition 83,H,Eye / Ear,3251,-3.965,4.172
+H83,Eye / Ear condition 84,H,Eye / Ear,18269,-6.704,8.301
+H84,Eye / Ear condition 85,H,Eye / Ear,15843,-4.233,5.627
+H85,Eye / Ear condition 86,H,Eye / Ear,24732,-7.049,7.28
+H86,Eye / Ear condition 87,H,Eye / Ear,24746,-4.889,6.373
+H87,Eye / Ear condition 88,H,Eye / Ear,16726,-3.636,6.584
+H88,Eye / Ear condition 89,H,Eye / Ear,24951,-4.869,5.564
+H89,Eye / Ear condition 90,H,Eye / Ear,17123,-7.826,4.575
+H90,Eye / Ear condition 91,H,Eye / Ear,10622,-4.896,4.947
+H91,Eye / Ear condition 92,H,Eye / Ear,23585,-5.635,6.036
+H92,Eye / Ear condition 93,H,Eye / Ear,19354,-4.85,5.878
+H93,Eye / Ear condition 94,H,Eye / Ear,15110,-3.999,4.659
+H94,Eye / Ear condition 95,H,Eye / Ear,11901,-4.567,7.758
+H95,Eye / Ear condition 96,H,Eye / Ear,18426,-4.627,7.6
+H96,Eye / Ear condition 97,H,Eye / Ear,3096,-3.516,6.146
+H97,Eye / Ear condition 98,H,Eye / Ear,7096,-6.123,4.763
+H98,Eye / Ear condition 99,H,Eye / Ear,10908,-4.785,5.855
+H99,Eye / Ear condition 100,H,Eye / Ear,23975,-4.82,6.565
+H100,Eye / Ear condition 101,H,Eye / Ear,18288,-4.755,7.906
+H101,Eye / Ear condition 102,H,Eye / Ear,16993,-6.09,7.428
+H102,Eye / Ear condition 103,H,Eye / Ear,24567,-4.414,4.214
+I00,Circulatory system condition 1,I,Circulatory system,10920,-7.758,5.91
+I01,Circulatory system condition 2,I,Circulatory system,19481,-5.583,3.975
+I02,Circulatory system condition 3,I,Circulatory system,21792,-5.094,4.149
+I03,Circulatory system condition 4,I,Circulatory system,6130,-5.981,4.196
+I04,Circulatory system condition 5,I,Circulatory system,29745,-5.713,5.982
+I05,Circulatory system condition 6,I,Circulatory system,102,-6.435,4.122
+I06,Circulatory system condition 7,I,Circulatory system,7204,-5.815,5.659
+I07,Circulatory system condition 8,I,Circulatory system,1417,-7.794,5.257
+I08,Circulatory system condition 9,I,Circulatory system,11284,-8.208,5.558
+I09,Circulatory system condition 10,I,Circulatory system,22381,-5.297,4.255
+I10,Circulatory system condition 11,I,Circulatory system,29759,-7.654,5.458
+I11,Circulatory system condition 12,I,Circulatory system,655,-7.402,3.925
+I12,Circulatory system condition 13,I,Circulatory system,10665,-6.203,3.903
+I13,Circulatory system condition 14,I,Circulatory system,8858,-6.629,3.141
+I14,Circulatory system condition 15,I,Circulatory system,27278,-7.438,4.211
+I15,Circulatory system condition 16,I,Circulatory system,2650,-6.269,6.397
+I16,Circulatory system condition 17,I,Circulatory system,2709,-5.494,4.298
+I17,Circulatory system condition 18,I,Circulatory system,11342,-7.235,2.978
+I18,Circulatory system condition 19,I,Circulatory system,19700,-8.354,2.735
+I19,Circulatory system condition 20,I,Circulatory system,22988,-7.162,4.033
+I20,Circulatory system condition 21,I,Circulatory system,23267,-7.403,4.958
+I21,Circulatory system condition 22,I,Circulatory system,22523,-4.904,5.374
+I22,Circulatory system condition 23,I,Circulatory system,17304,-8.361,6.351
+I23,Circulatory system condition 24,I,Circulatory system,5177,-7.427,5.163
+I24,Circulatory system condition 25,I,Circulatory system,3992,-5.547,3.225
+I25,Circulatory system condition 26,I,Circulatory system,25933,-7.509,3.764
+I26,Circulatory system condition 27,I,Circulatory system,8477,-6.953,5.52
+I27,Circulatory system condition 28,I,Circulatory system,13362,-7.119,5.53
+I28,Circulatory system condition 29,I,Circulatory system,25199,-7.552,6.039
+I29,Circulatory system condition 30,I,Circulatory system,10230,-5.223,3.625
+I30,Circulatory system condition 31,I,Circulatory system,14487,-7.717,4.47
+I31,Circulatory system condition 32,I,Circulatory system,23728,-4.292,4.811
+I32,Circulatory system condition 33,I,Circulatory system,18587,-5.4,4.394
+I33,Circulatory system condition 34,I,Circulatory system,16575,-6.295,4.315
+I34,Circulatory system condition 35,I,Circulatory system,3662,-7.094,5.178
+I35,Circulatory system condition 36,I,Circulatory system,1283,-4.791,5.709
+I36,Circulatory system condition 37,I,Circulatory system,18911,-8.165,4.966
+I37,Circulatory system condition 38,I,Circulatory system,5704,-5.881,4.386
+I38,Circulatory system condition 39,I,Circulatory system,17231,-6.76,6.173
+I39,Circulatory system condition 40,I,Circulatory system,24465,-6.021,6.717
+I40,Circulatory system condition 41,I,Circulatory system,19717,-5.889,5.724
+I41,Circulatory system condition 42,I,Circulatory system,18180,-4.862,5.212
+I42,Circulatory system condition 43,I,Circulatory system,25159,-6.517,6.452
+I43,Circulatory system condition 44,I,Circulatory system,1665,-4.391,4.096
+I44,Circulatory system condition 45,I,Circulatory system,28697,-6.786,4.69
+I45,Circulatory system condition 46,I,Circulatory system,315,-6.257,3.938
+I46,Circulatory system condition 47,I,Circulatory system,9880,-6.91,4.549
+I47,Circulatory system condition 48,I,Circulatory system,28044,-6.896,5.432
+I48,Circulatory system condition 49,I,Circulatory system,24552,-6.365,6.835
+I49,Circulatory system condition 50,I,Circulatory system,17318,-9.316,6.792
+I50,Circulatory system condition 51,I,Circulatory system,15974,-5.596,5.376
+I51,Circulatory system condition 52,I,Circulatory system,8609,-6.822,7.152
+I52,Circulatory system condition 53,I,Circulatory system,11356,-6.451,5.397
+I53,Circulatory system condition 54,I,Circulatory system,12926,-4.031,5.344
+I54,Circulatory system condition 55,I,Circulatory system,15927,-4.759,2.516
+I55,Circulatory system condition 56,I,Circulatory system,27073,-4.776,4.602
+I56,Circulatory system condition 57,I,Circulatory system,4564,-6.849,4.712
+I57,Circulatory system condition 58,I,Circulatory system,10953,-6.477,3.499
+I58,Circulatory system condition 59,I,Circulatory system,22881,-5.865,3.894
+I59,Circulatory system condition 60,I,Circulatory system,18838,-4.975,5.328
+I60,Circulatory system condition 61,I,Circulatory system,5068,-7.018,2.544
+I61,Circulatory system condition 62,I,Circulatory system,11486,-8.124,5.769
+I62,Circulatory system condition 63,I,Circulatory system,22424,-5.666,5.866
+I63,Circulatory system condition 64,I,Circulatory system,24228,-3.211,5.596
+I64,Circulatory system condition 65,I,Circulatory system,28868,-5.643,3.936
+I65,Circulatory system condition 66,I,Circulatory system,10567,-6.872,2.4
+I66,Circulatory system condition 67,I,Circulatory system,21316,-6.029,3.988
+I67,Circulatory system condition 68,I,Circulatory system,8107,-5.32,3.325
+I68,Circulatory system condition 69,I,Circulatory system,14926,-7.038,5.592
+I69,Circulatory system condition 70,I,Circulatory system,4596,-5.875,5.078
+I70,Circulatory system condition 71,I,Circulatory system,6026,-7.2,5.122
+I71,Circulatory system condition 72,I,Circulatory system,19951,-7.413,5.695
+I72,Circulatory system condition 73,I,Circulatory system,16827,-6.685,6.684
+I73,Circulatory system condition 74,I,Circulatory system,132,-8.023,5.252
+I74,Circulatory system condition 75,I,Circulatory system,27319,-5.112,4.895
+I75,Circulatory system condition 76,I,Circulatory system,11302,-4.653,5.735
+I76,Circulatory system condition 77,I,Circulatory system,18484,-7.398,2.027
+I77,Circulatory system condition 78,I,Circulatory system,19945,-7.796,4.662
+I78,Circulatory system condition 79,I,Circulatory system,12326,-6.947,5.206
+I79,Circulatory system condition 80,I,Circulatory system,22253,-6.856,3.767
+I80,Circulatory system condition 81,I,Circulatory system,26050,-7.203,6.661
+I81,Circulatory system condition 82,I,Circulatory system,11160,-6.322,5.233
+I82,Circulatory system condition 83,I,Circulatory system,9080,-7.02,4.189
+I83,Circulatory system condition 84,I,Circulatory system,24931,-6.89,3.907
+I84,Circulatory system condition 85,I,Circulatory system,25629,-7.565,3.31
+I85,Circulatory system condition 86,I,Circulatory system,15643,-6.652,5.992
+I86,Circulatory system condition 87,I,Circulatory system,11535,-7.236,5.426
+I87,Circulatory system condition 88,I,Circulatory system,29472,-6.245,4.756
+I88,Circulatory system condition 89,I,Circulatory system,10737,-7.012,6.264
+I89,Circulatory system condition 90,I,Circulatory system,21304,-6.248,3.909
+I90,Circulatory system condition 91,I,Circulatory system,27422,-7.66,7.942
+I91,Circulatory system condition 92,I,Circulatory system,14202,-8.181,4.297
+I92,Circulatory system condition 93,I,Circulatory system,3387,-7.109,5.759
+I93,Circulatory system condition 94,I,Circulatory system,18520,-6.171,5.291
+I94,Circulatory system condition 95,I,Circulatory system,137,-6.018,3.876
+I95,Circulatory system condition 96,I,Circulatory system,20120,-6.221,4.393
+I96,Circulatory system condition 97,I,Circulatory system,13318,-4.729,4.094
+I97,Circulatory system condition 98,I,Circulatory system,9829,-5.74,3.874
+I98,Circulatory system condition 99,I,Circulatory system,11844,-7.591,3.955
+I99,Circulatory system condition 100,I,Circulatory system,1719,-6.77,4.206
+I100,Circulatory system condition 101,I,Circulatory system,10962,-7.302,3.654
+I101,Circulatory system condition 102,I,Circulatory system,28191,-6.34,5.682
+I102,Circulatory system condition 103,I,Circulatory system,8662,-6.444,5.165
+I103,Circulatory system condition 104,I,Circulatory system,29358,-7.469,3.147
+I104,Circulatory system condition 105,I,Circulatory system,15901,-5.724,5.534
+I105,Circulatory system condition 106,I,Circulatory system,12019,-7.858,4.982
+I106,Circulatory system condition 107,I,Circulatory system,13199,-6.497,5.555
+I107,Circulatory system condition 108,I,Circulatory system,8909,-7.634,3.142
+I108,Circulatory system condition 109,I,Circulatory system,16034,-6.907,5.821
+I109,Circulatory system condition 110,I,Circulatory system,10824,-5.648,3.884
+I110,Circulatory system condition 111,I,Circulatory system,7062,-7.234,3.991
+I111,Circulatory system condition 112,I,Circulatory system,7841,-5.519,3.56
+I112,Circulatory system condition 113,I,Circulatory system,12268,-6.605,4.886
+I113,Circulatory system condition 114,I,Circulatory system,25453,-7.199,3.294
+I114,Circulatory system condition 115,I,Circulatory system,27466,-7.58,6.354
+I115,Circulatory system condition 116,I,Circulatory system,9926,-5.906,3.715
+I116,Circulatory system condition 117,I,Circulatory system,16485,-5.467,5.411
+I117,Circulatory system condition 118,I,Circulatory system,1501,-5.036,6.826
+I118,Circulatory system condition 119,I,Circulatory system,17446,-6.335,3.776
+I119,Circulatory system condition 120,I,Circulatory system,21030,-5.89,5.232
+I120,Circulatory system condition 121,I,Circulatory system,5543,-6.328,6.671
+I121,Circulatory system condition 122,I,Circulatory system,21519,-6.077,3.038
+I122,Circulatory system condition 123,I,Circulatory system,14600,-6.242,4.705
+I123,Circulatory system condition 124,I,Circulatory system,3384,-6.494,6.878
+I124,Circulatory system condition 125,I,Circulatory system,14618,-6.832,4.301
+I125,Circulatory system condition 126,I,Circulatory system,23955,-4.702,4.468
+I126,Circulatory system condition 127,I,Circulatory system,16078,-6.875,2.564
+I127,Circulatory system condition 128,I,Circulatory system,22775,-6.444,5.697
+J00,Respiratory system condition 1,J,Respiratory system,18268,-8.223,3.326
+J01,Respiratory system condition 2,J,Respiratory system,11192,-6.159,2.424
+J02,Respiratory system condition 3,J,Respiratory system,7152,-8.588,2.476
+J03,Respiratory system condition 4,J,Respiratory system,23442,-7.574,2.144
+J04,Respiratory system condition 5,J,Respiratory system,15171,-5.986,2.733
+J05,Respiratory system condition 6,J,Respiratory system,12773,-7.219,2.758
+J06,Respiratory system condition 7,J,Respiratory system,11451,-7.834,2.271
+J07,Respiratory system condition 8,J,Respiratory system,27784,-7.061,2.61
+J08,Respiratory system condition 9,J,Respiratory system,24616,-6.458,2.731
+J09,Respiratory system condition 10,J,Respiratory system,18818,-7.368,1.551
+J10,Respiratory system condition 11,J,Respiratory system,1145,-8.883,2.561
+J11,Respiratory system condition 12,J,Respiratory system,19625,-6.966,3.797
+J12,Respiratory system condition 13,J,Respiratory system,10333,-8.124,1.379
+J13,Respiratory system condition 14,J,Respiratory system,23106,-6.498,4.131
+J14,Respiratory system condition 15,J,Respiratory system,12015,-9.451,1.485
+J15,Respiratory system condition 16,J,Respiratory system,21827,-9.631,1.82
+J16,Respiratory system condition 17,J,Respiratory system,19231,-8.69,3.03
+J17,Respiratory system condition 18,J,Respiratory system,8241,-8.089,3.108
+J18,Respiratory system condition 19,J,Respiratory system,14089,-8.495,2.546
+J19,Respiratory system condition 20,J,Respiratory system,28859,-8.127,1.473
+J20,Respiratory system condition 21,J,Respiratory system,17324,-7.912,2.268
+J21,Respiratory system condition 22,J,Respiratory system,1943,-8.223,2.653
+J22,Respiratory system condition 23,J,Respiratory system,17690,-7.146,4.506
+J23,Respiratory system condition 24,J,Respiratory system,7050,-7.473,3.569
+J24,Respiratory system condition 25,J,Respiratory system,3538,-7.574,0.821
+J25,Respiratory system condition 26,J,Respiratory system,2488,-7.66,2.841
+J26,Respiratory system condition 27,J,Respiratory system,15388,-6.733,1.923
+J27,Respiratory system condition 28,J,Respiratory system,16188,-9.767,0.016
+J28,Respiratory system condition 29,J,Respiratory system,7478,-9.741,3.44
+J29,Respiratory system condition 30,J,Respiratory system,7423,-8.346,4.217
+J30,Respiratory system condition 31,J,Respiratory system,23878,-8.788,1.937
+J31,Respiratory system condition 32,J,Respiratory system,26925,-5.407,0.517
+J32,Respiratory system condition 33,J,Respiratory system,8832,-7.862,2.44
+J33,Respiratory system condition 34,J,Respiratory system,23105,-7.251,-0.74
+J34,Respiratory system condition 35,J,Respiratory system,21924,-7.219,2.499
+J35,Respiratory system condition 36,J,Respiratory system,15001,-8.008,1.706
+J36,Respiratory system condition 37,J,Respiratory system,11984,-7.414,1.201
+J37,Respiratory system condition 38,J,Respiratory system,12002,-8.251,2.214
+J38,Respiratory system condition 39,J,Respiratory system,27062,-6.875,2.589
+J39,Respiratory system condition 40,J,Respiratory system,27896,-9.217,4.914
+J40,Respiratory system condition 41,J,Respiratory system,21984,-9.811,3.773
+J41,Respiratory system condition 42,J,Respiratory system,15479,-6.545,-0.225
+J42,Respiratory system condition 43,J,Respiratory system,23234,-7.528,2.028
+J43,Respiratory system condition 44,J,Respiratory system,29094,-9.645,2.388
+J44,Respiratory system condition 45,J,Respiratory system,12840,-9.042,3.156
+J45,Respiratory system condition 46,J,Respiratory system,2948,-6.946,0.807
+J46,Respiratory system condition 47,J,Respiratory system,6476,-7.399,1.78
+J47,Respiratory system condition 48,J,Respiratory system,8695,-8.115,1.955
+J48,Respiratory system condition 49,J,Respiratory system,28451,-6.977,3.455
+J49,Respiratory system condition 50,J,Respiratory system,3595,-9.429,1.387
+J50,Respiratory system condition 51,J,Respiratory system,17959,-10.637,1.102
+J51,Respiratory system condition 52,J,Respiratory system,27670,-8.44,3.916
+J52,Respiratory system condition 53,J,Respiratory system,10081,-9.201,3.718
+J53,Respiratory system condition 54,J,Respiratory system,10485,-8.505,2.754
+J54,Respiratory system condition 55,J,Respiratory system,20664,-7.989,5.107
+J55,Respiratory system condition 56,J,Respiratory system,22989,-7.353,3.607
+J56,Respiratory system condition 57,J,Respiratory system,26886,-8.011,3.372
+J57,Respiratory system condition 58,J,Respiratory system,2553,-7.188,2.817
+J58,Respiratory system condition 59,J,Respiratory system,25362,-8.288,0.831
+J59,Respiratory system condition 60,J,Respiratory system,25101,-6.699,1.855
+J60,Respiratory system condition 61,J,Respiratory system,7056,-8.577,3.358
+J61,Respiratory system condition 62,J,Respiratory system,16801,-5.82,2.088
+J62,Respiratory system condition 63,J,Respiratory system,4781,-6.186,3.014
+J63,Respiratory system condition 64,J,Respiratory system,21285,-7.951,2.04
+J64,Respiratory system condition 65,J,Respiratory system,19485,-7.129,4.709
+J65,Respiratory system condition 66,J,Respiratory system,23717,-8.524,2.911
+J66,Respiratory system condition 67,J,Respiratory system,3317,-10.102,1.881
+J67,Respiratory system condition 68,J,Respiratory system,28294,-8.099,2.482
+J68,Respiratory system condition 69,J,Respiratory system,12567,-7.954,1.837
+J69,Respiratory system condition 70,J,Respiratory system,2491,-7.71,3.927
+J70,Respiratory system condition 71,J,Respiratory system,6548,-7.566,3.417
+J71,Respiratory system condition 72,J,Respiratory system,2005,-7.138,2.128
+J72,Respiratory system condition 73,J,Respiratory system,14563,-7.21,3.186
+J73,Respiratory system condition 74,J,Respiratory system,12802,-7.54,2.477
+J74,Respiratory system condition 75,J,Respiratory system,15833,-6.74,1.64
+J75,Respiratory system condition 76,J,Respiratory system,9588,-8.96,2.741
+J76,Respiratory system condition 77,J,Respiratory system,24046,-10.926,0.834
+J77,Respiratory system condition 78,J,Respiratory system,21722,-8.262,1.368
+K00,Digestive system condition 1,K,Digestive system,17858,-7.892,1.338
+K01,Digestive system condition 2,K,Digestive system,4781,-8.069,-1.158
+K02,Digestive system condition 3,K,Digestive system,15882,-9.212,0.656
+K03,Digestive system condition 4,K,Digestive system,27520,-6.86,0.499
+K04,Digestive system condition 5,K,Digestive system,3123,-8.351,0.002
+K05,Digestive system condition 6,K,Digestive system,17928,-9.43,-0.213
+K06,Digestive system condition 7,K,Digestive system,18430,-7.035,0.309
+K07,Digestive system condition 8,K,Digestive system,16466,-9.208,1.0
+K08,Digestive system condition 9,K,Digestive system,1515,-7.665,2.223
+K09,Digestive system condition 10,K,Digestive system,5353,-8.765,0.657
+K10,Digestive system condition 11,K,Digestive system,10814,-7.737,-0.886
+K11,Digestive system condition 12,K,Digestive system,14120,-8.565,0.118
+K12,Digestive system condition 13,K,Digestive system,20132,-7.715,0.165
+K13,Digestive system condition 14,K,Digestive system,23574,-6.332,-1.115
+K14,Digestive system condition 15,K,Digestive system,20013,-8.494,-1.079
+K15,Digestive system condition 16,K,Digestive system,29925,-8.002,2.145
+K16,Digestive system condition 17,K,Digestive system,1137,-6.133,-0.414
+K17,Digestive system condition 18,K,Digestive system,24648,-8.211,0.018
+K18,Digestive system condition 19,K,Digestive system,9826,-6.499,1.612
+K19,Digestive system condition 20,K,Digestive system,3801,-8.449,-1.552
+K20,Digestive system condition 21,K,Digestive system,22419,-6.562,0.498
+K21,Digestive system condition 22,K,Digestive system,24212,-6.997,-1.162
+K22,Digestive system condition 23,K,Digestive system,3321,-6.551,3.52
+K23,Digestive system condition 24,K,Digestive system,4709,-9.177,-0.643
+K24,Digestive system condition 25,K,Digestive system,403,-8.724,0.174
+K25,Digestive system condition 26,K,Digestive system,10932,-7.605,-0.21
+K26,Digestive system condition 27,K,Digestive system,8208,-8.784,-0.92
+K27,Digestive system condition 28,K,Digestive system,4589,-7.788,-1.075
+K28,Digestive system condition 29,K,Digestive system,5681,-8.081,0.058
+K29,Digestive system condition 30,K,Digestive system,5759,-6.816,1.019
+K30,Digestive system condition 31,K,Digestive system,24846,-6.141,0.295
+K31,Digestive system condition 32,K,Digestive system,14975,-8.647,0.717
+K32,Digestive system condition 33,K,Digestive system,392,-6.546,1.794
+K33,Digestive system condition 34,K,Digestive system,19824,-7.766,2.052
+K34,Digestive system condition 35,K,Digestive system,12110,-9.935,-0.565
+K35,Digestive system condition 36,K,Digestive system,27167,-8.54,1.735
+K36,Digestive system condition 37,K,Digestive system,20417,-8.071,-0.085
+K37,Digestive system condition 38,K,Digestive system,11914,-10.369,0.792
+K38,Digestive system condition 39,K,Digestive system,10741,-7.184,-1.104
+K39,Digestive system condition 40,K,Digestive system,11127,-6.982,-0.574
+K40,Digestive system condition 41,K,Digestive system,7182,-7.747,-1.861
+K41,Digestive system condition 42,K,Digestive system,4051,-7.294,0.116
+K42,Digestive system condition 43,K,Digestive system,2720,-8.875,2.467
+K43,Digestive system condition 44,K,Digestive system,25122,-5.758,1.392
+K44,Digestive system condition 45,K,Digestive system,8063,-7.42,1.45
+K45,Digestive system condition 46,K,Digestive system,12096,-9.697,-0.141
+K46,Digestive system condition 47,K,Digestive system,23201,-9.567,0.176
+K47,Digestive system condition 48,K,Digestive system,7276,-9.072,1.715
+K48,Digestive system condition 49,K,Digestive system,19805,-9.34,0.4
+K49,Digestive system condition 50,K,Digestive system,16202,-6.793,0.678
+K50,Digestive system condition 51,K,Digestive system,929,-7.608,1.033
+K51,Digestive system condition 52,K,Digestive system,16444,-8.392,0.122
+K52,Digestive system condition 53,K,Digestive system,18830,-8.208,0.597
+K53,Digestive system condition 54,K,Digestive system,29871,-6.926,-0.482
+K54,Digestive system condition 55,K,Digestive system,10862,-7.002,0.662
+K55,Digestive system condition 56,K,Digestive system,17773,-7.263,-1.891
+K56,Digestive system condition 57,K,Digestive system,20733,-8.992,-0.359
+K57,Digestive system condition 58,K,Digestive system,7883,-9.454,0.491
+K58,Digestive system condition 59,K,Digestive system,3828,-7.95,-1.318
+K59,Digestive system condition 60,K,Digestive system,27336,-9.104,0.763
+K60,Digestive system condition 61,K,Digestive system,21913,-8.39,0.167
+K61,Digestive system condition 62,K,Digestive system,12756,-8.193,1.016
+K62,Digestive system condition 63,K,Digestive system,21547,-6.471,-2.318
+K63,Digestive system condition 64,K,Digestive system,26232,-8.382,-1.761
+K64,Digestive system condition 65,K,Digestive system,21948,-6.738,-1.933
+K65,Digestive system condition 66,K,Digestive system,20990,-7.84,-2.022
+K66,Digestive system condition 67,K,Digestive system,1511,-7.895,0.742
+K67,Digestive system condition 68,K,Digestive system,19060,-7.489,-1.927
+K68,Digestive system condition 69,K,Digestive system,23726,-8.167,-1.068
+K69,Digestive system condition 70,K,Digestive system,24787,-5.46,-0.262
+K70,Digestive system condition 71,K,Digestive system,8701,-6.906,-0.038
+K71,Digestive system condition 72,K,Digestive system,25592,-6.499,0.003
+K72,Digestive system condition 73,K,Digestive system,29439,-8.349,-0.074
+K73,Digestive system condition 74,K,Digestive system,9994,-9.042,-3.269
+K74,Digestive system condition 75,K,Digestive system,23818,-7.258,-2.19
+K75,Digestive system condition 76,K,Digestive system,17790,-7.079,0.607
+K76,Digestive system condition 77,K,Digestive system,690,-6.563,-1.818
+K77,Digestive system condition 78,K,Digestive system,5364,-9.315,0.136
+K78,Digestive system condition 79,K,Digestive system,25591,-6.532,-2.056
+K79,Digestive system condition 80,K,Digestive system,11842,-7.213,-1.74
+K80,Digestive system condition 81,K,Digestive system,9844,-7.597,-1.172
+K81,Digestive system condition 82,K,Digestive system,3895,-7.693,0.239
+K82,Digestive system condition 83,K,Digestive system,18928,-9.012,0.176
+K83,Digestive system condition 84,K,Digestive system,14781,-9.162,1.369
+K84,Digestive system condition 85,K,Digestive system,11554,-9.163,0.655
+K85,Digestive system condition 86,K,Digestive system,16818,-9.214,-0.528
+K86,Digestive system condition 87,K,Digestive system,5503,-9.196,1.023
+K87,Digestive system condition 88,K,Digestive system,9750,-8.948,-0.041
+K88,Digestive system condition 89,K,Digestive system,22342,-7.201,0.125
+K89,Digestive system condition 90,K,Digestive system,391,-8.718,-0.586
+K90,Digestive system condition 91,K,Digestive system,22505,-9.732,1.621
+K91,Digestive system condition 92,K,Digestive system,24352,-10.001,1.152
+K92,Digestive system condition 93,K,Digestive system,12467,-8.321,-1.912
+K93,Digestive system condition 94,K,Digestive system,6013,-5.372,-1.398
+K94,Digestive system condition 95,K,Digestive system,23571,-7.707,-0.341
+K95,Digestive system condition 96,K,Digestive system,17069,-7.169,0.91
+K96,Digestive system condition 97,K,Digestive system,18002,-9.662,0.249
+K97,Digestive system condition 98,K,Digestive system,28305,-9.211,0.455
+K98,Digestive system condition 99,K,Digestive system,14999,-9.078,0.435
+K99,Digestive system condition 100,K,Digestive system,1389,-7.965,-0.812
+K100,Digestive system condition 101,K,Digestive system,18563,-7.041,-0.763
+K101,Digestive system condition 102,K,Digestive system,12378,-7.771,1.329
+K102,Digestive system condition 103,K,Digestive system,6070,-6.417,-1.499
+K103,Digestive system condition 104,K,Digestive system,14600,-6.094,0.893
+K104,Digestive system condition 105,K,Digestive system,1857,-6.089,-0.67
+K105,Digestive system condition 106,K,Digestive system,11767,-6.91,1.066
+K106,Digestive system condition 107,K,Digestive system,13794,-7.173,1.559
+K107,Digestive system condition 108,K,Digestive system,1114,-10.611,1.73
+K108,Digestive system condition 109,K,Digestive system,21452,-7.146,-0.496
+K109,Digestive system condition 110,K,Digestive system,5422,-7.792,1.811
+K110,Digestive system condition 111,K,Digestive system,25488,-7.892,2.11
+K111,Digestive system condition 112,K,Digestive system,7117,-10.05,-1.849
+K112,Digestive system condition 113,K,Digestive system,8315,-8.048,0.252
+K113,Digestive system condition 114,K,Digestive system,13194,-7.008,-2.316
+K114,Digestive system condition 115,K,Digestive system,27395,-6.314,-2.378
+K115,Digestive system condition 116,K,Digestive system,18596,-7.076,-0.088
+K116,Digestive system condition 117,K,Digestive system,7474,-8.035,-0.074
+K117,Digestive system condition 118,K,Digestive system,20103,-8.353,0.528
+K118,Digestive system condition 119,K,Digestive system,11224,-10.284,0.943
+K119,Digestive system condition 120,K,Digestive system,10637,-7.711,-1.596
+K120,Digestive system condition 121,K,Digestive system,3010,-7.28,0.833
+K121,Digestive system condition 122,K,Digestive system,15857,-8.082,-0.37
+K122,Digestive system condition 123,K,Digestive system,25788,-10.107,1.916
+K123,Digestive system condition 124,K,Digestive system,8366,-10.209,-0.437
+K124,Digestive system condition 125,K,Digestive system,11070,-8.318,1.333
+K125,Digestive system condition 126,K,Digestive system,11212,-7.983,0.597
+K126,Digestive system condition 127,K,Digestive system,19011,-9.381,-1.503
+K127,Digestive system condition 128,K,Digestive system,17098,-7.808,-0.903
+K128,Digestive system condition 129,K,Digestive system,11915,-8.609,0.838
+K129,Digestive system condition 130,K,Digestive system,4741,-8.134,-0.025
+K130,Digestive system condition 131,K,Digestive system,8162,-6.783,-0.197
+K131,Digestive system condition 132,K,Digestive system,9968,-6.875,-0.21
+K132,Digestive system condition 133,K,Digestive system,26287,-6.495,0.286
+K133,Digestive system condition 134,K,Digestive system,13952,-9.624,-0.535
+K134,Digestive system condition 135,K,Digestive system,14685,-8.272,-0.078
+K135,Digestive system condition 136,K,Digestive system,5962,-6.146,0.501
+K136,Digestive system condition 137,K,Digestive system,4311,-7.556,0.793
+K137,Digestive system condition 138,K,Digestive system,2512,-7.726,-0.158
+K138,Digestive system condition 139,K,Digestive system,29519,-5.364,1.744
+K139,Digestive system condition 140,K,Digestive system,29658,-8.559,1.079
+K140,Digestive system condition 141,K,Digestive system,13639,-5.392,-1.381
+K141,Digestive system condition 142,K,Digestive system,25467,-8.565,-0.296
+L00,Skin condition 1,L,Skin,26628,-9.049,-2.216
+L01,Skin condition 2,L,Skin,15910,-6.263,-0.367
+L02,Skin condition 3,L,Skin,16337,-6.984,-0.42
+L03,Skin condition 4,L,Skin,2549,-7.616,-1.77
+L04,Skin condition 5,L,Skin,10198,-9.563,-3.353
+L05,Skin condition 6,L,Skin,5741,-8.13,-2.743
+L06,Skin condition 7,L,Skin,21890,-8.522,-2.955
+L07,Skin condition 8,L,Skin,3813,-8.395,-2.084
+L08,Skin condition 9,L,Skin,24961,-6.981,-1.076
+L09,Skin condition 10,L,Skin,267,-7.842,-2.429
+L10,Skin condition 11,L,Skin,2624,-7.834,-3.191
+L11,Skin condition 12,L,Skin,16029,-8.303,-0.786
+L12,Skin condition 13,L,Skin,4967,-6.981,-2.725
+L13,Skin condition 14,L,Skin,5267,-7.821,-4.212
+L14,Skin condition 15,L,Skin,168,-5.428,-1.233
+L15,Skin condition 16,L,Skin,11874,-8.465,0.309
+L16,Skin condition 17,L,Skin,2239,-8.792,-1.593
+L17,Skin condition 18,L,Skin,20350,-6.049,-0.647
+L18,Skin condition 19,L,Skin,2283,-5.249,-1.613
+L19,Skin condition 20,L,Skin,13346,-9.713,-1.228
+L20,Skin condition 21,L,Skin,10520,-7.742,-2.657
+L21,Skin condition 22,L,Skin,3250,-8.362,-1.507
+L22,Skin condition 23,L,Skin,22350,-8.435,-2.868
+L23,Skin condition 24,L,Skin,5647,-7.214,-3.244
+L24,Skin condition 25,L,Skin,23685,-8.712,-1.652
+L25,Skin condition 26,L,Skin,29821,-7.502,-3.464
+L26,Skin condition 27,L,Skin,17838,-5.634,-3.371
+L27,Skin condition 28,L,Skin,6658,-4.477,-2.208
+L28,Skin condition 29,L,Skin,16685,-6.974,-2.668
+L29,Skin condition 30,L,Skin,7845,-7.923,-3.248
+L30,Skin condition 31,L,Skin,17577,-7.655,-2.64
+L31,Skin condition 32,L,Skin,1654,-6.93,-4.773
+L32,Skin condition 33,L,Skin,11046,-9.127,-1.93
+L33,Skin condition 34,L,Skin,7557,-6.691,-1.437
+L34,Skin condition 35,L,Skin,8828,-7.687,-3.948
+L35,Skin condition 36,L,Skin,16439,-8.088,-4.073
+L36,Skin condition 37,L,Skin,15133,-6.466,-2.422
+L37,Skin condition 38,L,Skin,23720,-6.609,-1.678
+L38,Skin condition 39,L,Skin,20015,-4.364,-2.857
+L39,Skin condition 40,L,Skin,21981,-6.487,-1.244
+L40,Skin condition 41,L,Skin,11531,-7.04,-2.189
+L41,Skin condition 42,L,Skin,3954,-7.205,-3.039
+L42,Skin condition 43,L,Skin,23768,-7.722,-3.085
+L43,Skin condition 44,L,Skin,7483,-8.492,-5.517
+L44,Skin condition 45,L,Skin,14794,-6.374,-4.37
+L45,Skin condition 46,L,Skin,18903,-8.087,-3.109
+L46,Skin condition 47,L,Skin,15667,-8.832,-3.201
+L47,Skin condition 48,L,Skin,19494,-6.681,-3.065
+L48,Skin condition 49,L,Skin,20747,-5.375,-3.918
+L49,Skin condition 50,L,Skin,26610,-6.709,-1.574
+L50,Skin condition 51,L,Skin,6964,-7.053,-4.11
+L51,Skin condition 52,L,Skin,2778,-7.754,-1.767
+L52,Skin condition 53,L,Skin,685,-6.5,-3.235
+L53,Skin condition 54,L,Skin,27263,-6.67,-2.869
+L54,Skin condition 55,L,Skin,28204,-5.977,-1.11
+L55,Skin condition 56,L,Skin,10200,-6.739,-2.988
+L56,Skin condition 57,L,Skin,26615,-8.476,-2.294
+L57,Skin condition 58,L,Skin,13551,-7.264,-1.94
+L58,Skin condition 59,L,Skin,19753,-5.209,-1.158
+L59,Skin condition 60,L,Skin,7840,-7.871,-3.176
+L60,Skin condition 61,L,Skin,21451,-10.54,-3.968
+L61,Skin condition 62,L,Skin,25993,-5.943,-3.458
+L62,Skin condition 63,L,Skin,7771,-7.503,-4.198
+L63,Skin condition 64,L,Skin,23258,-7.272,-3.803
+L64,Skin condition 65,L,Skin,28947,-7.599,-3.48
+L65,Skin condition 66,L,Skin,20869,-8.189,-0.883
+L66,Skin condition 67,L,Skin,11276,-6.541,-3.763
+M00,Musculoskeletal condition 1,M,Musculoskeletal,15203,-7.187,-4.788
+M01,Musculoskeletal condition 2,M,Musculoskeletal,28460,-7.446,-3.745
+M02,Musculoskeletal condition 3,M,Musculoskeletal,11111,-4.82,-5.84
+M03,Musculoskeletal condition 4,M,Musculoskeletal,27948,-7.37,-2.322
+M04,Musculoskeletal condition 5,M,Musculoskeletal,28445,-6.631,-5.021
+M05,Musculoskeletal condition 6,M,Musculoskeletal,5184,-7.654,-5.723
+M06,Musculoskeletal condition 7,M,Musculoskeletal,25048,-6.143,-5.596
+M07,Musculoskeletal condition 8,M,Musculoskeletal,17546,-7.505,-6.074
+M08,Musculoskeletal condition 9,M,Musculoskeletal,4157,-6.895,-3.177
+M09,Musculoskeletal condition 10,M,Musculoskeletal,13771,-4.838,-5.111
+M10,Musculoskeletal condition 11,M,Musculoskeletal,23675,-5.533,-4.398
+M11,Musculoskeletal condition 12,M,Musculoskeletal,19756,-4.769,-3.955
+M12,Musculoskeletal condition 13,M,Musculoskeletal,15874,-6.301,-3.471
+M13,Musculoskeletal condition 14,M,Musculoskeletal,9486,-5.585,-5.546
+M14,Musculoskeletal condition 15,M,Musculoskeletal,22808,-6.135,-6.518
+M15,Musculoskeletal condition 16,M,Musculoskeletal,4585,-5.815,-4.038
+M16,Musculoskeletal condition 17,M,Musculoskeletal,5089,-5.722,-5.097
+M17,Musculoskeletal condition 18,M,Musculoskeletal,25670,-6.793,-4.934
+M18,Musculoskeletal condition 19,M,Musculoskeletal,24969,-3.872,-3.175
+M19,Musculoskeletal condition 20,M,Musculoskeletal,27253,-6.759,-5.006
+M20,Musculoskeletal condition 21,M,Musculoskeletal,3335,-6.766,-5.315
+M21,Musculoskeletal condition 22,M,Musculoskeletal,7970,-5.006,-3.509
+M22,Musculoskeletal condition 23,M,Musculoskeletal,24696,-8.624,-4.152
+M23,Musculoskeletal condition 24,M,Musculoskeletal,13026,-6.637,-4.291
+M24,Musculoskeletal condition 25,M,Musculoskeletal,16150,-5.435,-4.968
+M25,Musculoskeletal condition 26,M,Musculoskeletal,18779,-6.283,-4.739
+M26,Musculoskeletal condition 27,M,Musculoskeletal,427,-7.442,-5.79
+M27,Musculoskeletal condition 28,M,Musculoskeletal,4174,-4.604,-5.754
+M28,Musculoskeletal condition 29,M,Musculoskeletal,7174,-4.838,-4.92
+M29,Musculoskeletal condition 30,M,Musculoskeletal,24198,-6.781,-2.568
+M30,Musculoskeletal condition 31,M,Musculoskeletal,5410,-5.656,-3.453
+M31,Musculoskeletal condition 32,M,Musculoskeletal,7991,-4.92,-7.362
+M32,Musculoskeletal condition 33,M,Musculoskeletal,21263,-6.347,-6.359
+M33,Musculoskeletal condition 34,M,Musculoskeletal,22476,-8.063,-3.767
+M34,Musculoskeletal condition 35,M,Musculoskeletal,25855,-9.242,-4.293
+M35,Musculoskeletal condition 36,M,Musculoskeletal,11614,-6.464,-3.089
+M36,Musculoskeletal condition 37,M,Musculoskeletal,25925,-5.85,-3.59
+M37,Musculoskeletal condition 38,M,Musculoskeletal,29959,-5.947,-3.833
+M38,Musculoskeletal condition 39,M,Musculoskeletal,23924,-6.249,-5.9
+M39,Musculoskeletal condition 40,M,Musculoskeletal,397,-5.693,-4.488
+M40,Musculoskeletal condition 41,M,Musculoskeletal,19878,-7.921,-5.305
+M41,Musculoskeletal condition 42,M,Musculoskeletal,23091,-6.073,-4.775
+M42,Musculoskeletal condition 43,M,Musculoskeletal,9900,-5.8,-5.727
+M43,Musculoskeletal condition 44,M,Musculoskeletal,28383,-5.912,-5.576
+M44,Musculoskeletal condition 45,M,Musculoskeletal,4822,-7.799,-4.286
+M45,Musculoskeletal condition 46,M,Musculoskeletal,27641,-6.555,-5.763
+M46,Musculoskeletal condition 47,M,Musculoskeletal,8563,-6.686,-5.033
+M47,Musculoskeletal condition 48,M,Musculoskeletal,9360,-6.066,-3.891
+M48,Musculoskeletal condition 49,M,Musculoskeletal,13175,-7.659,-5.807
+M49,Musculoskeletal condition 50,M,Musculoskeletal,23777,-6.59,-5.112
+M50,Musculoskeletal condition 51,M,Musculoskeletal,14234,-7.54,-4.301
+M51,Musculoskeletal condition 52,M,Musculoskeletal,28331,-6.645,-3.151
+M52,Musculoskeletal condition 53,M,Musculoskeletal,20430,-5.482,-1.872
+M53,Musculoskeletal condition 54,M,Musculoskeletal,22460,-7.897,-5.423
+M54,Musculoskeletal condition 55,M,Musculoskeletal,9132,-6.822,-3.952
+M55,Musculoskeletal condition 56,M,Musculoskeletal,25539,-7.605,-6.821
+M56,Musculoskeletal condition 57,M,Musculoskeletal,25975,-5.366,-4.762
+M57,Musculoskeletal condition 58,M,Musculoskeletal,16872,-8.283,-4.343
+M58,Musculoskeletal condition 59,M,Musculoskeletal,11006,-7.345,-4.459
+M59,Musculoskeletal condition 60,M,Musculoskeletal,26203,-6.221,-5.188
+M60,Musculoskeletal condition 61,M,Musculoskeletal,7302,-6.407,-1.903
+M61,Musculoskeletal condition 62,M,Musculoskeletal,7666,-6.627,-3.808
+M62,Musculoskeletal condition 63,M,Musculoskeletal,29480,-6.04,-5.399
+M63,Musculoskeletal condition 64,M,Musculoskeletal,5974,-5.218,-4.815
+M64,Musculoskeletal condition 65,M,Musculoskeletal,3374,-6.084,-5.273
+M65,Musculoskeletal condition 66,M,Musculoskeletal,24893,-7.379,-4.562
+M66,Musculoskeletal condition 67,M,Musculoskeletal,20809,-7.523,-5.197
+M67,Musculoskeletal condition 68,M,Musculoskeletal,23465,-6.177,-5.339
+M68,Musculoskeletal condition 69,M,Musculoskeletal,7970,-6.427,-4.342
+M69,Musculoskeletal condition 70,M,Musculoskeletal,2429,-6.974,-4.336
+M70,Musculoskeletal condition 71,M,Musculoskeletal,26968,-6.109,-4.305
+M71,Musculoskeletal condition 72,M,Musculoskeletal,978,-6.991,-4.661
+M72,Musculoskeletal condition 73,M,Musculoskeletal,11731,-7.541,-2.58
+M73,Musculoskeletal condition 74,M,Musculoskeletal,1824,-5.474,-7.531
+M74,Musculoskeletal condition 75,M,Musculoskeletal,8791,-7.709,-6.088
+M75,Musculoskeletal condition 76,M,Musculoskeletal,9008,-4.998,-2.622
+M76,Musculoskeletal condition 77,M,Musculoskeletal,26848,-6.862,-5.636
+M77,Musculoskeletal condition 78,M,Musculoskeletal,11220,-6.833,-4.416
+M78,Musculoskeletal condition 79,M,Musculoskeletal,19505,-7.312,-5.497
+M79,Musculoskeletal condition 80,M,Musculoskeletal,12248,-6.079,-5.204
+M80,Musculoskeletal condition 81,M,Musculoskeletal,7670,-8.663,-4.85
+M81,Musculoskeletal condition 82,M,Musculoskeletal,15985,-6.411,-5.173
+M82,Musculoskeletal condition 83,M,Musculoskeletal,3036,-5.224,-6.551
+M83,Musculoskeletal condition 84,M,Musculoskeletal,24061,-5.383,-4.884
+M84,Musculoskeletal condition 85,M,Musculoskeletal,748,-7.628,-3.097
+M85,Musculoskeletal condition 86,M,Musculoskeletal,23945,-7.093,-6.231
+M86,Musculoskeletal condition 87,M,Musculoskeletal,8370,-3.523,-6.054
+M87,Musculoskeletal condition 88,M,Musculoskeletal,20250,-6.784,-6.019
+M88,Musculoskeletal condition 89,M,Musculoskeletal,10967,-7.318,-6.919
+M89,Musculoskeletal condition 90,M,Musculoskeletal,10341,-8.311,-2.42
+M90,Musculoskeletal condition 91,M,Musculoskeletal,29349,-5.311,-5.233
+M91,Musculoskeletal condition 92,M,Musculoskeletal,7606,-5.806,-3.422
+M92,Musculoskeletal condition 93,M,Musculoskeletal,21335,-5.816,-3.991
+M93,Musculoskeletal condition 94,M,Musculoskeletal,8111,-4.384,-4.472
+M94,Musculoskeletal condition 95,M,Musculoskeletal,3992,-6.492,-5.346
+M95,Musculoskeletal condition 96,M,Musculoskeletal,27970,-4.878,-3.897
+M96,Musculoskeletal condition 97,M,Musculoskeletal,17628,-7.866,-6.814
+M97,Musculoskeletal condition 98,M,Musculoskeletal,23515,-7.425,-4.272
+M98,Musculoskeletal condition 99,M,Musculoskeletal,353,-6.439,-4.736
+M99,Musculoskeletal condition 100,M,Musculoskeletal,14330,-5.507,-5.088
+M100,Musculoskeletal condition 101,M,Musculoskeletal,9525,-5.88,-3.844
+M101,Musculoskeletal condition 102,M,Musculoskeletal,18477,-7.234,-5.895
+M102,Musculoskeletal condition 103,M,Musculoskeletal,11797,-7.092,-5.791
+M103,Musculoskeletal condition 104,M,Musculoskeletal,14644,-6.939,-4.584
+M104,Musculoskeletal condition 105,M,Musculoskeletal,6270,-7.195,-6.398
+M105,Musculoskeletal condition 106,M,Musculoskeletal,13893,-3.712,-4.283
+M106,Musculoskeletal condition 107,M,Musculoskeletal,1427,-6.521,-6.31
+M107,Musculoskeletal condition 108,M,Musculoskeletal,3631,-3.9,-3.97
+M108,Musculoskeletal condition 109,M,Musculoskeletal,25127,-6.419,-6.651
+M109,Musculoskeletal condition 110,M,Musculoskeletal,27889,-5.675,-4.443
+M110,Musculoskeletal condition 111,M,Musculoskeletal,4925,-7.907,-4.572
+M111,Musculoskeletal condition 112,M,Musculoskeletal,16461,-7.868,-5.227
+M112,Musculoskeletal condition 113,M,Musculoskeletal,6837,-4.384,-4.19
+M113,Musculoskeletal condition 114,M,Musculoskeletal,29404,-6.93,-4.327
+M114,Musculoskeletal condition 115,M,Musculoskeletal,8015,-7.028,-4.902
+M115,Musculoskeletal condition 116,M,Musculoskeletal,16704,-7.937,-4.453
+M116,Musculoskeletal condition 117,M,Musculoskeletal,11594,-4.594,-3.533
+M117,Musculoskeletal condition 118,M,Musculoskeletal,11624,-3.943,-5.843
+M118,Musculoskeletal condition 119,M,Musculoskeletal,1549,-4.787,-4.776
+M119,Musculoskeletal condition 120,M,Musculoskeletal,21704,-7.381,-5.289
+M120,Musculoskeletal condition 121,M,Musculoskeletal,13165,-6.39,-6.188
+M121,Musculoskeletal condition 122,M,Musculoskeletal,5303,-7.017,-4.192
+M122,Musculoskeletal condition 123,M,Musculoskeletal,1173,-3.551,-4.481
+M123,Musculoskeletal condition 124,M,Musculoskeletal,23463,-8.703,-4.538
+M124,Musculoskeletal condition 125,M,Musculoskeletal,23774,-7.456,-5.867
+M125,Musculoskeletal condition 126,M,Musculoskeletal,22110,-7.645,-6.797
+M126,Musculoskeletal condition 127,M,Musculoskeletal,14711,-6.028,-4.054
+M127,Musculoskeletal condition 128,M,Musculoskeletal,6956,-7.056,-3.917
+M128,Musculoskeletal condition 129,M,Musculoskeletal,15323,-8.397,-4.894
+M129,Musculoskeletal condition 130,M,Musculoskeletal,23378,-5.883,-7.683
+M130,Musculoskeletal condition 131,M,Musculoskeletal,7322,-5.317,-4.329
+M131,Musculoskeletal condition 132,M,Musculoskeletal,14580,-5.082,-5.132
+M132,Musculoskeletal condition 133,M,Musculoskeletal,19658,-9.575,-6.511
+M133,Musculoskeletal condition 134,M,Musculoskeletal,12214,-5.738,-4.146
+M134,Musculoskeletal condition 135,M,Musculoskeletal,9357,-7.105,-5.21
+M135,Musculoskeletal condition 136,M,Musculoskeletal,15170,-5.748,-5.288
+M136,Musculoskeletal condition 137,M,Musculoskeletal,15805,-6.499,-4.382
+M137,Musculoskeletal condition 138,M,Musculoskeletal,14296,-7.518,-3.707
+M138,Musculoskeletal condition 139,M,Musculoskeletal,13742,-6.901,-4.561
+M139,Musculoskeletal condition 140,M,Musculoskeletal,18438,-7.202,-3.513
+M140,Musculoskeletal condition 141,M,Musculoskeletal,3358,-5.589,-4.187
+M141,Musculoskeletal condition 142,M,Musculoskeletal,14176,-4.76,-4.2
+M142,Musculoskeletal condition 143,M,Musculoskeletal,26120,-7.28,-3.791
+M143,Musculoskeletal condition 144,M,Musculoskeletal,10000,-6.459,-2.703
+M144,Musculoskeletal condition 145,M,Musculoskeletal,16557,-4.868,-4.194
+M145,Musculoskeletal condition 146,M,Musculoskeletal,14431,-5.772,-2.009
+M146,Musculoskeletal condition 147,M,Musculoskeletal,582,-6.594,-5.336
+M147,Musculoskeletal condition 148,M,Musculoskeletal,17392,-5.91,-5.655
+M148,Musculoskeletal condition 149,M,Musculoskeletal,10905,-6.428,-5.534
+M149,Musculoskeletal condition 150,M,Musculoskeletal,25298,-7.813,-4.444
+M150,Musculoskeletal condition 151,M,Musculoskeletal,26087,-6.381,-2.9
+M151,Musculoskeletal condition 152,M,Musculoskeletal,3307,-7.795,-3.437
+M152,Musculoskeletal condition 153,M,Musculoskeletal,15812,-4.842,-3.383
+M153,Musculoskeletal condition 154,M,Musculoskeletal,27563,-7.47,-4.118
+M154,Musculoskeletal condition 155,M,Musculoskeletal,17990,-7.16,-4.617
+M155,Musculoskeletal condition 156,M,Musculoskeletal,27972,-5.727,-4.135
+M156,Musculoskeletal condition 157,M,Musculoskeletal,1936,-5.722,-3.813
+M157,Musculoskeletal condition 158,M,Musculoskeletal,26856,-6.735,-3.679
+M158,Musculoskeletal condition 159,M,Musculoskeletal,21617,-5.446,-4.312
+M159,Musculoskeletal condition 160,M,Musculoskeletal,19378,-5.046,-4.769
+M160,Musculoskeletal condition 161,M,Musculoskeletal,24441,-6.806,-6.447
+M161,Musculoskeletal condition 162,M,Musculoskeletal,19256,-4.46,-5.835
+M162,Musculoskeletal condition 163,M,Musculoskeletal,18663,-5.778,-5.701
+M163,Musculoskeletal condition 164,M,Musculoskeletal,15065,-6.354,-3.274
+M164,Musculoskeletal condition 165,M,Musculoskeletal,4477,-6.672,-4.197
+M165,Musculoskeletal condition 166,M,Musculoskeletal,7080,-4.332,-4.525
+M166,Musculoskeletal condition 167,M,Musculoskeletal,25344,-6.766,-3.265
+M167,Musculoskeletal condition 168,M,Musculoskeletal,25361,-6.607,-4.952
+M168,Musculoskeletal condition 169,M,Musculoskeletal,19064,-5.723,-4.294
+M169,Musculoskeletal condition 170,M,Musculoskeletal,5207,-7.721,-5.805
+M170,Musculoskeletal condition 171,M,Musculoskeletal,7456,-5.082,-4.826
+M171,Musculoskeletal condition 172,M,Musculoskeletal,23442,-6.697,-3.435
+M172,Musculoskeletal condition 173,M,Musculoskeletal,18666,-8.049,-5.401
+N00,Genitourinary condition 1,N,Genitourinary,10342,-3.465,-6.547
+N01,Genitourinary condition 2,N,Genitourinary,12747,-3.744,-5.107
+N02,Genitourinary condition 3,N,Genitourinary,22764,-4.515,-5.955
+N03,Genitourinary condition 4,N,Genitourinary,19895,-4.492,-7.141
+N04,Genitourinary condition 5,N,Genitourinary,11087,-3.534,-4.749
+N05,Genitourinary condition 6,N,Genitourinary,20754,-4.793,-6.41
+N06,Genitourinary condition 7,N,Genitourinary,4224,-4.702,-5.84
+N07,Genitourinary condition 8,N,Genitourinary,29431,-4.378,-6.569
+N08,Genitourinary condition 9,N,Genitourinary,12575,-4.756,-7.786
+N09,Genitourinary condition 10,N,Genitourinary,27837,-4.152,-6.557
+N10,Genitourinary condition 11,N,Genitourinary,11827,-3.689,-5.925
+N11,Genitourinary condition 12,N,Genitourinary,18526,-4.891,-8.709
+N12,Genitourinary condition 13,N,Genitourinary,3401,-2.63,-7.561
+N13,Genitourinary condition 14,N,Genitourinary,5489,-4.504,-7.885
+N14,Genitourinary condition 15,N,Genitourinary,29810,-4.248,-6.438
+N15,Genitourinary condition 16,N,Genitourinary,13240,-6.417,-5.683
+N16,Genitourinary condition 17,N,Genitourinary,26298,-4.135,-5.974
+N17,Genitourinary condition 18,N,Genitourinary,19026,-3.677,-5.42
+N18,Genitourinary condition 19,N,Genitourinary,9680,-4.517,-7.844
+N19,Genitourinary condition 20,N,Genitourinary,20176,-3.205,-6.151
+N20,Genitourinary condition 21,N,Genitourinary,26253,-4.529,-6.004
+N21,Genitourinary condition 22,N,Genitourinary,4655,-6.33,-6.2
+N22,Genitourinary condition 23,N,Genitourinary,27218,-6.782,-7.172
+N23,Genitourinary condition 24,N,Genitourinary,28157,-4.905,-5.473
+N24,Genitourinary condition 25,N,Genitourinary,535,-3.382,-4.775
+N25,Genitourinary condition 26,N,Genitourinary,8554,-4.937,-7.113
+N26,Genitourinary condition 27,N,Genitourinary,17636,-5.855,-6.801
+N27,Genitourinary condition 28,N,Genitourinary,23780,-2.519,-5.437
+N28,Genitourinary condition 29,N,Genitourinary,7740,-5.687,-6.232
+N29,Genitourinary condition 30,N,Genitourinary,1411,-4.633,-6.008
+N30,Genitourinary condition 31,N,Genitourinary,27430,-2.867,-8.39
+N31,Genitourinary condition 32,N,Genitourinary,1084,-5.097,-7.578
+N32,Genitourinary condition 33,N,Genitourinary,12523,-6.191,-8.084
+N33,Genitourinary condition 34,N,Genitourinary,8686,-4.316,-8.06
+N34,Genitourinary condition 35,N,Genitourinary,8194,-5.298,-7.548
+N35,Genitourinary condition 36,N,Genitourinary,12607,-3.895,-5.993
+N36,Genitourinary condition 37,N,Genitourinary,25691,-4.126,-8.843
+N37,Genitourinary condition 38,N,Genitourinary,18657,-4.393,-7.007
+N38,Genitourinary condition 39,N,Genitourinary,3390,-3.847,-8.463
+N39,Genitourinary condition 40,N,Genitourinary,20223,-3.965,-5.733
+N40,Genitourinary condition 41,N,Genitourinary,12448,-2.967,-6.96
+N41,Genitourinary condition 42,N,Genitourinary,4736,-3.226,-7.718
+N42,Genitourinary condition 43,N,Genitourinary,13458,-6.361,-7.131
+N43,Genitourinary condition 44,N,Genitourinary,6977,-5.478,-3.408
+N44,Genitourinary condition 45,N,Genitourinary,7273,-4.775,-5.5
+N45,Genitourinary condition 46,N,Genitourinary,6538,-4.651,-7.916
+N46,Genitourinary condition 47,N,Genitourinary,3682,-0.354,-8.072
+N47,Genitourinary condition 48,N,Genitourinary,18477,-5.396,-7.244
+N48,Genitourinary condition 49,N,Genitourinary,11250,-3.067,-7.349
+N49,Genitourinary condition 50,N,Genitourinary,7634,-3.757,-5.051
+N50,Genitourinary condition 51,N,Genitourinary,14629,-3.45,-7.742
+N51,Genitourinary condition 52,N,Genitourinary,10198,-4.83,-6.161
+N52,Genitourinary condition 53,N,Genitourinary,11884,-6.044,-5.668
+N53,Genitourinary condition 54,N,Genitourinary,9057,-4.13,-8.571
+N54,Genitourinary condition 55,N,Genitourinary,29630,-5.119,-6.111
+N55,Genitourinary condition 56,N,Genitourinary,21695,-4.155,-7.684
+N56,Genitourinary condition 57,N,Genitourinary,7019,-3.979,-6.136
+N57,Genitourinary condition 58,N,Genitourinary,8657,-4.294,-7.516
+N58,Genitourinary condition 59,N,Genitourinary,29882,-5.505,-5.806
+N59,Genitourinary condition 60,N,Genitourinary,4150,-4.051,-6.7
+N60,Genitourinary condition 61,N,Genitourinary,10801,-5.419,-7.624
+N61,Genitourinary condition 62,N,Genitourinary,8857,-4.369,-7.752
+N62,Genitourinary condition 63,N,Genitourinary,8822,-3.88,-6.33
+N63,Genitourinary condition 64,N,Genitourinary,14786,-4.864,-4.815
+N64,Genitourinary condition 65,N,Genitourinary,19075,-7.102,-8.546
+N65,Genitourinary condition 66,N,Genitourinary,14788,-1.835,-6.405
+N66,Genitourinary condition 67,N,Genitourinary,8141,-6.165,-7.658
+N67,Genitourinary condition 68,N,Genitourinary,12933,-4.764,-10.895
+N68,Genitourinary condition 69,N,Genitourinary,9517,-2.831,-5.302
+N69,Genitourinary condition 70,N,Genitourinary,13305,-4.254,-6.577
+N70,Genitourinary condition 71,N,Genitourinary,27360,-5.345,-5.908
+N71,Genitourinary condition 72,N,Genitourinary,14029,-4.627,-7.784
+N72,Genitourinary condition 73,N,Genitourinary,7709,-2.963,-7.157
+N73,Genitourinary condition 74,N,Genitourinary,18286,-3.368,-6.08
+N74,Genitourinary condition 75,N,Genitourinary,13045,-4.604,-4.65
+N75,Genitourinary condition 76,N,Genitourinary,1236,-1.185,-4.503
+N76,Genitourinary condition 77,N,Genitourinary,19794,-5.598,-5.872
+N77,Genitourinary condition 78,N,Genitourinary,13386,-4.537,-7.175
+N78,Genitourinary condition 79,N,Genitourinary,7450,-5.648,-5.75
+N79,Genitourinary condition 80,N,Genitourinary,9507,-3.736,-6.342
+N80,Genitourinary condition 81,N,Genitourinary,9572,-3.547,-6.843
+N81,Genitourinary condition 82,N,Genitourinary,19692,-5.181,-5.008
+N82,Genitourinary condition 83,N,Genitourinary,25441,-5.749,-7.668
+N83,Genitourinary condition 84,N,Genitourinary,17050,-5.906,-7.246
+N84,Genitourinary condition 85,N,Genitourinary,16983,-4.532,-6.393
+N85,Genitourinary condition 86,N,Genitourinary,21337,-4.654,-4.292
+N86,Genitourinary condition 87,N,Genitourinary,880,-2.004,-6.672
+N87,Genitourinary condition 88,N,Genitourinary,14992,-4.671,-6.574
+O00,Pregnancy condition 1,O,Pregnancy,2403,-5.23,-6.606
+O01,Pregnancy condition 2,O,Pregnancy,25124,-1.344,-8.944
+O02,Pregnancy condition 3,O,Pregnancy,10312,-3.396,-8.073
+O03,Pregnancy condition 4,O,Pregnancy,6514,-1.673,-9.666
+O04,Pregnancy condition 5,O,Pregnancy,1261,-2.998,-7.416
+O05,Pregnancy condition 6,O,Pregnancy,29048,-1.963,-7.353
+O06,Pregnancy condition 7,O,Pregnancy,23101,-2.346,-9.872
+O07,Pregnancy condition 8,O,Pregnancy,1246,-2.518,-7.35
+O08,Pregnancy condition 9,O,Pregnancy,3091,-2.585,-6.614
+O09,Pregnancy condition 10,O,Pregnancy,26597,-3.922,-5.779
+O10,Pregnancy condition 11,O,Pregnancy,13906,-3.288,-7.33
+O11,Pregnancy condition 12,O,Pregnancy,7694,-3.207,-8.861
+O12,Pregnancy condition 13,O,Pregnancy,21794,-3.599,-8.093
+Q00,Congenital condition 1,Q,Congenital,23031,1.037,-8.523
+Q01,Congenital condition 2,Q,Congenital,5350,0.464,-4.535
+Q02,Congenital condition 3,Q,Congenital,15780,0.046,-8.274
+Q03,Congenital condition 4,Q,Congenital,6967,-0.164,-9.122
+Q04,Congenital condition 5,Q,Congenital,29766,2.82,-7.978
+Q05,Congenital condition 6,Q,Congenital,1865,-0.693,-6.286
+Q06,Congenital condition 7,Q,Congenital,19241,-1.023,-8.593
+Q07,Congenital condition 8,Q,Congenital,13295,0.827,-8.105
+Q08,Congenital condition 9,Q,Congenital,12695,-0.609,-10.951
+Q09,Congenital condition 10,Q,Congenital,20150,-2.242,-7.683
+Q10,Congenital condition 11,Q,Congenital,7762,1.05,-7.198
+Q11,Congenital condition 12,Q,Congenital,18659,1.386,-9.493
+Q12,Congenital condition 13,Q,Congenital,22806,0.819,-8.498
+Q13,Congenital condition 14,Q,Congenital,16280,-0.139,-8.675
+Q14,Congenital condition 15,Q,Congenital,6475,0.582,-10.114
+Q15,Congenital condition 16,Q,Congenital,27007,-0.854,-6.808
+Q16,Congenital condition 17,Q,Congenital,28159,-0.846,-6.45
+Q17,Congenital condition 18,Q,Congenital,27430,-1.735,-9.665
+Q18,Congenital condition 19,Q,Congenital,21639,0.579,-9.409
+Q19,Congenital condition 20,Q,Congenital,21800,1.559,-6.976
+Q20,Congenital condition 21,Q,Congenital,7961,-0.118,-7.205
+Q21,Congenital condition 22,Q,Congenital,4125,1.085,-8.846
+Q22,Congenital condition 23,Q,Congenital,20004,-2.181,-6.207
+Q23,Congenital condition 24,Q,Congenital,14154,1.141,-7.958
+Q24,Congenital condition 25,Q,Congenital,21057,1.96,-6.552
+Q25,Congenital condition 26,Q,Congenital,27075,-0.693,-6.512
+Q26,Congenital condition 27,Q,Congenital,3931,0.447,-8.416
+Q27,Congenital condition 28,Q,Congenital,4514,-0.636,-6.983
+Q28,Congenital condition 29,Q,Congenital,26640,-1.409,-8.863
+Q29,Congenital condition 30,Q,Congenital,28784,-0.646,-7.321
+Q30,Congenital condition 31,Q,Congenital,9954,-1.802,-6.702
+Q31,Congenital condition 32,Q,Congenital,17584,-0.451,-9.228
+Q32,Congenital condition 33,Q,Congenital,3380,1.639,-8.665
+Q33,Congenital condition 34,Q,Congenital,20641,-0.691,-8.901
+Q34,Congenital condition 35,Q,Congenital,210,0.497,-8.713
+Q35,Congenital condition 36,Q,Congenital,23556,0.14,-6.24
+Q36,Congenital condition 37,Q,Congenital,15629,-1.141,-11.209
+Q37,Congenital condition 38,Q,Congenital,23783,-1.164,-8.307
+Q38,Congenital condition 39,Q,Congenital,24539,-0.595,-8.343
+Q39,Congenital condition 40,Q,Congenital,10606,1.596,-6.381
+Q40,Congenital condition 41,Q,Congenital,21298,0.248,-7.911
+R00,Symptoms / Signs condition 1,R,Symptoms / Signs,5739,2.166,-7.353
+R01,Symptoms / Signs condition 2,R,Symptoms / Signs,1619,1.424,-9.428
+R02,Symptoms / Signs condition 3,R,Symptoms / Signs,26142,3.22,-9.224
+R03,Symptoms / Signs condition 4,R,Symptoms / Signs,24620,4.554,-6.853
+R04,Symptoms / Signs condition 5,R,Symptoms / Signs,13947,2.882,-7.403
+R05,Symptoms / Signs condition 6,R,Symptoms / Signs,19233,0.98,-7.222
+R06,Symptoms / Signs condition 7,R,Symptoms / Signs,25864,2.441,-5.547
+R07,Symptoms / Signs condition 8,R,Symptoms / Signs,20480,2.125,-7.963
+R08,Symptoms / Signs condition 9,R,Symptoms / Signs,2924,2.508,-7.655
+R09,Symptoms / Signs condition 10,R,Symptoms / Signs,22089,2.381,-9.043
+R10,Symptoms / Signs condition 11,R,Symptoms / Signs,21517,2.6,-9.079
+R11,Symptoms / Signs condition 12,R,Symptoms / Signs,9977,1.886,-8.614
+R12,Symptoms / Signs condition 13,R,Symptoms / Signs,18824,1.025,-9.046
+R13,Symptoms / Signs condition 14,R,Symptoms / Signs,22548,4.996,-8.427
+R14,Symptoms / Signs condition 15,R,Symptoms / Signs,26917,1.337,-8.063
+R15,Symptoms / Signs condition 16,R,Symptoms / Signs,4239,3.388,-4.98
+R16,Symptoms / Signs condition 17,R,Symptoms / Signs,2460,4.117,-6.941
+R17,Symptoms / Signs condition 18,R,Symptoms / Signs,17391,3.748,-6.335
+R18,Symptoms / Signs condition 19,R,Symptoms / Signs,15326,3.325,-7.894
+R19,Symptoms / Signs condition 20,R,Symptoms / Signs,13573,4.225,-9.837
+R20,Symptoms / Signs condition 21,R,Symptoms / Signs,10437,2.399,-8.061
+R21,Symptoms / Signs condition 22,R,Symptoms / Signs,4588,2.797,-7.278
+R22,Symptoms / Signs condition 23,R,Symptoms / Signs,17427,0.113,-8.325
+R23,Symptoms / Signs condition 24,R,Symptoms / Signs,737,0.779,-6.544
+R24,Symptoms / Signs condition 25,R,Symptoms / Signs,17294,2.3,-8.804
+R25,Symptoms / Signs condition 26,R,Symptoms / Signs,9468,3.326,-6.791
+R26,Symptoms / Signs condition 27,R,Symptoms / Signs,20958,0.239,-9.977
+R27,Symptoms / Signs condition 28,R,Symptoms / Signs,7368,2.802,-8.223
+R28,Symptoms / Signs condition 29,R,Symptoms / Signs,13598,2.428,-7.013
+R29,Symptoms / Signs condition 30,R,Symptoms / Signs,20621,1.656,-7.263
+R30,Symptoms / Signs condition 31,R,Symptoms / Signs,16654,3.46,-5.147
+R31,Symptoms / Signs condition 32,R,Symptoms / Signs,20021,1.429,-8.28
+R32,Symptoms / Signs condition 33,R,Symptoms / Signs,15203,2.281,-7.525
+R33,Symptoms / Signs condition 34,R,Symptoms / Signs,8039,3.731,-5.936
+R34,Symptoms / Signs condition 35,R,Symptoms / Signs,21887,3.895,-6.964
+R35,Symptoms / Signs condition 36,R,Symptoms / Signs,7524,0.676,-10.384
+R36,Symptoms / Signs condition 37,R,Symptoms / Signs,4634,2.826,-9.048
+R37,Symptoms / Signs condition 38,R,Symptoms / Signs,29066,4.117,-9.024
+R38,Symptoms / Signs condition 39,R,Symptoms / Signs,26429,1.939,-7.451
+R39,Symptoms / Signs condition 40,R,Symptoms / Signs,12519,3.151,-8.184
+R40,Symptoms / Signs condition 41,R,Symptoms / Signs,19159,2.326,-5.293
+R41,Symptoms / Signs condition 42,R,Symptoms / Signs,18651,1.447,-5.461
+R42,Symptoms / Signs condition 43,R,Symptoms / Signs,6161,1.463,-5.195
+R43,Symptoms / Signs condition 44,R,Symptoms / Signs,13631,2.54,-8.533
+R44,Symptoms / Signs condition 45,R,Symptoms / Signs,22456,0.461,-7.866
+R45,Symptoms / Signs condition 46,R,Symptoms / Signs,8186,3.104,-9.495
+R46,Symptoms / Signs condition 47,R,Symptoms / Signs,14114,2.676,-9.539
+R47,Symptoms / Signs condition 48,R,Symptoms / Signs,14304,0.041,-7.72
+R48,Symptoms / Signs condition 49,R,Symptoms / Signs,29010,3.241,-6.92
+R49,Symptoms / Signs condition 50,R,Symptoms / Signs,7342,2.703,-6.365
+R50,Symptoms / Signs condition 51,R,Symptoms / Signs,846,1.324,-8.499
+R51,Symptoms / Signs condition 52,R,Symptoms / Signs,10551,1.204,-8.128
+R52,Symptoms / Signs condition 53,R,Symptoms / Signs,27604,1.532,-5.994
+R53,Symptoms / Signs condition 54,R,Symptoms / Signs,19508,1.519,-9.473
+R54,Symptoms / Signs condition 55,R,Symptoms / Signs,1878,2.817,-10.218
+R55,Symptoms / Signs condition 56,R,Symptoms / Signs,22941,4.071,-8.952
+R56,Symptoms / Signs condition 57,R,Symptoms / Signs,17438,0.84,-7.391
+R57,Symptoms / Signs condition 58,R,Symptoms / Signs,5677,3.863,-8.347
+R58,Symptoms / Signs condition 59,R,Symptoms / Signs,22597,3.568,-6.06
+R59,Symptoms / Signs condition 60,R,Symptoms / Signs,8780,5.326,-8.447
+R60,Symptoms / Signs condition 61,R,Symptoms / Signs,15384,3.08,-6.53
+R61,Symptoms / Signs condition 62,R,Symptoms / Signs,29093,2.279,-8.8
+R62,Symptoms / Signs condition 63,R,Symptoms / Signs,23801,3.139,-7.514
+R63,Symptoms / Signs condition 64,R,Symptoms / Signs,10666,2.007,-7.634
+R64,Symptoms / Signs condition 65,R,Symptoms / Signs,26143,4.146,-7.538
+R65,Symptoms / Signs condition 66,R,Symptoms / Signs,11345,1.596,-8.949
+R66,Symptoms / Signs condition 67,R,Symptoms / Signs,16096,1.627,-7.438
+R67,Symptoms / Signs condition 68,R,Symptoms / Signs,14971,4.576,-8.008
+R68,Symptoms / Signs condition 69,R,Symptoms / Signs,6458,1.563,-8.283
+R69,Symptoms / Signs condition 70,R,Symptoms / Signs,16069,3.101,-8.444
+R70,Symptoms / Signs condition 71,R,Symptoms / Signs,11396,5.266,-6.348
+R71,Symptoms / Signs condition 72,R,Symptoms / Signs,26792,3.635,-6.088
+R72,Symptoms / Signs condition 73,R,Symptoms / Signs,8878,2.278,-8.035
+R73,Symptoms / Signs condition 74,R,Symptoms / Signs,15761,0.865,-10.782
+R74,Symptoms / Signs condition 75,R,Symptoms / Signs,14993,4.356,-7.468
+R75,Symptoms / Signs condition 76,R,Symptoms / Signs,13999,3.142,-6.706
+R76,Symptoms / Signs condition 77,R,Symptoms / Signs,21445,1.232,-7.315
+R77,Symptoms / Signs condition 78,R,Symptoms / Signs,3438,4.031,-5.141
+R78,Symptoms / Signs condition 79,R,Symptoms / Signs,9607,2.384,-8.313
+R79,Symptoms / Signs condition 80,R,Symptoms / Signs,6865,2.673,-7.569
+R80,Symptoms / Signs condition 81,R,Symptoms / Signs,1457,0.537,-5.313
+R81,Symptoms / Signs condition 82,R,Symptoms / Signs,1100,2.41,-9.037
+R82,Symptoms / Signs condition 83,R,Symptoms / Signs,4839,1.834,-7.949
+R83,Symptoms / Signs condition 84,R,Symptoms / Signs,8331,4.006,-7.664
+R84,Symptoms / Signs condition 85,R,Symptoms / Signs,16803,-0.523,-6.965
+R85,Symptoms / Signs condition 86,R,Symptoms / Signs,27527,3.889,-9.226
+R86,Symptoms / Signs condition 87,R,Symptoms / Signs,1338,3.859,-8.786
+R87,Symptoms / Signs condition 88,R,Symptoms / Signs,17145,1.978,-7.686
+R88,Symptoms / Signs condition 89,R,Symptoms / Signs,20912,0.695,-6.923
+R89,Symptoms / Signs condition 90,R,Symptoms / Signs,11621,2.55,-8.6
+R90,Symptoms / Signs condition 91,R,Symptoms / Signs,11483,2.524,-7.538
+R91,Symptoms / Signs condition 92,R,Symptoms / Signs,4432,4.134,-7.54
+R92,Symptoms / Signs condition 93,R,Symptoms / Signs,27737,3.465,-7.467
+R93,Symptoms / Signs condition 94,R,Symptoms / Signs,17901,0.255,-7.185
+R94,Symptoms / Signs condition 95,R,Symptoms / Signs,2322,0.715,-6.872
+R95,Symptoms / Signs condition 96,R,Symptoms / Signs,16108,1.508,-8.438
+R96,Symptoms / Signs condition 97,R,Symptoms / Signs,29148,2.776,-6.443
+R97,Symptoms / Signs condition 98,R,Symptoms / Signs,2219,3.545,-5.986
+R98,Symptoms / Signs condition 99,R,Symptoms / Signs,10772,2.154,-7.19
+R99,Symptoms / Signs condition 100,R,Symptoms / Signs,23294,5.46,-7.241
+R100,Symptoms / Signs condition 101,R,Symptoms / Signs,29049,3.731,-6.909
+R101,Symptoms / Signs condition 102,R,Symptoms / Signs,20315,1.98,-6.201
+R102,Symptoms / Signs condition 103,R,Symptoms / Signs,8436,2.315,-8.219
+R103,Symptoms / Signs condition 104,R,Symptoms / Signs,28791,3.327,-5.983
+R104,Symptoms / Signs condition 105,R,Symptoms / Signs,471,2.516,-7.438
+R105,Symptoms / Signs condition 106,R,Symptoms / Signs,14854,3.062,-6.942
+R106,Symptoms / Signs condition 107,R,Symptoms / Signs,1304,3.468,-6.171
+R107,Symptoms / Signs condition 108,R,Symptoms / Signs,7616,5.072,-7.562
+R108,Symptoms / Signs condition 109,R,Symptoms / Signs,21993,2.382,-6.95
+R109,Symptoms / Signs condition 110,R,Symptoms / Signs,26895,1.964,-8.221
+R110,Symptoms / Signs condition 111,R,Symptoms / Signs,15021,2.077,-6.899
+R111,Symptoms / Signs condition 112,R,Symptoms / Signs,3809,4.507,-7.858
+R112,Symptoms / Signs condition 113,R,Symptoms / Signs,4688,3.372,-8.856
+R113,Symptoms / Signs condition 114,R,Symptoms / Signs,28376,0.563,-9.111
+R114,Symptoms / Signs condition 115,R,Symptoms / Signs,23297,1.981,-7.234
+R115,Symptoms / Signs condition 116,R,Symptoms / Signs,27582,3.495,-8.353
+R116,Symptoms / Signs condition 117,R,Symptoms / Signs,12682,3.17,-8.769
+R117,Symptoms / Signs condition 118,R,Symptoms / Signs,22203,2.162,-6.756
+R118,Symptoms / Signs condition 119,R,Symptoms / Signs,28169,3.633,-7.598
+R119,Symptoms / Signs condition 120,R,Symptoms / Signs,29865,2.423,-4.738
+R120,Symptoms / Signs condition 121,R,Symptoms / Signs,12814,3.441,-6.909
+R121,Symptoms / Signs condition 122,R,Symptoms / Signs,19064,2.18,-7.542
+R122,Symptoms / Signs condition 123,R,Symptoms / Signs,17960,1.98,-5.55
+R123,Symptoms / Signs condition 124,R,Symptoms / Signs,10905,1.951,-7.786
+R124,Symptoms / Signs condition 125,R,Symptoms / Signs,23933,1.696,-8.764
+R125,Symptoms / Signs condition 126,R,Symptoms / Signs,9858,4.278,-5.348
+R126,Symptoms / Signs condition 127,R,Symptoms / Signs,27251,1.968,-8.963
+R127,Symptoms / Signs condition 128,R,Symptoms / Signs,19263,2.842,-7.217
+R128,Symptoms / Signs condition 129,R,Symptoms / Signs,11802,4.686,-7.524
+R129,Symptoms / Signs condition 130,R,Symptoms / Signs,21486,0.796,-8.992
+S00,Injury condition 1,S,Injury,20211,3.022,-7.304
+S01,Injury condition 2,S,Injury,3284,4.454,-8.523
+S02,Injury condition 3,S,Injury,4053,4.358,-5.846
+S03,Injury condition 4,S,Injury,10909,3.41,-5.138
+S04,Injury condition 5,S,Injury,22866,5.623,-4.967
+S05,Injury condition 6,S,Injury,18160,5.679,-6.891
+S06,Injury condition 7,S,Injury,27491,1.406,-7.503
+S07,Injury condition 8,S,Injury,21281,3.741,-6.126
+S08,Injury condition 9,S,Injury,11513,6.436,-7.408
+S09,Injury condition 10,S,Injury,22969,5.31,-7.299
+S10,Injury condition 11,S,Injury,13307,5.203,-5.5
+S11,Injury condition 12,S,Injury,28570,3.981,-7.918
+S12,Injury condition 13,S,Injury,1581,4.771,-6.979
+S13,Injury condition 14,S,Injury,10850,5.066,-8.654
+S14,Injury condition 15,S,Injury,10514,3.42,-6.525
+S15,Injury condition 16,S,Injury,5999,2.88,-6.041
+S16,Injury condition 17,S,Injury,18143,3.521,-6.762
+S17,Injury condition 18,S,Injury,7293,5.834,-5.827
+S18,Injury condition 19,S,Injury,17466,2.001,-8.129
+S19,Injury condition 20,S,Injury,701,4.61,-3.381
+S20,Injury condition 21,S,Injury,26341,6.768,-7.926
+S21,Injury condition 22,S,Injury,16679,6.725,-6.383
+S22,Injury condition 23,S,Injury,15480,5.812,-5.459
+S23,Injury condition 24,S,Injury,2258,5.414,-8.697
+S24,Injury condition 25,S,Injury,10191,4.998,-7.036
+S25,Injury condition 26,S,Injury,20010,5.547,-6.516
+S26,Injury condition 27,S,Injury,23070,3.83,-4.85
+S27,Injury condition 28,S,Injury,9717,4.095,-7.44
+S28,Injury condition 29,S,Injury,28862,5.15,-5.505
+S29,Injury condition 30,S,Injury,26049,3.965,-5.492
+S30,Injury condition 31,S,Injury,10574,3.175,-5.921
+S31,Injury condition 32,S,Injury,27987,6.244,-5.517
+S32,Injury condition 33,S,Injury,25781,3.176,-5.968
+S33,Injury condition 34,S,Injury,18015,5.015,-4.614
+S34,Injury condition 35,S,Injury,24907,4.098,-5.394
+T00,Injury / Poisoning condition 1,T,Injury / Poisoning,4729,5.621,-4.379
+T01,Injury / Poisoning condition 2,T,Injury / Poisoning,25184,6.852,-5.117
+T02,Injury / Poisoning condition 3,T,Injury / Poisoning,12798,8.031,-4.697
+T03,Injury / Poisoning condition 4,T,Injury / Poisoning,29285,8.304,-7.262
+T04,Injury / Poisoning condition 5,T,Injury / Poisoning,18742,3.62,-4.06
+T05,Injury / Poisoning condition 6,T,Injury / Poisoning,26198,6.573,-7.163
+T06,Injury / Poisoning condition 7,T,Injury / Poisoning,21653,7.127,-5.019
+T07,Injury / Poisoning condition 8,T,Injury / Poisoning,3860,6.606,-5.496
+T08,Injury / Poisoning condition 9,T,Injury / Poisoning,23292,4.413,-4.985
+T09,Injury / Poisoning condition 10,T,Injury / Poisoning,2041,7.912,-4.632
+T10,Injury / Poisoning condition 11,T,Injury / Poisoning,8972,4.72,-4.235
+T11,Injury / Poisoning condition 12,T,Injury / Poisoning,2355,7.451,-3.662
+T12,Injury / Poisoning condition 13,T,Injury / Poisoning,18982,7.689,-5.734
+T13,Injury / Poisoning condition 14,T,Injury / Poisoning,23692,6.732,-2.892
+T14,Injury / Poisoning condition 15,T,Injury / Poisoning,16297,5.975,-2.161
+T15,Injury / Poisoning condition 16,T,Injury / Poisoning,24313,7.142,-4.098
+T16,Injury / Poisoning condition 17,T,Injury / Poisoning,27480,4.663,-5.585
+T17,Injury / Poisoning condition 18,T,Injury / Poisoning,15751,4.367,-5.814
+T18,Injury / Poisoning condition 19,T,Injury / Poisoning,19527,6.868,-4.298
+T19,Injury / Poisoning condition 20,T,Injury / Poisoning,29749,8.143,-5.501
+T20,Injury / Poisoning condition 21,T,Injury / Poisoning,1643,8.487,-5.939
+T21,Injury / Poisoning condition 22,T,Injury / Poisoning,7269,6.907,-2.952
+T22,Injury / Poisoning condition 23,T,Injury / Poisoning,24565,5.068,-5.072
+T23,Injury / Poisoning condition 24,T,Injury / Poisoning,11609,6.97,-5.155
+T24,Injury / Poisoning condition 25,T,Injury / Poisoning,12026,6.16,-7.771
+T25,Injury / Poisoning condition 26,T,Injury / Poisoning,18426,7.394,-5.806
+T26,Injury / Poisoning condition 27,T,Injury / Poisoning,16844,5.601,-5.933
+T27,Injury / Poisoning condition 28,T,Injury / Poisoning,25182,6.427,-3.825
+T28,Injury / Poisoning condition 29,T,Injury / Poisoning,18904,4.657,-4.325
+T29,Injury / Poisoning condition 30,T,Injury / Poisoning,1726,5.864,-7.185
+T30,Injury / Poisoning condition 31,T,Injury / Poisoning,330,5.643,-5.771
+T31,Injury / Poisoning condition 32,T,Injury / Poisoning,16317,5.057,-5.568
+T32,Injury / Poisoning condition 33,T,Injury / Poisoning,20094,8.154,-7.027
+T33,Injury / Poisoning condition 34,T,Injury / Poisoning,21463,7.409,-6.575
+T34,Injury / Poisoning condition 35,T,Injury / Poisoning,10294,3.964,-4.101
+T35,Injury / Poisoning condition 36,T,Injury / Poisoning,21658,6.436,-2.55
+T36,Injury / Poisoning condition 37,T,Injury / Poisoning,9130,8.843,-2.733
+T37,Injury / Poisoning condition 38,T,Injury / Poisoning,14857,4.334,-3.21
+T38,Injury / Poisoning condition 39,T,Injury / Poisoning,5632,6.447,-5.349
+T39,Injury / Poisoning condition 40,T,Injury / Poisoning,21029,6.618,-5.793
+T40,Injury / Poisoning condition 41,T,Injury / Poisoning,21486,6.701,-2.662
+T41,Injury / Poisoning condition 42,T,Injury / Poisoning,27258,5.522,-3.472
+T42,Injury / Poisoning condition 43,T,Injury / Poisoning,22639,4.289,-2.919
+T43,Injury / Poisoning condition 44,T,Injury / Poisoning,24089,6.409,-3.608
+T44,Injury / Poisoning condition 45,T,Injury / Poisoning,21423,7.192,-5.1
+T45,Injury / Poisoning condition 46,T,Injury / Poisoning,20078,3.5,-4.997
+T46,Injury / Poisoning condition 47,T,Injury / Poisoning,20917,6.092,-6.209
+T47,Injury / Poisoning condition 48,T,Injury / Poisoning,1825,4.881,-4.316
+T48,Injury / Poisoning condition 49,T,Injury / Poisoning,25701,5.33,-5.26
+T49,Injury / Poisoning condition 50,T,Injury / Poisoning,16639,7.277,-5.739
+T50,Injury / Poisoning condition 51,T,Injury / Poisoning,24833,6.775,-2.936
+T51,Injury / Poisoning condition 52,T,Injury / Poisoning,10859,3.43,-2.945
+T52,Injury / Poisoning condition 53,T,Injury / Poisoning,18143,7.701,-4.105
+T53,Injury / Poisoning condition 54,T,Injury / Poisoning,10189,7.314,-4.723
+T54,Injury / Poisoning condition 55,T,Injury / Poisoning,10096,5.858,-5.949
+Z00,Health factors condition 1,Z,Health factors,22772,8.589,1.4
+Z01,Health factors condition 2,Z,Health factors,21419,6.56,-4.377
+Z02,Health factors condition 3,Z,Health factors,27581,4.663,-1.833
+Z03,Health factors condition 4,Z,Health factors,3127,8.941,-3.721
+Z04,Health factors condition 5,Z,Health factors,28226,8.221,-0.826
+Z05,Health factors condition 6,Z,Health factors,21084,6.63,-3.468
+Z06,Health factors condition 7,Z,Health factors,17567,7.927,-0.915
+Z07,Health factors condition 8,Z,Health factors,4919,8.301,-0.7
+Z08,Health factors condition 9,Z,Health factors,16468,7.522,-2.293
+Z09,Health factors condition 10,Z,Health factors,29678,8.2,-1.003
+Z10,Health factors condition 11,Z,Health factors,19842,6.012,0.041
+Z11,Health factors condition 12,Z,Health factors,10962,7.461,-2.797
+Z12,Health factors condition 13,Z,Health factors,6187,7.938,-0.457
+Z13,Health factors condition 14,Z,Health factors,4579,9.254,-3.25
+Z14,Health factors condition 15,Z,Health factors,12914,7.328,-1.825
+Z15,Health factors condition 16,Z,Health factors,7845,6.913,-0.824
+Z16,Health factors condition 17,Z,Health factors,10896,7.964,-3.388
+Z17,Health factors condition 18,Z,Health factors,14811,8.507,-1.134
+Z18,Health factors condition 19,Z,Health factors,1807,8.8,0.451
+Z19,Health factors condition 20,Z,Health factors,8100,7.453,-1.094
+Z20,Health factors condition 21,Z,Health factors,9618,6.142,-1.712
+Z21,Health factors condition 22,Z,Health factors,29089,8.484,-2.286
+Z22,Health factors condition 23,Z,Health factors,11746,7.177,-1.457
+Z23,Health factors condition 24,Z,Health factors,14844,7.958,-2.501
+Z24,Health factors condition 25,Z,Health factors,4925,8.811,-2.19
+Z25,Health factors condition 26,Z,Health factors,15459,7.601,-1.683
+Z26,Health factors condition 27,Z,Health factors,10180,7.337,0.307
+Z27,Health factors condition 28,Z,Health factors,11861,5.627,-3.309
+Z28,Health factors condition 29,Z,Health factors,26238,6.019,-1.185
+Z29,Health factors condition 30,Z,Health factors,3581,6.746,-2.758
+Z30,Health factors condition 31,Z,Health factors,21764,5.145,-4.194
+Z31,Health factors condition 32,Z,Health factors,4882,5.679,-2.199
+Z32,Health factors condition 33,Z,Health factors,25795,8.853,-2.36
+Z33,Health factors condition 34,Z,Health factors,1022,6.478,-2.005
+Z34,Health factors condition 35,Z,Health factors,29741,8.984,-0.48
+Z35,Health factors condition 36,Z,Health factors,29749,9.329,-2.707
+Z36,Health factors condition 37,Z,Health factors,21552,7.54,-2.741
+Z37,Health factors condition 38,Z,Health factors,12705,7.252,-1.273
+Z38,Health factors condition 39,Z,Health factors,22822,6.532,-1.042
+Z39,Health factors condition 40,Z,Health factors,8460,6.877,-1.703
+Z40,Health factors condition 41,Z,Health factors,11194,7.269,-2.661
+Z41,Health factors condition 42,Z,Health factors,13415,7.862,-1.423
+Z42,Health factors condition 43,Z,Health factors,266,6.221,-2.47
+Z43,Health factors condition 44,Z,Health factors,17709,6.197,-3.577
+Z44,Health factors condition 45,Z,Health factors,26054,7.971,-0.781
+Z45,Health factors condition 46,Z,Health factors,16045,4.645,-0.59
+Z46,Health factors condition 47,Z,Health factors,18942,7.537,-2.894
+Z47,Health factors condition 48,Z,Health factors,22278,7.752,-2.76
+Z48,Health factors condition 49,Z,Health factors,17074,8.472,-0.696
+Z49,Health factors condition 50,Z,Health factors,8051,6.663,-1.788
+Z50,Health factors condition 51,Z,Health factors,21699,9.874,-2.714
+Z51,Health factors condition 52,Z,Health factors,13946,8.797,-3.458
+Z52,Health factors condition 53,Z,Health factors,6070,8.331,-2.722
+Z53,Health factors condition 54,Z,Health factors,2083,6.539,-2.929
+Z54,Health factors condition 55,Z,Health factors,11098,7.068,-3.559
+Z55,Health factors condition 56,Z,Health factors,15054,7.657,-2.799
+Z56,Health factors condition 57,Z,Health factors,21130,8.847,-2.975
+Z57,Health factors condition 58,Z,Health factors,23685,8.608,-2.024
+Z58,Health factors condition 59,Z,Health factors,3582,7.798,-2.113
+Z59,Health factors condition 60,Z,Health factors,19187,8.139,-3.219
+Z60,Health factors condition 61,Z,Health factors,20090,8.866,-2.206
+Z61,Health factors condition 62,Z,Health factors,15635,9.691,-4.108
+Z62,Health factors condition 63,Z,Health factors,12580,7.802,-2.044
+Z63,Health factors condition 64,Z,Health factors,21318,7.915,-1.643
+Z64,Health factors condition 65,Z,Health factors,22537,8.27,-3.927
+Z65,Health factors condition 66,Z,Health factors,20864,7.894,-2.84
+Z66,Health factors condition 67,Z,Health factors,19588,9.088,-0.218
+Z67,Health factors condition 68,Z,Health factors,25713,7.207,-3.016
+Z68,Health factors condition 69,Z,Health factors,130,8.112,-3.164
+Z69,Health factors condition 70,Z,Health factors,15791,8.246,-2.095
+Z70,Health factors condition 71,Z,Health factors,13743,8.0,-2.366
+Z71,Health factors condition 72,Z,Health factors,18374,8.081,-1.994
+Z72,Health factors condition 73,Z,Health factors,7690,6.859,-3.536
+Z73,Health factors condition 74,Z,Health factors,9216,8.475,-0.574
+Z74,Health factors condition 75,Z,Health factors,10390,7.263,-0.974
+Z75,Health factors condition 76,Z,Health factors,16138,7.472,-3.952
+Z76,Health factors condition 77,Z,Health factors,14628,8.225,-4.92
+Z77,Health factors condition 78,Z,Health factors,4810,8.336,-2.173
+Z78,Health factors condition 79,Z,Health factors,5252,7.1,-3.831
+Z79,Health factors condition 80,Z,Health factors,22781,7.604,-2.746
+Z80,Health factors condition 81,Z,Health factors,2643,8.33,-2.559
+Z81,Health factors condition 82,Z,Health factors,18954,5.169,-3.323
+Z82,Health factors condition 83,Z,Health factors,8526,6.528,-1.842
+Z83,Health factors condition 84,Z,Health factors,16541,7.036,-2.785
+Z84,Health factors condition 85,Z,Health factors,28919,7.449,-1.253
+Z85,Health factors condition 86,Z,Health factors,27727,5.59,-3.389
+Z86,Health factors condition 87,Z,Health factors,26982,8.865,-2.318
+Z87,Health factors condition 88,Z,Health factors,27257,8.839,-2.865
+Z88,Health factors condition 89,Z,Health factors,22816,5.748,-4.395
+Z89,Health factors condition 90,Z,Health factors,11277,8.2,-1.276
+Z90,Health factors condition 91,Z,Health factors,14895,5.85,-3.045
+Z91,Health factors condition 92,Z,Health factors,15427,4.999,-2.387
+Z92,Health factors condition 93,Z,Health factors,8598,7.71,-2.463
+Z93,Health factors condition 94,Z,Health factors,22885,7.307,-3.381
+Z94,Health factors condition 95,Z,Health factors,10472,6.292,-2.294
+Z95,Health factors condition 96,Z,Health factors,28477,8.819,-2.055
+Z96,Health factors condition 97,Z,Health factors,4712,8.8,-3.283
+Z97,Health factors condition 98,Z,Health factors,19929,5.016,-1.697
+Z98,Health factors condition 99,Z,Health factors,17933,7.189,-1.336
+Z99,Health factors condition 100,Z,Health factors,2058,7.792,-3.095
+Z100,Health factors condition 101,Z,Health factors,26154,10.142,-2.649
+Z101,Health factors condition 102,Z,Health factors,22562,7.251,-4.319
+Z102,Health factors condition 103,Z,Health factors,24818,7.173,-2.051
+Z103,Health factors condition 104,Z,Health factors,929,8.401,-2.466
+Z104,Health factors condition 105,Z,Health factors,16194,8.898,-1.82
+Z105,Health factors condition 106,Z,Health factors,13951,8.77,-2.226
+Z106,Health factors condition 107,Z,Health factors,23552,6.452,-1.607
+Z107,Health factors condition 108,Z,Health factors,26097,8.162,-0.721
+Z108,Health factors condition 109,Z,Health factors,21062,6.774,-1.877
+Z109,Health factors condition 110,Z,Health factors,15514,9.154,-2.773
+Z110,Health factors condition 111,Z,Health factors,12098,7.168,-2.977
+Z111,Health factors condition 112,Z,Health factors,19141,5.075,-2.852
+Z112,Health factors condition 113,Z,Health factors,28889,8.54,-0.666
+Z113,Health factors condition 114,Z,Health factors,8651,8.827,-1.116
+Z114,Health factors condition 115,Z,Health factors,7856,9.391,-2.663
+Z115,Health factors condition 116,Z,Health factors,8899,8.657,-1.868
+Z116,Health factors condition 117,Z,Health factors,640,9.016,-1.643
+Z117,Health factors condition 118,Z,Health factors,20261,6.732,-2.796
+Z118,Health factors condition 119,Z,Health factors,696,7.52,-2.485
+Z119,Health factors condition 120,Z,Health factors,23067,7.651,-2.433
+Z120,Health factors condition 121,Z,Health factors,16907,7.944,-4.265
+Z121,Health factors condition 122,Z,Health factors,15971,7.997,-2.874
+Z122,Health factors condition 123,Z,Health factors,5638,8.914,-2.142
+Z123,Health factors condition 124,Z,Health factors,3440,7.544,-2.87
+Z124,Health factors condition 125,Z,Health factors,27149,7.393,-1.513
+Z125,Health factors condition 126,Z,Health factors,7420,6.263,-1.783
+Z126,Health factors condition 127,Z,Health factors,12272,7.426,-4.08
+Z127,Health factors condition 128,Z,Health factors,14894,7.066,-4.12
+Z128,Health factors condition 129,Z,Health factors,9673,6.087,-1.537
+Z129,Health factors condition 130,Z,Health factors,10782,8.128,-2.556
+Z130,Health factors condition 131,Z,Health factors,27204,7.574,-2.488
+Z131,Health factors condition 132,Z,Health factors,22210,5.445,-2.045
+Z132,Health factors condition 133,Z,Health factors,16314,6.538,-2.859
+Z133,Health factors condition 134,Z,Health factors,23856,8.124,-1.435
+Z134,Health factors condition 135,Z,Health factors,4919,7.036,-1.663
+Z135,Health factors condition 136,Z,Health factors,15567,8.661,-0.73
+Z136,Health factors condition 137,Z,Health factors,20586,7.84,-0.669
+Z137,Health factors condition 138,Z,Health factors,5804,7.791,-2.434
+Z138,Health factors condition 139,Z,Health factors,22154,8.822,-0.193
+Z139,Health factors condition 140,Z,Health factors,15472,6.502,-1.209
+Z140,Health factors condition 141,Z,Health factors,19810,5.898,-2.183
+Z141,Health factors condition 142,Z,Health factors,22150,6.986,-4.13
+Z142,Health factors condition 143,Z,Health factors,10986,6.069,-4.333
+Z143,Health factors condition 144,Z,Health factors,13886,6.564,-0.299
+Z144,Health factors condition 145,Z,Health factors,14838,7.598,-3.392
+Z145,Health factors condition 146,Z,Health factors,24956,7.951,-1.876
+Z146,Health factors condition 147,Z,Health factors,21778,6.885,-3.965
+Z147,Health factors condition 148,Z,Health factors,24363,7.522,-0.739
+Z148,Health factors condition 149,Z,Health factors,1890,7.37,-1.274
+Z149,Health factors condition 150,Z,Health factors,3752,6.492,-0.92
+Z150,Health factors condition 151,Z,Health factors,14494,6.868,0.287
+Z151,Health factors condition 152,Z,Health factors,25835,7.12,-3.509
+Z152,Health factors condition 153,Z,Health factors,29556,8.229,-2.934
+Z153,Health factors condition 154,Z,Health factors,15076,10.78,-3.787
+Z154,Health factors condition 155,Z,Health factors,25194,7.773,-1.182
+Z155,Health factors condition 156,Z,Health factors,13935,7.953,-3.626
+Z156,Health factors condition 157,Z,Health factors,18840,7.854,-4.284
+Z157,Health factors condition 158,Z,Health factors,14706,7.177,-2.064
+Z158,Health factors condition 159,Z,Health factors,22203,9.27,-3.671
+Z159,Health factors condition 160,Z,Health factors,207,8.159,-3.371
+Z160,Health factors condition 161,Z,Health factors,16316,7.839,-4.641
+Z161,Health factors condition 162,Z,Health factors,15051,7.053,-0.806
+Z162,Health factors condition 163,Z,Health factors,26262,6.949,-1.707
+Z163,Health factors condition 164,Z,Health factors,23760,6.5,-1.566
+Z164,Health factors condition 165,Z,Health factors,9062,7.372,-0.837
+Z165,Health factors condition 166,Z,Health factors,16942,10.409,-1.398
+Z166,Health factors condition 167,Z,Health factors,26164,6.974,-1.436
+Z167,Health factors condition 168,Z,Health factors,9331,7.433,-4.26
+Z168,Health factors condition 169,Z,Health factors,14605,7.571,-1.397
+Z169,Health factors condition 170,Z,Health factors,18561,6.473,-3.502
+Z170,Health factors condition 171,Z,Health factors,6901,8.085,-1.413
+Z171,Health factors condition 172,Z,Health factors,8028,6.277,0.484
+Z172,Health factors condition 173,Z,Health factors,24188,7.152,-2.766
+Z173,Health factors condition 174,Z,Health factors,3869,10.202,-0.814
+Z174,Health factors condition 175,Z,Health factors,29903,7.259,-3.575
+Z175,Health factors condition 176,Z,Health factors,22757,9.59,-4.818
+Z176,Health factors condition 177,Z,Health factors,8251,6.542,-1.799
+Z177,Health factors condition 178,Z,Health factors,16816,6.233,-3.606
+Z178,Health factors condition 179,Z,Health factors,23868,7.239,-1.706
+Z179,Health factors condition 180,Z,Health factors,5487,8.609,-1.952
+Z180,Health factors condition 181,Z,Health factors,18953,6.406,-1.73
+Z181,Health factors condition 182,Z,Health factors,6919,9.275,-1.904
+Z182,Health factors condition 183,Z,Health factors,23748,7.013,-4.108
+Z183,Health factors condition 184,Z,Health factors,22764,8.973,-3.042
+Z184,Health factors condition 185,Z,Health factors,28806,7.755,-4.962
+Z185,Health factors condition 186,Z,Health factors,4893,6.917,-3.513
+Z186,Health factors condition 187,Z,Health factors,5124,5.821,0.117
+Z187,Health factors condition 188,Z,Health factors,16281,7.272,-3.022
+Z188,Health factors condition 189,Z,Health factors,11025,8.208,-3.281
+Z189,Health factors condition 190,Z,Health factors,27124,8.416,-1.127
+Z190,Health factors condition 191,Z,Health factors,28549,8.641,-3.389
+Z191,Health factors condition 192,Z,Health factors,25991,7.077,-2.638
+Z192,Health factors condition 193,Z,Health factors,20030,7.885,-2.134
+Z193,Health factors condition 194,Z,Health factors,24910,8.062,-3.747
+Z194,Health factors condition 195,Z,Health factors,22433,7.543,-0.535
+Z195,Health factors condition 196,Z,Health factors,9226,6.488,-2.083
+Z196,Health factors condition 197,Z,Health factors,9706,8.022,-1.666
+Z197,Health factors condition 198,Z,Health factors,14981,8.938,-2.828
+Z198,Health factors condition 199,Z,Health factors,17995,9.194,-3.359
+Z199,Health factors condition 200,Z,Health factors,26080,7.966,-2.81
+Z200,Health factors condition 201,Z,Health factors,14133,8.281,-2.111
+Z201,Health factors condition 202,Z,Health factors,11058,5.48,-2.953
+Z202,Health factors condition 203,Z,Health factors,11326,8.131,-4.061
+Z203,Health factors condition 204,Z,Health factors,29444,8.157,-1.289
+Z204,Health factors condition 205,Z,Health factors,27539,5.187,-1.293
+Z205,Health factors condition 206,Z,Health factors,17039,6.825,-3.537
+Z206,Health factors condition 207,Z,Health factors,17802,4.79,-2.914
+Z207,Health factors condition 208,Z,Health factors,10884,7.321,-1.439
+Z208,Health factors condition 209,Z,Health factors,8503,9.113,-3.824
+Z209,Health factors condition 210,Z,Health factors,2319,7.618,-2.362
+Z210,Health factors condition 211,Z,Health factors,20050,8.189,-2.763
+Z211,Health factors condition 212,Z,Health factors,19096,11.047,-2.664
+Z212,Health factors condition 213,Z,Health factors,13679,10.284,-2.561
+Z213,Health factors condition 214,Z,Health factors,22701,6.839,-1.036
+Z214,Health factors condition 215,Z,Health factors,6013,7.245,-3.489
+Z215,Health factors condition 216,Z,Health factors,2147,9.188,-2.593
+Z216,Health factors condition 217,Z,Health factors,8280,6.958,-1.837
+Z217,Health factors condition 218,Z,Health factors,19802,8.29,-2.354
+Z218,Health factors condition 219,Z,Health factors,9185,8.408,-3.706
+Z219,Health factors condition 220,Z,Health factors,25858,7.157,-0.902
+Z220,Health factors condition 221,Z,Health factors,13875,7.26,-4.223
+Z221,Health factors condition 222,Z,Health factors,13390,9.448,-0.77
+Z222,Health factors condition 223,Z,Health factors,11851,5.784,-1.308
+Z223,Health factors condition 224,Z,Health factors,4509,7.091,-4.264
+Z224,Health factors condition 225,Z,Health factors,7914,7.898,-2.789
+Z225,Health factors condition 226,Z,Health factors,26637,5.894,-2.093
+Z226,Health factors condition 227,Z,Health factors,11036,6.51,-3.42
+Z227,Health factors condition 228,Z,Health factors,28439,7.257,-1.674
+Z228,Health factors condition 229,Z,Health factors,12461,9.442,-2.061
+Z229,Health factors condition 230,Z,Health factors,14779,6.942,-3.234
+Z230,Health factors condition 231,Z,Health factors,8178,9.769,-1.727
+Z231,Health factors condition 232,Z,Health factors,22174,8.724,-0.24
+Z232,Health factors condition 233,Z,Health factors,21367,7.044,-5.035
+Z233,Health factors condition 234,Z,Health factors,2258,5.949,-2.864
+Z234,Health factors condition 235,Z,Health factors,5356,7.325,-1.177
+Z235,Health factors condition 236,Z,Health factors,28700,7.145,-1.852
+Z236,Health factors condition 237,Z,Health factors,2102,7.783,-3.01
+Z237,Health factors condition 238,Z,Health factors,20547,8.941,-1.777
+Z238,Health factors condition 239,Z,Health factors,519,5.285,-2.349
+Z239,Health factors condition 240,Z,Health factors,18321,8.84,-3.319
+Z240,Health factors condition 241,Z,Health factors,26197,8.759,-2.118
+Z241,Health factors condition 242,Z,Health factors,2591,6.567,-0.22
+Z242,Health factors condition 243,Z,Health factors,11411,6.579,-3.471
+Z243,Health factors condition 244,Z,Health factors,16879,6.899,-1.966
+Z244,Health factors condition 245,Z,Health factors,14238,6.563,-0.455
+Z245,Health factors condition 246,Z,Health factors,2668,7.322,-2.514
