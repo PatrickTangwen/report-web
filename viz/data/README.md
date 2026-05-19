@@ -1,83 +1,50 @@
-# Data Directory
+# Visualization Data
 
-This directory will contain datasets for the interactive dashboard visualizations.
+CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Currently **mock data** — to be replaced with real experimental results.
 
-## Directory Structure
+## Files
 
-- `processed/` - Analysis-ready datasets (cleaned, formatted, aggregated)
-- `raw/` - Original data files (before processing)
+| File | Size | Used By | Description |
+|------|------|---------|-------------|
+| `patient_embeddings.csv` | 311 KB | `overall-performance.qmd` | Patient UMAP coordinates (sex, age, diagnosis) |
+| `icd_code_embeddings.csv` | 113 KB | `overall-performance.qmd` | ICD code UMAP coordinates (chapter, frequency) |
+| `evaluation_metrics.csv` | 20 KB | `overall-performance.qmd` | Model comparison metrics (AUROC, AUPRC, F1, etc.) |
+| `ablation_results.csv` | 10 KB | `ablation.qmd` | Ablation deltas per variant/disease/metric |
+| `fibrotic_patient_embeddings.csv` | 376 KB | `use-case.qmd` | Fibrotic disease patient UMAP coordinates |
+| `feature_importance.csv` | 12 KB | `use-case.qmd` | Top risk factors per disease |
+| `pathway_enrichment.csv` | 20 KB | `use-case.qmd` | Pathway enrichment results (gene count, enrichment ratio, p-values) |
 
-## Expected Data Formats
+## Column Schemas
 
-### Model Performance Data (`processed/model_performance.csv`)
+### patient_embeddings.csv
+`patient_id, umap_x, umap_y, age, sex, primary_diagnosis, primary_diagnosis_desc, disease_count`
 
-Expected columns:
-- `disease` (string): Disease category name
-- `model` (string): Model type (RandomForest, XGBoost, DNN)
-- `auc` (float): Area under ROC curve (0-1)
-- `accuracy` (float): Classification accuracy (0-1)
-- `precision` (float): Precision score (0-1)
-- `recall` (float): Recall score (0-1)
-- `f1` (float): F1-score (0-1)
+### icd_code_embeddings.csv
+`icd_code, description, icd_chapter, icd_chapter_name, frequency, umap_x, umap_y`
 
-Example:
-```csv
-disease,model,auc,accuracy,precision,recall,f1
-Cardiovascular,RandomForest,0.87,0.82,0.79,0.85,0.82
-Cardiovascular,XGBoost,0.89,0.84,0.81,0.87,0.84
-Diabetes,RandomForest,0.85,0.80,0.77,0.83,0.80
-```
+### evaluation_metrics.csv
+`model, disease, metric, value, ci_lower, ci_upper, is_proposed`
 
-### Variable Importance Data (`processed/variable_importance.csv`)
+### ablation_results.csv
+`variant, disease, metric, value, full_model_value, delta`
 
-Expected columns:
-- `disease` (string): Disease category
-- `variable` (string): Variable/feature name
-- `importance` (float): Importance score (0-1 or other scale)
-- `category` (string): Variable category (demographic, lifestyle, clinical, genetic)
+### fibrotic_patient_embeddings.csv
+`patient_id, umap_x, umap_y, age, sex, fibrotic_disease, primary_diagnosis, primary_diagnosis_desc, disease_count`
 
-Example:
-```csv
-disease,variable,importance,category
-Cardiovascular,age,0.18,demographic
-Cardiovascular,bmi,0.14,clinical
-Cardiovascular,smoking,0.11,lifestyle
-```
+### feature_importance.csv
+`disease, feature, importance_score, rank`
 
-### Multimorbidity Network Data (`processed/multimorbidity_network.csv`)
+### pathway_enrichment.csv
+`disease, pathway, source, gene_count, enrichment_ratio, p_value, p_adjusted, rank`
 
-Expected columns:
-- `disease_1` (string): First disease
-- `disease_2` (string): Second disease
-- `correlation` (float): Correlation coefficient (-1 to 1)
-- `odds_ratio` (float): Odds ratio of co-occurrence
-- `p_value` (float): Statistical significance
+## Deployment Contract
 
-Example:
-```csv
-disease_1,disease_2,correlation,odds_ratio,p_value
-Diabetes,Hypertension,0.65,3.8,0.001
-Diabetes,CVD,0.58,3.2,0.002
-```
+Every file referenced by `FileAttachment(...)` in `viz/*.qmd` must be Git-tracked. Run `python scripts/check_ojs_assets.py` before pushing to verify.
+
+## Non-published Directories
+
+`raw/` and `processed/` are gitignored and not deployed. Published assets live at this level (`viz/data/*.csv`).
 
 ## Data Privacy
 
-**Important:** Do not include patient-level identifiable data in this repository.
-
-- Use only aggregated or anonymized data
-- For public dashboards, consider using synthetic data that preserves statistical properties
-- Ensure compliance with data protection regulations (HIPAA, GDPR, etc.)
-
-## Data Processing
-
-When adding new data:
-
-1. Place raw data files in `raw/` directory
-2. Run processing scripts (to be created in `/scripts/` directory)
-3. Save cleaned, analysis-ready data to `processed/` directory
-4. Update dashboard code in `../dashboard.qmd` to load new datasets
-
-## .gitignore
-
-Data files are gitignored by default to prevent accidental commits of sensitive information.
-To track specific processed data files, use `git add -f <file>` explicitly.
+Do not commit patient-level identifiable data. Current files use synthetic/mock data. When replacing with real results, use only aggregated or de-identified outputs.
