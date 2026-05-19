@@ -84,8 +84,6 @@ A case study on five primary fibrotic and closely related diseases — coronary 
 
 ## Research Team
 
-Xiayuan Huang^1^, Hang Zhou^1^, Yitao Hong^1^, Xin Zhou^1^, Johann de Jong^2,\*^, Zuoheng Wang^1,\*^
-
 ^1^Yale University, New Haven, CT, USA
 ^2^UCB Biosciences GmbH, Monheim am Rhein, Germany
 ^\*^Equal contribution as co-senior authors
