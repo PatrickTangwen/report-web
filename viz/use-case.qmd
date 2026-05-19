@@ -170,12 +170,16 @@ pathwayChart = {
     neg_log10_padj: -Math.log10(d.p_adjusted),
   }));
 
+  const minER = d3.min(withLogP, d => d.enrichment_ratio);
+  const maxER = d3.max(withLogP, d => d.enrichment_ratio);
+  const xPad = (maxER - minER) * 0.12;
+
   const chart = Plot.plot({
     width: 1000,
     height: 480,
     marginLeft: 280,
     marginRight: 20,
-    x: { label: "Enrichment Ratio", grid: true },
+    x: { label: "Enrichment Ratio", grid: true, domain: [minER - xPad, maxER + xPad * 0.3] },
     y: {
       label: null,
       domain: withLogP.map(d => d.pathway),
