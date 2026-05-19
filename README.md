@@ -85,14 +85,13 @@ report-web/
 ### Prerequisites
 
 - [Quarto](https://quarto.org/docs/get-started/) (v1.4+)
-- `conda activate pytorch_env`
+- Python available on `PATH` for repo validation scripts
 
-The charts run in the browser via OJS, but local validation and deployment checks in this repo should be run from `pytorch_env`.
+The charts run in the browser via OJS. For local validation and deployment checks, use any environment that has Quarto and Python available.
 
 ### Preview
 
 ```bash
-conda activate pytorch_env
 quarto preview              # Dev server at http://localhost:4200
 quarto render               # Full build to _site/
 quarto render viz/ablation.qmd  # Single page render
@@ -109,12 +108,11 @@ Published URL: [patricktangwen.github.io/report-web](https://patricktangwen.gith
 - GitHub Pages does not publish your local `_site/`. The workflow checks out the repository on GitHub Actions and runs `quarto render` there.
 - Any file referenced by OJS `FileAttachment(...)` in `viz/*.qmd` must exist in the repository and be tracked by Git.
 - Published visualization assets live in `viz/data/`. `viz/data/raw/` and `viz/data/processed/` remain non-published directories and stay ignored.
-- Before pushing deployment-related changes, run the validation commands below from `pytorch_env`.
+- Before pushing deployment-related changes, run the validation commands below in an environment with Quarto and Python available.
 
 ### Deployment Validation
 
 ```bash
-conda activate pytorch_env
 python scripts/check_ojs_assets.py
 quarto render
 ```

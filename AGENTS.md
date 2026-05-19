@@ -55,7 +55,6 @@ report-web/
 ## Build & Preview
 
 ```bash
-conda activate pytorch_env
 quarto preview          # Dev server on port 4200
 quarto render           # Full site build to _site/
 quarto render index.qmd # Render single page
@@ -66,10 +65,9 @@ quarto render index.qmd # Render single page
 - GitHub Pages deploys from `.github/workflows/deploy.yml`, not from the local `_site/` directory. The workflow checks out the repository and runs `quarto render` on GitHub Actions.
 - Treat any OJS `FileAttachment(...)` reference in `viz/*.qmd` as a published-asset contract. The target file must exist in the repo and be tracked by Git, or the deployed chart will fail even if local preview worked before.
 - Published visualization assets belong in `viz/data/`. Keep `viz/data/raw/` and `viz/data/processed/` as ignored non-published directories.
-- When editing `viz/*.qmd`, `viz/data/*`, `.gitignore`, or deployment workflow files, run these checks from `pytorch_env` before finishing:
+- When editing `viz/*.qmd`, `viz/data/*`, `.gitignore`, or deployment workflow files, run these checks in an environment with Quarto and Python available before finishing:
 
 ```bash
-conda activate pytorch_env
 python scripts/check_ojs_assets.py
 quarto render
 ```
