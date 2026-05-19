@@ -16,16 +16,14 @@ Paper: "Multimodal Data Integration Improves Disease Risk Prediction in the UK B
 - [x] Mock CSV data for all visualizations (7 files in `viz/data/`)
 - [x] Dark mode support for all OJS charts (SVG + WebGL)
 - [x] Old Shiny dashboard files removed
+- [x] GitHub Pages deployment via GitHub Actions
+- [x] Deployment-time OJS asset validation via `scripts/check_ojs_assets.py`
 
 ### TODO
 
 **Data**
 - [ ] Replace mock CSVs with real experimental data
 - [ ] Validate data schemas against `viz_planning/INTERACTIVE_VIZ_PLAN.md`
-
-**Deployment**
-- [ ] Configure GitHub Pages (or Netlify) for static hosting
-- [ ] Set up GitHub Actions for auto-render on push
 
 **Content**
 - [ ] Update `site-url` and `repo-url` in `_quarto.yml` (currently placeholder `yourusername`)
@@ -87,12 +85,14 @@ report-web/
 ### Prerequisites
 
 - [Quarto](https://quarto.org/docs/get-started/) (v1.4+)
+- `conda activate pytorch_env`
 
-No Python or R dependencies required — all visualizations use browser-native OJS.
+The charts run in the browser via OJS, but local validation and deployment checks in this repo should be run from `pytorch_env`.
 
 ### Preview
 
 ```bash
+conda activate pytorch_env
 quarto preview              # Dev server at http://localhost:4200
 quarto render               # Full build to _site/
 quarto render viz/ablation.qmd  # Single page render
@@ -100,7 +100,26 @@ quarto render viz/ablation.qmd  # Single page render
 
 ## Deployment
 
-Not yet configured. Plan: GitHub Pages via GitHub Actions (render on push to `main`).
+The site is deployed on GitHub Pages from `main` through `.github/workflows/deploy.yml`.
+
+Published URL: [patricktangwen.github.io/report-web](https://patricktangwen.github.io/report-web/)
+
+### Deployment Contract
+
+- GitHub Pages does not publish your local `_site/`. The workflow checks out the repository on GitHub Actions and runs `quarto render` there.
+- Any file referenced by OJS `FileAttachment(...)` in `viz/*.qmd` must exist in the repository and be tracked by Git.
+- Published visualization assets live in `viz/data/`. `viz/data/raw/` and `viz/data/processed/` remain non-published directories and stay ignored.
+- Before pushing deployment-related changes, run the validation commands below from `pytorch_env`.
+
+### Deployment Validation
+
+```bash
+conda activate pytorch_env
+python scripts/check_ojs_assets.py
+quarto render
+```
+
+If `scripts/check_ojs_assets.py` fails, treat it as a deployment blocker. The most common cause is adding or renaming a `FileAttachment(...)` target without committing the corresponding file under `viz/data/`.
 
 ## Citation
 
