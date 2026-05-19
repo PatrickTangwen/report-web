@@ -1,0 +1,384 @@
+---
+title: "Overall Model Performance"
+subtitle: "Patient and Code Embeddings, Evaluation Metrics"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    grid:
+      body-width: 1100px
+      sidebar-width: 0px
+      margin-width: 200px
+---
+
+This page presents the learned representations from the ALIGATEHR-Gen model and its quantitative performance against baselines. Explore the patient and ICD code embedding spaces, and compare evaluation metrics across diseases.
+
+## Patient Embeddings — Coloured by Sex
+
+```{ojs}
+//| echo: false
+
+patientData = {
+  const text = await FileAttachment("data/patient_embeddings.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).default
+```
+
+```{ojs}
+//| echo: false
+
+umapSex = {
+  const width = 1000;
+  const height = 600;
+
+  const container = document.createElement("div");
+  container.style.position = "relative";
+  container.style.width = width + "px";
+
+  const title = document.createElement("div");
+  title.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Patient Embeddings — Coloured by Sex</strong><br><span style="font-size:0.9rem;color:#6c757d;">Pre-trained EHR Encoder (UKB ${patientData.length.toLocaleString()} patients)</span>`;
+  title.style.marginBottom = "8px";
+  container.appendChild(title);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  container.appendChild(canvas);
+
+  const tooltip = document.createElement("div");
+  tooltip.style.cssText = "display:none;position:absolute;pointer-events:none;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;padding:8px 12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;max-width:280px;z-index:10;box-shadow:0 2px 4px rgba(0,0,0,0.1);";
+  container.appendChild(tooltip);
+
+  const scatterplot = createScatterplot({
+    canvas,
+    width,
+    height,
+    pointSize: 3,
+    opacity: 0.6,
+    lassoOnLongPress: true,
+  });
+
+  scatterplot.set({
+    colorBy: "valueA",
+    pointColor: ["#e07b39", "#4a90d9"],
+  });
+  await scatterplot.draw({
+    x: patientData.map(d => d.umap_x),
+    y: patientData.map(d => d.umap_y),
+    z: patientData.map(d => d.sex === "Female" ? 0 : 1),
+  });
+
+  scatterplot.subscribe("pointover", (idx) => {
+    const d = patientData[idx];
+    if (!d) return;
+    tooltip.innerHTML = `<strong>${d.patient_id}</strong><br>Age: ${d.age} · Sex: ${d.sex}<br>${d.primary_diagnosis} — ${d.primary_diagnosis_desc}<br>Disease count: ${d.disease_count}`;
+    tooltip.style.display = "block";
+  });
+  scatterplot.subscribe("pointout", () => { tooltip.style.display = "none"; });
+
+  canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    tooltip.style.left = (e.clientX - rect.left + 15) + "px";
+    tooltip.style.top = (e.clientY - rect.top + 15) + "px";
+  });
+
+  const legend = document.createElement("div");
+  legend.style.cssText = "margin-top:8px;display:flex;gap:20px;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;";
+  const femaleCount = patientData.filter(d => d.sex === "Female").length;
+  const maleCount = patientData.length - femaleCount;
+  legend.innerHTML = `
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#e07b39;margin-right:4px;vertical-align:middle;"></span>Female (n=${femaleCount.toLocaleString()})</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#4a90d9;margin-right:4px;vertical-align:middle;"></span>Male (n=${maleCount.toLocaleString()})</span>
+  `;
+  container.appendChild(legend);
+
+  const resetBtn = document.createElement("button");
+  resetBtn.textContent = "Reset View";
+  resetBtn.style.cssText = "margin-top:8px;padding:4px 12px;font-size:0.85rem;cursor:pointer;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#2c3e50;";
+  resetBtn.addEventListener("click", () => scatterplot.reset());
+  container.appendChild(resetBtn);
+
+  return container;
+}
+```
+
+## Patient Embeddings — Coloured by Age
+
+```{ojs}
+//| echo: false
+
+umapAge = {
+  const width = 1000;
+  const height = 600;
+
+  const container = document.createElement("div");
+  container.style.position = "relative";
+  container.style.width = width + "px";
+
+  const title = document.createElement("div");
+  title.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Patient Embeddings — Coloured by Age</strong><br><span style="font-size:0.9rem;color:#6c757d;">Pre-trained EHR Encoder (UKB ${patientData.length.toLocaleString()} patients)</span>`;
+  title.style.marginBottom = "8px";
+  container.appendChild(title);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  container.appendChild(canvas);
+
+  const tooltip = document.createElement("div");
+  tooltip.style.cssText = "display:none;position:absolute;pointer-events:none;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;padding:8px 12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;max-width:280px;z-index:10;box-shadow:0 2px 4px rgba(0,0,0,0.1);";
+  container.appendChild(tooltip);
+
+  const scatterplot = createScatterplot({
+    canvas,
+    width,
+    height,
+    pointSize: 3,
+    opacity: 0.6,
+    lassoOnLongPress: true,
+  });
+
+  const ages = patientData.map(d => d.age);
+  const minAge = Math.min(...ages);
+  const maxAge = Math.max(...ages);
+
+  const viridisStops = [
+    "#440154","#482878","#3e4989","#31688e","#26828e",
+    "#1f9e89","#35b779","#6ece58","#b5de2b","#fde725"
+  ];
+  scatterplot.set({
+    colorBy: "valueA",
+    pointColor: viridisStops,
+  });
+  await scatterplot.draw({
+    x: patientData.map(d => d.umap_x),
+    y: patientData.map(d => d.umap_y),
+    z: patientData.map(d => (d.age - minAge) / (maxAge - minAge)),
+  });
+
+  scatterplot.subscribe("pointover", (idx) => {
+    const d = patientData[idx];
+    if (!d) return;
+    tooltip.innerHTML = `<strong>${d.patient_id}</strong><br>Age: ${d.age} · Sex: ${d.sex}<br>${d.primary_diagnosis} — ${d.primary_diagnosis_desc}<br>Disease count: ${d.disease_count}`;
+    tooltip.style.display = "block";
+  });
+  scatterplot.subscribe("pointout", () => { tooltip.style.display = "none"; });
+
+  canvas.addEventListener("mousemove", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    tooltip.style.left = (e.clientX - rect.left + 15) + "px";
+    tooltip.style.top = (e.clientY - rect.top + 15) + "px";
+  });
+
+  const legendDiv = document.createElement("div");
+  legendDiv.style.cssText = "margin-top:8px;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;display:flex;align-items:center;gap:8px;";
+  const gradBar = document.createElement("div");
+  gradBar.style.cssText = "width:200px;height:14px;border-radius:2px;background:linear-gradient(to right, #440154, #482878, #3e4989, #31688e, #26828e, #1f9e89, #35b779, #6ece58, #b5de2b, #fde725);";
+  legendDiv.appendChild(document.createTextNode(minAge + " "));
+  legendDiv.appendChild(gradBar);
+  const ageLabel = document.createElement("span");
+  ageLabel.textContent = " " + maxAge;
+  legendDiv.appendChild(ageLabel);
+  const ageTitle = document.createElement("span");
+  ageTitle.style.cssText = "margin-left:8px;color:#6c757d;";
+  ageTitle.textContent = "Age";
+  legendDiv.appendChild(ageTitle);
+  container.appendChild(legendDiv);
+
+  const resetBtn = document.createElement("button");
+  resetBtn.textContent = "Reset View";
+  resetBtn.style.cssText = "margin-top:8px;padding:4px 12px;font-size:0.85rem;cursor:pointer;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;color:#2c3e50;";
+  resetBtn.addEventListener("click", () => scatterplot.reset());
+  container.appendChild(resetBtn);
+
+  return container;
+}
+```
+
+## ICD-10 Code Embedding UMAP
+
+```{ojs}
+//| echo: false
+
+icdData = {
+  const text = await FileAttachment("data/icd_code_embeddings.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+viewof icdSearch = Inputs.text({ label: "Search ICD code or description", placeholder: "e.g. E11, diabetes, circulatory..." })
+```
+
+```{ojs}
+//| echo: false
+
+icdUmap = {
+  const query = icdSearch.toLowerCase().trim();
+  const hasQuery = query.length > 0;
+
+  const schemeCategory20 = [
+    "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd",
+    "#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf",
+    "#aec7e8","#ffbb78","#98df8a","#ff9896","#c5b0d5",
+    "#c49c94","#f7b6d2","#c7c7c7","#dbdb8d","#9edae5"
+  ];
+  const chapters = [...new Set(icdData.map(d => d.icd_chapter))];
+  const chapterColorMap = {};
+  chapters.forEach((ch, i) => { chapterColorMap[ch] = schemeCategory20[i % 20]; });
+
+  const plotData = icdData.map(d => {
+    const match = !hasQuery || d.icd_code.toLowerCase().includes(query) || d.description.toLowerCase().includes(query);
+    return { ...d, match, opacity: hasQuery ? (match ? 0.9 : 0.08) : 0.8 };
+  });
+
+  const chart = Plot.plot({
+    width: 1000,
+    height: 650,
+    marginLeft: 40,
+    marginRight: 20,
+    marginTop: 20,
+    marginBottom: 40,
+    x: { label: "UMAP 1" },
+    y: { label: "UMAP 2" },
+    marks: [
+      Plot.dot(plotData, {
+        x: "umap_x",
+        y: "umap_y",
+        fill: d => chapterColorMap[d.icd_chapter],
+        fillOpacity: "opacity",
+        r: d => hasQuery ? (d.match ? 5 : 2.5) : 4,
+        stroke: hasQuery ? (d => d.match ? "#333" : "none") : "none",
+        strokeWidth: 0.5,
+        tip: true,
+        title: d => `${d.icd_code} — ${d.description}\nChapter: ${d.icd_chapter}: ${d.icd_chapter_name}\nFrequency: ${d.frequency.toLocaleString()} patients`,
+      }),
+    ],
+  });
+
+  const container = document.createElement("div");
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">UMAP of ICD-10 Code Embeddings</strong><br><span style="font-size:0.9rem;color:#6c757d;">${icdData.length.toLocaleString()} codes, coloured by ICD-10 chapter</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+  container.appendChild(chart);
+
+  const legendDiv = document.createElement("div");
+  legendDiv.style.cssText = "margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;font-family:'Source Sans Pro',sans-serif;font-size:0.8rem;";
+  for (const ch of chapters) {
+    const chName = icdData.find(d => d.icd_chapter === ch)?.icd_chapter_name || ch;
+    const count = icdData.filter(d => d.icd_chapter === ch).length;
+    legendDiv.innerHTML += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${chapterColorMap[ch]};margin-right:4px;vertical-align:middle;"></span>${ch}: ${chName} (${count})</span>`;
+  }
+  container.appendChild(legendDiv);
+
+  return container;
+}
+```
+
+## Evaluation Metrics Comparison
+
+```{ojs}
+//| echo: false
+
+evalData = {
+  const text = await FileAttachment("data/evaluation_metrics.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+viewof selectedMetric = Inputs.select(
+  [...new Set(evalData.map(d => d.metric))],
+  { label: "Metric", value: "AUROC" }
+)
+```
+
+```{ojs}
+//| echo: false
+
+evalChart = {
+  const filtered = evalData.filter(d => d.metric === selectedMetric);
+  const diseases = [...new Set(filtered.map(d => d.disease))];
+  const models = [...new Set(filtered.map(d => d.model))];
+
+  // Sort diseases by proposed model performance (descending)
+  const proposed = filtered.filter(d => d.is_proposed);
+  diseases.sort((a, b) => {
+    const va = proposed.find(d => d.disease === a)?.value || 0;
+    const vb = proposed.find(d => d.disease === b)?.value || 0;
+    return vb - va;
+  });
+
+  const proposedModel = "ALIGATEHR-Gen";
+  const grayScale = ["#888","#aaa","#666","#999","#bbb","#777","#ccc","#555","#ddd"];
+  const modelColors = {};
+  let gi = 0;
+  for (const m of models) {
+    modelColors[m] = m === proposedModel ? "#2c5aa0" : grayScale[gi++ % grayScale.length];
+  }
+
+  const chart = Plot.plot({
+    width: 1000,
+    height: 420,
+    marginLeft: 180,
+    marginRight: 20,
+    x: { label: selectedMetric, grid: true },
+    y: { label: null, domain: diseases },
+    color: { legend: true },
+    marks: [
+      // Error bars (if CI available)
+      Plot.ruleX(filtered.filter(d => d.ci_lower != null && d.ci_upper != null), {
+        x1: "ci_lower",
+        x2: "ci_upper",
+        y: "disease",
+        stroke: d => modelColors[d.model],
+        strokeWidth: 1.5,
+        strokeOpacity: 0.5,
+      }),
+      // Dots
+      Plot.dot(filtered, {
+        x: "value",
+        y: "disease",
+        fill: d => modelColors[d.model],
+        r: d => d.model === proposedModel ? 6 : 4,
+        symbol: d => d.model === proposedModel ? "circle" : "diamond2",
+        tip: true,
+        title: d => `${d.model}\n${d.disease}\n${selectedMetric}: ${d.value.toFixed(4)}${d.ci_lower != null ? `\nCI: [${d.ci_lower.toFixed(4)}, ${d.ci_upper.toFixed(4)}]` : ""}`,
+      }),
+    ],
+  });
+
+  // Wrap with title
+  const container = document.createElement("div");
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Model Performance Comparison</strong><br><span style="font-size:0.9rem;color:#6c757d;">${models.length} models × ${diseases.length} diseases · Metric: ${selectedMetric}</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+  container.appendChild(chart);
+
+  // Custom legend
+  const legendDiv = document.createElement("div");
+  legendDiv.style.cssText = "margin-top:8px;display:flex;flex-wrap:wrap;gap:12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;";
+  for (const m of models) {
+    const color = modelColors[m];
+    const shape = m === proposedModel ? "●" : "◆";
+    const weight = m === proposedModel ? "font-weight:600;" : "";
+    legendDiv.innerHTML += `<span style="${weight}"><span style="color:${color};margin-right:3px;">${shape}</span>${m}</span>`;
+  }
+  container.appendChild(legendDiv);
+
+  return container;
+}
+```

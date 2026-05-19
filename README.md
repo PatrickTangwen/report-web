@@ -1,216 +1,117 @@
-# EHR Research Project Website
+# ALIGATEHR-Gen Research Website
 
-A comprehensive platform for academic research reporting and interactive data visualization in electronic health records analysis, built with Quarto.
+A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction in the UK Biobank.
 
-## Overview
+Paper: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank" by Xiayuan Huang, Hang Zhou, Yitao Hong, Xin Zhou, Johann de Jong, Zuoheng Wang (Yale University & UCB Biosciences).
 
-This website features:
-- **Home**: Project overview and introduction
-- **Report**: Academic papers with citations and reproducible research
-- **Viz**: Interactive dashboard for data exploration (Shiny-based)
+## Status
 
-## Installation
+### Completed
 
-### 1. Install Quarto
+- [x] Quarto website scaffolding (homepage hero, navbar, dual theme)
+- [x] Full paper content in `report/paper1.qmd` with Nature-style citations
+- [x] Page 1 — Overall Performance: Patient UMAP (sex/age via regl-scatterplot), ICD UMAP with search, Evaluation Metrics dot plot
+- [x] Page 2 — Ablation Study: Delta bar chart with disease/metric dropdown selectors
+- [x] Page 3 — Use Case: Fibrotic patient UMAP, Risk Factor bar chart, Pathway Enrichment dot plot
+- [x] Mock CSV data for all visualizations (7 files in `viz/data/`)
+- [x] Dark mode support for all OJS charts (SVG + WebGL)
+- [x] Old Shiny dashboard files removed
 
-**macOS:**
-```bash
-brew install quarto
-```
+### TODO
 
-**Windows:**
-Download installer from https://quarto.org/docs/get-started/
+**Data**
+- [ ] Replace mock CSVs with real experimental data
+- [ ] Validate data schemas against `viz_planning/INTERACTIVE_VIZ_PLAN.md`
 
-**Linux:**
-```bash
-# Download and install from https://quarto.org/docs/get-started/
-```
+**Deployment**
+- [ ] Configure GitHub Pages (or Netlify) for static hosting
+- [ ] Set up GitHub Actions for auto-render on push
 
-### 2. Install Python Dependencies
+**Content**
+- [ ] Update `site-url` and `repo-url` in `_quarto.yml` (currently placeholder `yourusername`)
+- [ ] Add proper citation information (BibTeX entry for the paper)
+- [ ] Update page footer copyright holder
 
-For the interactive dashboard:
+**Feature Enhancements**
+- [ ] Cross-chart brushing/linking between UMAP and metrics
+- [ ] Patient detail panel on click
+- [ ] Animated transitions on dropdown switch
+- [ ] Mobile-responsive chart sizing
 
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+**Code Quality**
+- [ ] Archive or remove `viz_planning/` after real data lands
+- [ ] Add `robots.txt` and `sitemap.xml`
+- [ ] Review accessibility (alt text, ARIA labels on charts)
 
-# Install required packages
-pip install quarto shiny plotly pandas
-```
+## Tech Stack
 
-Additional packages for future development:
-```bash
-pip install numpy scikit-learn networkx jupyter
-```
-
-## Local Development
-
-### Preview the Website
-
-```bash
-# Preview entire website
-quarto preview
-
-# Preview specific page
-quarto preview index.qmd
-quarto preview viz/dashboard.qmd
-```
-
-The site will open at http://localhost:4200
-
-### Render the Website
-
-```bash
-# Build the complete site
-quarto render
-
-# Output will be in _site/ directory
-```
-
-### Check for Issues
-
-```bash
-# Check for broken links and other issues
-quarto check
-```
+| Layer | Technology |
+|-------|-----------|
+| Site framework | [Quarto](https://quarto.org) (website project type) |
+| Visualization | [Observable JS (OJS)](https://observablehq.com/@observablehq/observable-javascript) cells in `.qmd` |
+| Charts (SVG) | [Observable Plot](https://observablehq.com/plot/) |
+| Charts (WebGL) | [regl-scatterplot](https://github.com/flekschas/regl-scatterplot) for large point clouds |
+| Styling | SCSS (`styles/custom.scss`) + CSS (`styles/styles.css`) |
+| Themes | Light (cosmo) / Dark (darkly) with custom extensions |
+| Citations | BibTeX + Nature CSL |
 
 ## Project Structure
 
 ```
-EHR_website/
-├── _quarto.yml              # Main configuration
-├── index.qmd                # Home page
-├── references.bib           # Bibliography
-│
-├── report/                  # Academic papers
+report-web/
+├── _quarto.yml              # Site config: navbar, theme, format
+├── index.qmd                # Homepage (hero section)
+├── references.bib           # BibTeX bibliography
+├── paper_v1.pdf             # Source PDF
+├── report/
 │   ├── index.qmd            # Report landing page
-│   └── paper1.qmd           # Sample paper template
-│
-├── viz/                     # Interactive dashboard
-│   ├── dashboard.qmd        # Main dashboard
-│   ├── data/                # Data files (gitignored)
-│   ├── modules/             # Modular components
-│   └── utils/               # Utility functions
-│
-├── styles/                  # Styling
-│   ├── custom.scss          # SCSS variables
-│   ├── styles.css           # Additional CSS
-│   └── nature.csl           # Citation style
-│
-└── assets/                  # Static resources
-    ├── images/
-    ├── logos/
-    └── downloads/
+│   ├── paper1.qmd           # Full paper content
+│   └── figures/             # Paper figures (PNG/JPEG)
+├── viz/
+│   ├── overall-performance.qmd  # Page 1: UMAP + Metrics
+│   ├── ablation.qmd             # Page 2: Ablation delta chart
+│   ├── use-case.qmd             # Page 3: Fibrotic disease analysis
+│   └── data/                    # CSV data files (7 mock files)
+├── viz_planning/            # Design specs (to be archived)
+│   ├── INTERACTIVE_VIZ_PLAN.md
+│   └── PRD_INTERACTIVE_VIZ.md
+├── styles/
+│   ├── custom.scss          # SCSS theme variables + components
+│   ├── styles.css           # Layout, dark mode overrides
+│   └── nature.csl           # Citation format
+└── _site/                   # Generated output (gitignored)
 ```
 
-## Adding Content
+## Local Development
 
-### Adding a New Paper
+### Prerequisites
 
-1. Create new `.qmd` file in `report/` directory:
+- [Quarto](https://quarto.org/docs/get-started/) (v1.4+)
 
-```markdown
----
-title: "Your Paper Title"
-author:
-  - name: Author Name
-    affiliation: Institution
-date: "2026-01-20"
-categories: [topic1, topic2]
----
+No Python or R dependencies required — all visualizations use browser-native OJS.
 
-## Introduction
+### Preview
 
-Your content here with citations [@citationkey].
-
-## References
-
-::: {#refs}
-:::
+```bash
+quarto preview              # Dev server at http://localhost:4200
+quarto render               # Full build to _site/
+quarto render viz/ablation.qmd  # Single page render
 ```
-
-2. Add citations to `references.bib`
-
-3. The paper will automatically appear on the Report page
-
-### Adding Data for Visualizations
-
-1. Place processed data files in `viz/data/processed/`
-2. See `viz/data/README.md` for expected data formats
-3. Update `viz/dashboard.qmd` to load and visualize the data
-
-### Customizing Styles
-
-- Edit `styles/custom.scss` for theme variables
-- Edit `styles/styles.css` for additional styling
-- Changes will apply to all pages
-
-## Dashboard Status
-
-The interactive dashboard framework is established with:
-- ✅ Introduction tab with project overview
-- ✅ Example interactive section demonstrating Shiny framework
-- ⏳ Model Performance section (awaiting data)
-- ⏳ Variable Importance section (awaiting data)
-- ⏳ Multimorbidity Analysis section (awaiting data)
-- ⏳ Individual Risk Prediction section (awaiting data)
-
-See `viz/data/README.md` for data format specifications.
 
 ## Deployment
 
-### Static Pages (Home, Report)
-
-**GitHub Pages:**
-```bash
-# Render site
-quarto render
-
-# Push _site/ to gh-pages branch
-# Configure GitHub Pages to serve from gh-pages branch
-```
-
-**Netlify:**
-- Connect GitHub repository
-- Build command: `quarto render`
-- Publish directory: `_site`
-
-### Interactive Dashboard
-
-**shinyapps.io:**
-```bash
-# Install rsconnect-python
-pip install rsconnect-python
-
-# Deploy dashboard
-rsconnect deploy quarto viz/dashboard.qmd
-```
-
-Free tier provides 25 active hours/month.
+Not yet configured. Plan: GitHub Pages via GitHub Actions (render on push to `main`).
 
 ## Citation
 
-If you use this work, please cite:
-
-```
-[Your citation information]
+```bibtex
+@article{huang2025aligatehr,
+  title={Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank},
+  author={Huang, Xiayuan and Zhou, Hang and Hong, Yitao and Zhou, Xin and de Jong, Johann and Wang, Zuoheng},
+  year={2025}
+}
 ```
 
 ## License
 
-This project is licensed under CC BY 4.0.
-
-## Contact
-
-- GitHub: [yourusername/EHR_website](https://github.com/yourusername/EHR_website)
-- Issues: [GitHub Issues](https://github.com/yourusername/EHR_website/issues)
-
-## Acknowledgments
-
-Built with:
-- [Quarto](https://quarto.org) - Scientific and technical publishing
-- [Shiny for Python](https://shiny.posit.co/py/) - Interactive dashboards
-- [Plotly](https://plotly.com/python/) - Interactive visualizations
-
-Inspired by the [UKB-MDRMF Dashboard](https://luminite.shinyapps.io/ukb-mdrmf/).
+CC BY 4.0

@@ -119,6 +119,91 @@ figcaption {
   margin-bottom: 0.8rem;
 }
 
+/* Dark mode: viz chart overrides */
+.quarto-dark .cell-output-display strong {
+  color: #e0e0e0 !important;
+}
+
+.quarto-dark .cell-output-display span {
+  color: #a0a0a0 !important;
+}
+
+.quarto-dark .cell-output-display [style*="color:#2c3e50"],
+.quarto-dark .cell-output-display [style*="color: #2c3e50"] {
+  color: #e0e0e0 !important;
+}
+
+.quarto-dark .cell-output-display [style*="color:#6c757d"],
+.quarto-dark .cell-output-display [style*="color: #6c757d"] {
+  color: #a0a0a0 !important;
+}
+
+.quarto-dark .cell-output-display [style*="background:#f8f9fa"],
+.quarto-dark .cell-output-display [style*="background: #f8f9fa"] {
+  background: #2b3035 !important;
+  border-color: #495057 !important;
+  color: #e0e0e0 !important;
+}
+
+.quarto-dark .cell-output-display button {
+  background: #2b3035 !important;
+  color: #e0e0e0 !important;
+  border-color: #495057 !important;
+}
+
+.quarto-dark .cell-output-display svg {
+  background: transparent !important;
+}
+
+.quarto-dark .cell-output-display svg rect[fill="white"],
+.quarto-dark .cell-output-display svg rect[fill="#fff"],
+.quarto-dark .cell-output-display svg rect[fill="#ffffff"] {
+  fill: transparent !important;
+}
+
+.quarto-dark .cell-output-display svg text {
+  fill: #c0c0c0 !important;
+}
+
+.quarto-dark .cell-output-display svg [aria-label*="tick"] text {
+  fill: #a0a0a0 !important;
+}
+
+.quarto-dark .cell-output-display svg line,
+.quarto-dark .cell-output-display svg [aria-label*="grid"] line {
+  stroke: #495057 !important;
+}
+
+.quarto-dark .cell-output-display svg [aria-label*="rule"] line {
+  stroke: #e0e0e0 !important;
+}
+
+.quarto-dark .hero-section .hero-title {
+  color: #e0e0e0;
+}
+
+.quarto-dark .hero-section .hero-desc {
+  color: #a0a0a0;
+}
+
+.quarto-dark .card {
+  border-color: #495057;
+}
+
+.quarto-dark .abstract {
+  background-color: #2b3035;
+}
+
+.quarto-dark .citation {
+  background-color: #2b3035;
+}
+
+.quarto-dark .placeholder-viz {
+  background-color: #2b3035;
+  border-color: #495057;
+  color: #a0a0a0;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .hero-section .hero-title {

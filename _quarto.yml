@@ -6,7 +6,6 @@ project:
     browser: true
   render:
     - "*.qmd"
-    - "!viz/dashboard_shiny.qmd"
 
 website:
   title: "ALIGATEHR-Gen"
@@ -23,8 +22,12 @@ website:
         href: index.qmd
       - text: "Report"
         href: report/paper1.qmd
-      - text: "Viz"
-        href: viz/dashboard.qmd
+      - text: "Performance"
+        href: viz/overall-performance.qmd
+      - text: "Ablation"
+        href: viz/ablation.qmd
+      - text: "Use Case"
+        href: viz/use-case.qmd
     right:
       - icon: github
         href: https://github.com/yourusername/EHR_website
