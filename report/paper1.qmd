@@ -1,25 +1,8 @@
 ---
 title: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank"
 description: "ALIGATEHR-Gen: a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction across 118 diseases"
-author:
-  - affiliations:
-      - name: Yale University
-        department: Department of Biostatistics
-        city: New Haven
-        region: CT
-        country: USA
-  - affiliations:
-      - name: Yale University
-  - affiliations:
-      - name: Yale University
-  - affiliations:
-      - name: Yale University
-  - affiliations:
-      - name: UCB Biosciences GmbH
-        city: Monheim am Rhein
-        country: Germany
-  - affiliations:
-      - name: Yale University
+# Add author entries back here when author metadata should be public again.
+author: []
 date: "2025-01-01"
 categories: [graph-neural-network, EHR, genetic-data, disease-risk-prediction, UK-Biobank]
 bibliography: ../references.bib
@@ -27,6 +10,7 @@ citation:
   type: article-journal
   container-title: "AMIA Annual Symposium Proceedings"
   url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12919468/"
+  author: []
 abstract: |
   Family health history is an important component to assess risk for common chronic diseases. The integration of electronic health records and genetic data offers great potential to improve disease risk prediction by capturing both clinical and genetic risk factors. We present ALIGATEHR-Gen, a graph attention network that integrates multimodal patient data including genetic information, diagnosis codes, and demographics, along with external medical ontology knowledge. ALIGATEHR-Gen constructs unified patient representations by incorporating genetically inferred first-degree relationships and disease ontology embeddings to enhance disease risk prediction. We evaluate the predictive performance of ALIGATEHR-Gen across 118 diseases in the UK Biobank and demonstrate that it outperforms state-of-the-art baseline models by an average of at least 6%. A case study on five primary fibrotic and closely related diseases reveals that ALIGATEHR-Gen effectively distinguishes patient subgroups based on clinical and genetic features. These findings illustrate the potential of ALIGATEHR-Gen to advance predictive and interpretable modeling in healthcare.
 ---

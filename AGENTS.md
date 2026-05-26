@@ -4,7 +4,6 @@
 
 A Quarto-based website for the ALIGATEHR-Gen research project — a graph attention network that integrates EHR, genetic data, and external medical ontology to improve disease risk prediction. The site serves as an academic paper reporting platform with interactive data visualization dashboards.
 
-The paper: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank" by Xiayuan Huang, Hang Zhou, Yitao Hong, Xin Zhou, Johann de Jong, Zuoheng Wang (Yale University & UCB Biosciences).
 
 ## Technical Stack
 

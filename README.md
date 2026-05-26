@@ -2,8 +2,6 @@
 
 A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction in the UK Biobank.
 
-Paper: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank" by Xiayuan Huang, Hang Zhou, Yitao Hong, Xin Zhou, Johann de Jong, Zuoheng Wang (Yale University & UCB Biosciences).
-
 ## Status
 
 ### Completed
@@ -118,16 +116,6 @@ quarto render
 ```
 
 If `scripts/check_ojs_assets.py` fails, treat it as a deployment blocker. The most common cause is adding or renaming a `FileAttachment(...)` target without committing the corresponding file under `viz/data/`.
-
-## Citation
-
-```bibtex
-@article{huang2025aligatehr,
-  title={Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank},
-  author={Huang, Xiayuan and Zhou, Hang and Hong, Yitao and Zhou, Xin and de Jong, Johann and Wang, Zuoheng},
-  year={2025}
-}
-```
 
 ## License
 

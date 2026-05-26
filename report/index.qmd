@@ -8,7 +8,8 @@ listing:
   type: grid
   sort: "date desc"
   categories: true
-  fields: [title, date, author, description, categories, image]
+  # Re-add `author` here when publication author metadata should be visible again.
+  fields: [title, date, description, categories, image]
   image-height: 200px
   grid-columns: 3
   filter-ui: true
@@ -31,7 +32,7 @@ Our work spans multiple interconnected research areas:
 ::: {.callout-tip}
 ### How to Navigate
 
-Use the filters and search functionality below to find papers by topic, date, or author. Click on any paper card to read the full report with detailed methods, results, and references.
+Use the filters and search functionality below to find papers by topic or date. Click on any paper card to read the full report with detailed methods, results, and references.
 :::
 
 ## Papers
