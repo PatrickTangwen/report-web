@@ -11,7 +11,7 @@ A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attent
 - [x] Page 1 — Overall Performance: Patient UMAP (sex/age via regl-scatterplot), ICD UMAP with search, Evaluation Metrics dot plot
 - [x] Page 2 — Ablation Study: Delta bar chart with disease/metric dropdown selectors
 - [x] Page 3 — Use Case: Fibrotic patient UMAP, Risk Factor bar chart, Pathway Enrichment dot plot
-- [x] Mock CSV data for all visualizations (7 files in `viz/data/`)
+- [x] Real embedding data for 3 core visualizations; mock data for 4 remaining files in `viz/data/`
 - [x] Dark mode support for all OJS charts (SVG + WebGL)
 - [x] Old Shiny dashboard files removed
 - [x] GitHub Pages deployment via GitHub Actions
@@ -20,7 +20,8 @@ A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attent
 ### TODO
 
 **Data**
-- [ ] Replace mock CSVs with real experimental data
+- [x] Replace mock CSVs with real data for patient embeddings (114K patients), ICD embeddings (12K codes), fibrotic patient features (6K patients)
+- [ ] Replace mock CSVs with real data for evaluation metrics, ablation results, feature importance, pathway enrichment
 - [ ] Validate data schemas against `viz_planning/INTERACTIVE_VIZ_PLAN.md`
 
 **Content**
@@ -67,7 +68,7 @@ report-web/
 │   ├── overall-performance.qmd  # Page 1: UMAP + Metrics
 │   ├── ablation.qmd             # Page 2: Ablation delta chart
 │   ├── use-case.qmd             # Page 3: Fibrotic disease analysis
-│   └── data/                    # CSV data files (7 mock files)
+│   └── data/                    # CSV data files (3 real + 4 mock)
 ├── viz_planning/            # Design specs (to be archived)
 │   ├── INTERACTIVE_VIZ_PLAN.md
 │   └── PRD_INTERACTIVE_VIZ.md

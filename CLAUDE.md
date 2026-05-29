@@ -31,7 +31,7 @@ report-web/
 │   ├── overall-performance.qmd  # Page 1: Patient UMAP (sex/age), ICD UMAP, Eval Metrics
 │   ├── ablation.qmd             # Page 2: Ablation delta bar chart
 │   ├── use-case.qmd             # Page 3: Fibrotic UMAP, Risk Factors, Pathway Enrichment
-│   └── data/                    # 7 mock CSV files
+│   └── data/                    # CSV data files (3 real + 4 mock)
 ├── viz_planning/          # Design specs (to be archived after real data)
 │   ├── INTERACTIVE_VIZ_PLAN.md
 │   └── PRD_INTERACTIVE_VIZ.md
@@ -49,7 +49,7 @@ report-web/
 - Dual theme support: light (cosmo) and dark (darkly), both extended by `custom.scss`.
 - Dark mode CSS uses `.quarto-dark` selector (NOT `[data-bs-theme="dark"]`).
 - Viz pages use wider layout: `body-width: 1100px` with `sidebar-width: 0px`.
-- All chart data lives in `viz/data/*.csv`; currently mock data, to be replaced with real experimental results.
+- All chart data lives in `viz/data/*.csv`. Three embedding files use real data (patient embeddings, ICD embeddings, fibrotic patient features); four files remain mock (evaluation metrics, ablation results, feature importance, pathway enrichment).
 
 ## Build & Preview
 

@@ -70,15 +70,15 @@ umapSex = {
     pointColor: ["#e07b39", "#4a90d9"],
   });
   await scatterplot.draw({
-    x: patientData.map(d => d.umap_x),
-    y: patientData.map(d => d.umap_y),
-    z: patientData.map(d => d.sex === "Female" ? 0 : 1),
+    x: patientData.map(d => d.umap_1),
+    y: patientData.map(d => d.umap_2),
+    z: patientData.map(d => d.sex_male),
   });
 
   scatterplot.subscribe("pointover", (idx) => {
     const d = patientData[idx];
     if (!d) return;
-    tooltip.innerHTML = `<strong>${d.patient_id}</strong><br>Age: ${d.age} · Sex: ${d.sex}<br>${d.primary_diagnosis} — ${d.primary_diagnosis_desc}<br>Disease count: ${d.disease_count}`;
+    tooltip.innerHTML = `<strong>ID: ${d.eid}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`;
     tooltip.style.display = "block";
   });
   scatterplot.subscribe("pointout", () => { tooltip.style.display = "none"; });
@@ -91,7 +91,7 @@ umapSex = {
 
   const legend = document.createElement("div");
   legend.style.cssText = "margin-top:8px;display:flex;gap:20px;font-family:'Source Sans Pro',sans-serif;font-size:0.9rem;";
-  const femaleCount = patientData.filter(d => d.sex === "Female").length;
+  const femaleCount = patientData.filter(d => d.sex_male === 0).length;
   const maleCount = patientData.length - femaleCount;
   legend.innerHTML = `
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#e07b39;margin-right:4px;vertical-align:middle;"></span>Female (n=${femaleCount.toLocaleString()})</span>
@@ -158,15 +158,15 @@ umapAge = {
     pointColor: viridisStops,
   });
   await scatterplot.draw({
-    x: patientData.map(d => d.umap_x),
-    y: patientData.map(d => d.umap_y),
+    x: patientData.map(d => d.umap_1),
+    y: patientData.map(d => d.umap_2),
     z: patientData.map(d => (d.age - minAge) / (maxAge - minAge)),
   });
 
   scatterplot.subscribe("pointover", (idx) => {
     const d = patientData[idx];
     if (!d) return;
-    tooltip.innerHTML = `<strong>${d.patient_id}</strong><br>Age: ${d.age} · Sex: ${d.sex}<br>${d.primary_diagnosis} — ${d.primary_diagnosis_desc}<br>Disease count: ${d.disease_count}`;
+    tooltip.innerHTML = `<strong>ID: ${d.eid}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`;
     tooltip.style.display = "block";
   });
   scatterplot.subscribe("pointout", () => { tooltip.style.display = "none"; });
@@ -232,12 +232,12 @@ icdUmap = {
     "#aec7e8","#ffbb78","#98df8a","#ff9896","#c5b0d5",
     "#c49c94","#f7b6d2","#c7c7c7","#dbdb8d","#9edae5"
   ];
-  const chapters = [...new Set(icdData.map(d => d.icd_chapter))];
+  const chapters = [...new Set(icdData.map(d => d.chapter))];
   const chapterColorMap = {};
   chapters.forEach((ch, i) => { chapterColorMap[ch] = schemeCategory20[i % 20]; });
 
   const plotData = icdData.map(d => {
-    const match = !hasQuery || d.icd_code.toLowerCase().includes(query) || d.description.toLowerCase().includes(query);
+    const match = !hasQuery || d.code.toLowerCase().includes(query) || d.chapter.toLowerCase().includes(query);
     return { ...d, match, opacity: hasQuery ? (match ? 0.9 : 0.08) : 0.8 };
   });
 
@@ -252,15 +252,15 @@ icdUmap = {
     y: { label: "UMAP 2" },
     marks: [
       Plot.dot(plotData, {
-        x: "umap_x",
-        y: "umap_y",
-        fill: d => chapterColorMap[d.icd_chapter],
+        x: "umap_1",
+        y: "umap_2",
+        fill: d => chapterColorMap[d.chapter],
         fillOpacity: "opacity",
-        r: d => hasQuery ? (d.match ? 5 : 2.5) : 4,
+        r: d => hasQuery ? (d.match ? 5 : 2.5) : 3,
         stroke: hasQuery ? (d => d.match ? "#333" : "none") : "none",
         strokeWidth: 0.5,
         tip: true,
-        title: d => `${d.icd_code} — ${d.description}\nChapter: ${d.icd_chapter}: ${d.icd_chapter_name}\nFrequency: ${d.frequency.toLocaleString()} patients`,
+        title: d => `${d.code}\nChapter: ${d.chapter}`,
       }),
     ],
   });
@@ -275,9 +275,8 @@ icdUmap = {
   const legendDiv = document.createElement("div");
   legendDiv.style.cssText = "margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;font-family:'Source Sans Pro',sans-serif;font-size:0.8rem;";
   for (const ch of chapters) {
-    const chName = icdData.find(d => d.icd_chapter === ch)?.icd_chapter_name || ch;
-    const count = icdData.filter(d => d.icd_chapter === ch).length;
-    legendDiv.innerHTML += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${chapterColorMap[ch]};margin-right:4px;vertical-align:middle;"></span>${ch}: ${chName} (${count})</span>`;
+    const count = icdData.filter(d => d.chapter === ch).length;
+    legendDiv.innerHTML += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${chapterColorMap[ch]};margin-right:4px;vertical-align:middle;"></span>${ch} (${count})</span>`;
   }
   container.appendChild(legendDiv);
 

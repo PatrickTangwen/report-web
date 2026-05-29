@@ -12,7 +12,7 @@ format:
       margin-width: 200px
 ---
 
-This page demonstrates the clinical utility of ALIGATEHR-Gen through a focused case study on seven fibrotic diseases: CKD, IPF, NASH, Pulmonary Fibrosis, SSc/Connective Tissue, Crohn's Disease, and Fibrosis of Skin.
+This page demonstrates the clinical utility of ALIGATEHR-Gen through a focused case study on seven fibrotic diseases: CKD, Cardiac Fibrosis, MASH, Pulmonary Fibrosis, SSc/Connective Tissue, Crohn's Disease, and Fibrosis of Skin.
 
 ## Patient Embeddings — 7 Fibrotic Diseases
 
@@ -29,13 +29,15 @@ fibroticData = {
 //| echo: false
 
 fibroticUmap = {
-  const diseaseList = [...new Set(fibroticData.map(d => d.fibrotic_disease))];
+  const diseaseList = [...new Set(fibroticData.map(d => d.disease))];
   const tableau7 = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
     "#9467bd", "#8c564b", "#e377c2"
   ];
   const diseaseColorMap = {};
   diseaseList.forEach((d, i) => { diseaseColorMap[d] = tableau7[i]; });
+
+  const displayName = name => name.replace(/_/g, " ");
 
   const chart = Plot.plot({
     width: 1000,
@@ -44,24 +46,24 @@ fibroticUmap = {
     marginRight: 20,
     marginTop: 20,
     marginBottom: 40,
-    x: { label: "UMAP 1" },
-    y: { label: "UMAP 2" },
+    x: { label: "t-SNE 1" },
+    y: { label: "t-SNE 2" },
     marks: [
       Plot.dot(fibroticData, {
-        x: "umap_x",
-        y: "umap_y",
-        fill: d => diseaseColorMap[d.fibrotic_disease],
+        x: "tsne_x",
+        y: "tsne_y",
+        fill: d => diseaseColorMap[d.disease],
         fillOpacity: 0.7,
         r: 3,
         tip: true,
-        title: d => `${d.patient_id}\nFibrotic Disease: ${d.fibrotic_disease}\nAge: ${d.age} · Sex: ${d.sex}\n${d.primary_diagnosis} — ${d.primary_diagnosis_desc}\nDisease count: ${d.disease_count}`,
+        title: d => `ID: ${d.eid}\nDisease: ${displayName(d.disease)} (${d.abbrev})\nAge: ${d.age_recruit} · Sex: ${d.is_male === 1 ? "Male" : "Female"}\nBMI: ${d.BMI} · Purity: ${d.group}\nP(true): ${Number(d.p_true).toFixed(3)}`,
       }),
     ],
   });
 
   const container = document.createElement("div");
   const titleDiv = document.createElement("div");
-  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Patient Embeddings — 7 Fibrotic Diseases</strong><br><span style="font-size:0.9rem;color:#6c757d;">Coloured by true first-onset fibrotic disease (${fibroticData.length.toLocaleString()} patients)</span>`;
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Patient Embeddings — 7 Fibrotic Diseases</strong><br><span style="font-size:0.9rem;color:#6c757d;">t-SNE of learned representations, coloured by fibrotic disease (${fibroticData.length.toLocaleString()} patients)</span>`;
   titleDiv.style.marginBottom = "8px";
   container.appendChild(titleDiv);
   container.appendChild(chart);
@@ -69,9 +71,9 @@ fibroticUmap = {
   const legendDiv = document.createElement("div");
   legendDiv.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;";
   for (const disease of diseaseList) {
-    const count = fibroticData.filter(d => d.fibrotic_disease === disease).length;
+    const count = fibroticData.filter(d => d.disease === disease).length;
     const color = diseaseColorMap[disease];
-    legendDiv.innerHTML += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle;"></span>${disease} (n=${count.toLocaleString()})</span>`;
+    legendDiv.innerHTML += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle;"></span>${displayName(disease)} (n=${count.toLocaleString()})</span>`;
   }
   container.appendChild(legendDiv);
 
