@@ -82,10 +82,6 @@ Explore interactive visualizations of model performance comparisons, patient sub
 
 A case study on five primary fibrotic and closely related diseases — coronary artery disease (CAD), chronic kidney disease (CKD), metabolic dysfunction-associated steatohepatitis (MASH), pulmonary fibrosis (PF), and Crohn's disease (CD) — reveals that ALIGATEHR-Gen effectively distinguishes patient subgroups based on clinical and genetic features. High-risk patients consistently have a greater number of affected family members and elevated BMI, demonstrating the model's capacity to capture interactions between genetic factors, demographics, and clinical features.
 
-## Funding & Data
-
-This study uses data from the UK Biobank (project ID: 41910) and is supported by the National Institutes of Health (NIH) grant R01LM014087.
-
 ---
 
 <div style="text-align: center; color: #6c757d; font-size: 0.9rem; margin-top: 3rem;">
