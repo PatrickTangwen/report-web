@@ -2,6 +2,7 @@
 _site/
 .quarto/
 *.html
+!chatbot/chatbot-include.html
 /.quarto/
 
 # Python

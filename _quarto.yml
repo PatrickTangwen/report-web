@@ -1,6 +1,9 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - chatbot/chatbot.css
+    - chatbot/chatbot.js
   preview:
     port: 4200
     browser: true
@@ -45,6 +48,7 @@ format:
       light: [cosmo, styles/custom.scss]
       dark: [darkly, styles/custom.scss]
     css: styles/styles.css
+    include-after-body: chatbot/chatbot-include.html
     toc: true
     toc-depth: 3
     toc-location: right
