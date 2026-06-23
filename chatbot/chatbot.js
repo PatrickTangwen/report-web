@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var API_URL = "https://YOUR-HF-SPACE.hf.space";
+  var API_URL = "https://patirckistc-report-web.hf.space";
 
   var history = [];
   var busy = false;

@@ -51,6 +51,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:4200",
         "https://patricktangwen.github.io",
+        "https://patirckistc-report-web.hf.space",
     ],
     allow_methods=["POST", "OPTIONS"],
     allow_headers=["Content-Type"],
