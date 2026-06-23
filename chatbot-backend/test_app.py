@@ -10,12 +10,13 @@ os.environ["LLM_Key_Deepseek"] = "test-key"
 from app import (
     app,
     PAPER_QA_SYSTEM_PROMPT,
-    CLINICAL_NOT_READY,
+    CLINICAL_PROMPT,
     DATA_QUERY_SYSTEM_PROMPT,
     classify_intent,
 )
 from paper_context import PAPER_TEXT
 from data_query import match_disease, match_datasets, query_data, format_data_context
+from clinical_form import get_available_diseases, get_form_fields
 
 
 def _mock_response(content):
@@ -105,7 +106,7 @@ async def test_chat_with_history(client, mock_openai_with_intent):
 # --- Intent classification ---
 
 @pytest.mark.asyncio
-async def test_intent_clinical(client):
+async def test_intent_clinical_returns_disease_select(client):
     with patch("app.client") as mock_client:
         mock_client.chat.completions.create.return_value = _mock_response("clinical")
         resp = await client.post(
@@ -114,7 +115,13 @@ async def test_intent_clinical(client):
         assert resp.status_code == 200
         body = resp.json()
         assert body["intent"] == "clinical"
-        assert body["reply"] == CLINICAL_NOT_READY
+        assert body["reply"] == CLINICAL_PROMPT
+        assert body["ui"]["type"] == "disease_select"
+        diseases = body["ui"]["diseases"]
+        assert len(diseases) == 7
+        ids = [d["id"] for d in diseases]
+        assert "CKD" in ids
+        assert "NASH" in ids
         mock_client.chat.completions.create.assert_called_once()
 
 
@@ -320,3 +327,117 @@ async def test_response_includes_intent_field(client, mock_openai_with_intent):
     body = resp.json()
     assert "intent" in body
     assert "reply" in body
+
+
+# --- Clinical form module ---
+
+def test_get_available_diseases():
+    diseases = get_available_diseases()
+    assert len(diseases) == 7
+    ids = [d["id"] for d in diseases]
+    assert "CKD" in ids
+    assert "NASH" in ids
+    assert "IPF" in ids
+    assert "Crohns_Disease" in ids
+    for d in diseases:
+        assert "id" in d
+        assert "label" in d
+        assert len(d["label"]) > 0
+
+
+def test_get_form_fields_valid_disease():
+    result = get_form_fields("CKD")
+    assert result is not None
+    assert result["disease"] == "CKD"
+    assert "Chronic Kidney Disease" in result["disease_label"]
+    assert len(result["fields"]) == 10
+    first = result["fields"][0]
+    assert first["rank"] == 1
+    assert "key" in first
+    assert "label" in first
+    assert "type" in first
+
+
+def test_get_form_fields_respects_top_n():
+    result = get_form_fields("CKD", top_n=5)
+    assert result is not None
+    assert len(result["fields"]) == 5
+
+
+def test_get_form_fields_alias():
+    result = get_form_fields("mash")
+    assert result is not None
+    assert result["disease"] == "NASH"
+
+
+def test_get_form_fields_unknown_disease():
+    result = get_form_fields("nonexistent_disease_xyz")
+    assert result is None
+
+
+def test_get_form_fields_field_metadata():
+    result = get_form_fields("CKD", top_n=50)
+    for field in result["fields"]:
+        assert "key" in field
+        assert "label" in field
+        assert "type" in field
+        if field["type"] == "numeric":
+            assert "min" in field
+            assert "max" in field
+            assert "step" in field
+        elif field["type"] == "select":
+            assert "options" in field
+
+
+# --- Form-fields endpoint ---
+
+@pytest.mark.asyncio
+async def test_form_fields_endpoint(client):
+    resp = await client.get("/form-fields", params={"disease": "CKD"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["disease"] == "CKD"
+    assert len(body["fields"]) == 10
+
+
+@pytest.mark.asyncio
+async def test_form_fields_with_alias(client):
+    resp = await client.get("/form-fields", params={"disease": "mash"})
+    assert resp.status_code == 200
+    assert resp.json()["disease"] == "NASH"
+
+
+@pytest.mark.asyncio
+async def test_form_fields_unknown_disease(client):
+    resp = await client.get("/form-fields", params={"disease": "unknown_xyz"})
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_form_fields_empty_disease(client):
+    resp = await client.get("/form-fields", params={"disease": ""})
+    assert resp.status_code == 422
+
+
+# --- Clinical submit endpoint ---
+
+@pytest.mark.asyncio
+async def test_clinical_submit(client):
+    resp = await client.post(
+        "/clinical/submit",
+        json={"disease": "CKD", "values": {"BMI": 25.3, "Free T4": 15.2}},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "received"
+    assert body["disease"] == "CKD"
+    assert "Chronic Kidney Disease" in body["message"]
+
+
+@pytest.mark.asyncio
+async def test_clinical_submit_unknown_disease(client):
+    resp = await client.post(
+        "/clinical/submit",
+        json={"disease": "unknown_xyz", "values": {"BMI": 25}},
+    )
+    assert resp.status_code == 404

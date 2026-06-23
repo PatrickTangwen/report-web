@@ -120,6 +120,11 @@
     return msg;
   }
 
+  function addRawElement(el) {
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
   function showTyping() {
     var el = createEl("div", "chatbot-typing");
     for (var i = 0; i < 3; i++) {
@@ -158,6 +163,10 @@
         var reply = data.reply || "Sorry, I could not generate a response.";
         addMessage("assistant", reply);
         history.push({ role: "assistant", content: reply });
+
+        if (data.ui && data.ui.type === "disease_select") {
+          renderDiseaseSelect(data.ui.diseases);
+        }
       })
       .catch(function (err) {
         typing.remove();
@@ -166,6 +175,204 @@
           "Sorry, I'm unable to connect right now. Please try again later."
         );
         console.error("Chatbot error:", err);
+      })
+      .finally(function () {
+        busy = false;
+        sendBtn.disabled = false;
+      });
+  }
+
+  // ── Disease selection ──
+
+  function renderDiseaseSelect(diseases) {
+    var container = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-disease-select");
+    var grid = createEl("div", "chatbot-disease-grid");
+
+    diseases.forEach(function (d) {
+      var btn = createEl("button", "chatbot-disease-btn");
+      btn.textContent = d.label;
+      btn.setAttribute("data-id", d.id);
+      btn.addEventListener("click", function () {
+        onDiseaseSelected(d, container);
+      });
+      grid.appendChild(btn);
+    });
+
+    container.appendChild(grid);
+    addRawElement(container);
+  }
+
+  function onDiseaseSelected(disease, selectContainer) {
+    // Disable all disease buttons
+    var btns = selectContainer.querySelectorAll(".chatbot-disease-btn");
+    btns.forEach(function (btn) {
+      btn.disabled = true;
+      if (btn.getAttribute("data-id") === disease.id) {
+        btn.classList.add("selected");
+      }
+    });
+
+    addMessage("user", "I'd like to assess: " + disease.label);
+    history.push({ role: "user", content: "I'd like to assess: " + disease.label });
+
+    var typing = showTyping();
+    busy = true;
+    sendBtn.disabled = true;
+
+    fetch(API_URL + "/form-fields?disease=" + encodeURIComponent(disease.id))
+      .then(function (res) {
+        if (!res.ok) throw new Error("API returned " + res.status);
+        return res.json();
+      })
+      .then(function (formData) {
+        typing.remove();
+        addMessage(
+          "assistant",
+          "Please fill in the following clinical values for **" +
+            formData.disease_label +
+            "** risk assessment. These are the top " +
+            formData.fields.length +
+            " most important features identified by our model. All fields are optional — fill in what you know."
+        );
+        history.push({
+          role: "assistant",
+          content: "Please fill in the clinical values for " + formData.disease_label + " risk assessment.",
+        });
+        renderClinicalForm(formData);
+      })
+      .catch(function (err) {
+        typing.remove();
+        addMessage(
+          "assistant",
+          "Sorry, I could not load the form for this disease. Please try again."
+        );
+        console.error("Form fields error:", err);
+      })
+      .finally(function () {
+        busy = false;
+        sendBtn.disabled = false;
+      });
+  }
+
+  // ── Clinical form ──
+
+  function renderClinicalForm(formData) {
+    var container = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-clinical-form");
+    var form = createEl("form", "chatbot-form");
+    form.setAttribute("data-disease", formData.disease);
+
+    formData.fields.forEach(function (field) {
+      var group = createEl("div", "chatbot-form-group");
+
+      var label = createEl("label", "chatbot-form-label");
+      label.textContent = field.label;
+      label.setAttribute("for", "cf-" + field.key);
+      group.appendChild(label);
+
+      if (field.type === "select") {
+        var sel = createEl("select", "chatbot-form-input", {
+          id: "cf-" + field.key,
+          name: field.key,
+        });
+        var emptyOpt = createEl("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "— Select —";
+        sel.appendChild(emptyOpt);
+        field.options.forEach(function (opt) {
+          var o = createEl("option");
+          o.value = opt;
+          o.textContent = opt;
+          sel.appendChild(o);
+        });
+        group.appendChild(sel);
+      } else {
+        var inp = createEl("input", "chatbot-form-input", {
+          id: "cf-" + field.key,
+          name: field.key,
+          type: "number",
+          step: String(field.step),
+          min: String(field.min),
+          max: String(field.max),
+          placeholder: field.min + " – " + field.max,
+        });
+        group.appendChild(inp);
+      }
+
+      form.appendChild(group);
+    });
+
+    var submitBtn = createEl("button", "chatbot-form-submit", { type: "submit" });
+    submitBtn.textContent = "Submit Assessment";
+    form.appendChild(submitBtn);
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      onFormSubmit(form, formData, container);
+    });
+
+    container.appendChild(form);
+    addRawElement(container);
+  }
+
+  function onFormSubmit(form, formData, formContainer) {
+    var values = {};
+    var hasValue = false;
+
+    formData.fields.forEach(function (field) {
+      var el = form.querySelector('[name="' + field.key + '"]');
+      if (!el) return;
+      var val = el.value.trim();
+      if (val === "") return;
+      if (field.type === "numeric") {
+        values[field.key] = parseFloat(val);
+      } else {
+        values[field.key] = val;
+      }
+      hasValue = true;
+    });
+
+    if (!hasValue) {
+      addMessage("assistant", "Please fill in at least one field before submitting.");
+      return;
+    }
+
+    // Disable form
+    var inputs = form.querySelectorAll("input, select, button");
+    inputs.forEach(function (el) { el.disabled = true; });
+
+    // Show submitted values as user message
+    var summary = "Submitted values for " + formData.disease_label + ":\n";
+    for (var key in values) {
+      summary += "• " + key + ": " + values[key] + "\n";
+    }
+    addMessage("user", summary.trim());
+    history.push({ role: "user", content: summary.trim() });
+
+    var typing = showTyping();
+    busy = true;
+    sendBtn.disabled = true;
+
+    fetch(API_URL + "/clinical/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ disease: formData.disease, values: values }),
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("API returned " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        typing.remove();
+        addMessage("assistant", data.message);
+        history.push({ role: "assistant", content: data.message });
+      })
+      .catch(function (err) {
+        typing.remove();
+        addMessage(
+          "assistant",
+          "Sorry, there was an error submitting your data. Please try again."
+        );
+        console.error("Clinical submit error:", err);
       })
       .finally(function () {
         busy = false;

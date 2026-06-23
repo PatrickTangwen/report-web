@@ -3,12 +3,13 @@ import re
 from contextlib import asynccontextmanager
 
 from openai import OpenAI, APIError
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from paper_context import PAPER_TEXT
 from data_query import query_data, format_data_context
+from clinical_form import get_available_diseases, get_form_fields
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -43,11 +44,9 @@ PAPER_QA_SYSTEM_PROMPT = (
     "--- END PAPER CONTENT ---"
 )
 
-CLINICAL_NOT_READY = (
-    "The clinical risk assessment feature is not yet available. "
-    "It is currently under development and will support guided disease risk evaluation "
-    "in a future update. In the meantime, I can answer questions about the ALIGATEHR-Gen "
-    "paper and methodology — feel free to ask!"
+CLINICAL_PROMPT = (
+    "I can help assess your risk for the following diseases. "
+    "Please select one to begin the clinical risk assessment:"
 )
 
 DATA_QUERY_SYSTEM_PROMPT = (
@@ -76,6 +75,24 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     intent: str = "paper_qa"
+    ui: dict | None = None
+
+
+class FormFieldsResponse(BaseModel):
+    disease: str
+    disease_label: str
+    fields: list[dict]
+
+
+class ClinicalSubmitRequest(BaseModel):
+    disease: str
+    values: dict
+
+
+class ClinicalSubmitResponse(BaseModel):
+    status: str
+    disease: str
+    message: str
 
 
 client: OpenAI | None = None
@@ -99,7 +116,7 @@ app.add_middleware(
         "https://patricktangwen.github.io",
         "https://patirckistc-report-web.hf.space",
     ],
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
@@ -126,6 +143,29 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/form-fields", response_model=FormFieldsResponse)
+async def form_fields(disease: str = Query(min_length=1)):
+    result = get_form_fields(disease)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Unknown disease: {disease}")
+    return result
+
+
+@app.post("/clinical/submit", response_model=ClinicalSubmitResponse)
+async def clinical_submit(req: ClinicalSubmitRequest):
+    result = get_form_fields(req.disease)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Unknown disease: {req.disease}")
+    return ClinicalSubmitResponse(
+        status="received",
+        disease=result["disease"],
+        message=(
+            f"Your clinical data for {result['disease_label']} has been received. "
+            "Risk assessment report generation will be available in a future update."
+        ),
+    )
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     if client is None:
@@ -137,7 +177,12 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
 
     if intent == "clinical":
-        return ChatResponse(reply=CLINICAL_NOT_READY, intent=intent)
+        diseases = get_available_diseases()
+        return ChatResponse(
+            reply=CLINICAL_PROMPT,
+            intent=intent,
+            ui={"type": "disease_select", "diseases": diseases},
+        )
 
     if intent == "data_query":
         results, disease, dataset_names = query_data(req.message)
