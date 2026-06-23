@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from paper_context import PAPER_TEXT
+from data_query import query_data, format_data_context
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -42,11 +43,14 @@ CLINICAL_NOT_READY = (
     "paper and methodology — feel free to ask!"
 )
 
-DATA_QUERY_NOT_READY = (
-    "The data query feature is not yet available. "
-    "It is currently under development and will allow you to explore the evaluation "
-    "datasets directly. In the meantime, I can answer questions about the ALIGATEHR-Gen "
-    "paper and its results — feel free to ask!"
+DATA_QUERY_SYSTEM_PROMPT = (
+    "You are a data analyst for the ALIGATEHR-Gen project. "
+    "Answer questions using ONLY the query results provided below. "
+    "If the data does not contain the answer, say so explicitly.\n\n"
+    "Present numbers precisely as they appear in the data. "
+    "Use tables or bullet points for comparative answers. "
+    "Keep answers concise and well-structured.\n\n"
+    "Important: This is a research prototype for demonstration purposes only.\n\n"
 )
 
 INTENT_LABELS = ("paper_qa", "clinical", "data_query", "general")
@@ -129,9 +133,13 @@ async def chat(req: ChatRequest):
         return ChatResponse(reply=CLINICAL_NOT_READY, intent=intent)
 
     if intent == "data_query":
-        return ChatResponse(reply=DATA_QUERY_NOT_READY, intent=intent)
+        results, disease, dataset_names = query_data(req.message)
+        data_context = format_data_context(results, disease, dataset_names)
+        system = DATA_QUERY_SYSTEM_PROMPT + "--- QUERY RESULTS ---\n" + data_context + "\n--- END QUERY RESULTS ---"
+    else:
+        system = PAPER_QA_SYSTEM_PROMPT
 
-    messages = [{"role": "system", "content": PAPER_QA_SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": system}]
     messages.extend({"role": m.role, "content": m.content} for m in req.history)
     messages.append({"role": "user", "content": req.message})
 

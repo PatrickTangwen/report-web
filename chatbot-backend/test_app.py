@@ -11,10 +11,11 @@ from app import (
     app,
     PAPER_QA_SYSTEM_PROMPT,
     CLINICAL_NOT_READY,
-    DATA_QUERY_NOT_READY,
+    DATA_QUERY_SYSTEM_PROMPT,
     classify_intent,
 )
 from paper_context import PAPER_TEXT
+from data_query import match_disease, match_datasets, query_data, format_data_context
 
 
 def _mock_response(content):
@@ -118,17 +119,23 @@ async def test_intent_clinical(client):
 
 
 @pytest.mark.asyncio
-async def test_intent_data_query(client):
+async def test_intent_data_query_routes_to_data(client):
     with patch("app.client") as mock_client:
-        mock_client.chat.completions.create.return_value = _mock_response("data_query")
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("data_query"),
+            _mock_response("The AUROC for CKD is 0.82."),
+        ]
         resp = await client.post(
-            "/chat", json={"message": "Show me the ablation results CSV"}
+            "/chat", json={"message": "What's the AUROC for CKD?"}
         )
         assert resp.status_code == 200
         body = resp.json()
         assert body["intent"] == "data_query"
-        assert body["reply"] == DATA_QUERY_NOT_READY
-        mock_client.chat.completions.create.assert_called_once()
+        assert body["reply"] == "The AUROC for CKD is 0.82."
+
+        qa_call = mock_client.chat.completions.create.call_args_list[1]
+        system_content = qa_call.kwargs["messages"][0]["content"]
+        assert "QUERY RESULTS" in system_content
 
 
 @pytest.mark.asyncio
@@ -175,6 +182,89 @@ def test_classify_intent_garbage_defaults():
         )
         result = classify_intent("What is the AUC?")
         assert result == "paper_qa"
+
+
+# --- Data query module ---
+
+def test_match_disease_exact():
+    assert match_disease("What's the AUROC for CKD?") == "CKD"
+
+
+def test_match_disease_full_name():
+    assert match_disease("Tell me about Type 2 Diabetes") == "Type 2 Diabetes"
+
+
+def test_match_disease_underscore():
+    assert match_disease("pathways for Crohns Disease") == "Crohns_Disease"
+
+
+def test_match_disease_none():
+    assert match_disease("What's the best model?") is None
+
+
+def test_match_disease_case_insensitive():
+    result = match_disease("what about ckd?")
+    assert result == "CKD"
+
+
+def test_match_datasets_eval_keywords():
+    result = match_datasets("What's the AUROC for CKD?")
+    assert "evaluation_metrics" in result
+
+
+def test_match_datasets_ablation_keywords():
+    result = match_datasets("What happens without genetic data?")
+    assert "ablation_results" in result
+
+
+def test_match_datasets_feature_keywords():
+    result = match_datasets("What are the top risk factors for MASH?")
+    assert "feature_importance" in result
+
+
+def test_match_datasets_pathway_keywords():
+    result = match_datasets("What pathways are enriched in CKD?")
+    assert "pathway_enrichment" in result
+
+
+def test_match_datasets_defaults_to_eval():
+    result = match_datasets("Tell me something about the data")
+    assert result == ["evaluation_metrics"]
+
+
+def test_query_data_filters_by_disease():
+    results, disease, names = query_data("What's the AUROC for CKD?")
+    assert disease == "CKD"
+    assert "evaluation_metrics" in results
+    assert "CKD" in results["evaluation_metrics"]
+    assert "Type 2 Diabetes" not in results["evaluation_metrics"]
+
+
+def test_query_data_ablation():
+    results, disease, names = query_data("What happens without genetic data?")
+    assert "ablation_results" in results
+    assert "w/o Genetic Data" in results["ablation_results"]
+
+
+def test_query_data_feature_importance():
+    results, disease, names = query_data("Top risk factors for NASH?")
+    assert "feature_importance" in results
+    assert "NASH" in results["feature_importance"]
+
+
+def test_query_data_pathway():
+    results, disease, names = query_data("What pathways are enriched in CKD?")
+    assert "pathway_enrichment" in results
+    assert "CKD" in results["pathway_enrichment"]
+
+
+def test_format_data_context_structure():
+    results, disease, names = query_data("AUROC for CKD")
+    ctx = format_data_context(results, disease, names)
+    assert "Available datasets:" in ctx
+    assert "Detected disease filter: CKD" in ctx
+    assert "=== evaluation_metrics ===" in ctx
+    assert "Available diseases per dataset" in ctx
 
 
 # --- Error handling ---
