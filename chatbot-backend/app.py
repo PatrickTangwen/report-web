@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-import anthropic
+from openai import OpenAI, APIError
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -32,15 +32,15 @@ class ChatResponse(BaseModel):
     reply: str
 
 
-client: anthropic.Anthropic | None = None
+client: OpenAI | None = None
 
 
 @asynccontextmanager
 async def lifespan(app):
     global client
-    api_key = os.environ.get("LLM_API_KEY")
+    api_key = os.environ.get("LLM_Key_Deepseek")
     if api_key:
-        client = anthropic.Anthropic(api_key=api_key)
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
     yield
 
 
@@ -68,18 +68,18 @@ async def chat(req: ChatRequest):
     if client is None:
         raise HTTPException(status_code=503, detail="LLM API key not configured")
 
-    messages = [{"role": m.role, "content": m.content} for m in req.history]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages.extend({"role": m.role, "content": m.content} for m in req.history)
     messages.append({"role": "user", "content": req.message})
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        response = client.chat.completions.create(
+            model="deepseek-chat",
             max_tokens=1024,
-            system=SYSTEM_PROMPT,
             messages=messages,
         )
-        reply = response.content[0].text
-    except anthropic.APIError as e:
+        reply = response.choices[0].message.content
+    except APIError as e:
         raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
 
     return ChatResponse(reply=reply)

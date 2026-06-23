@@ -5,17 +5,19 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-os.environ["LLM_API_KEY"] = "test-key"
+os.environ["LLM_Key_Deepseek"] = "test-key"
 
 from app import app
 
 
 @pytest.fixture
-def mock_anthropic():
+def mock_openai():
+    mock_message = MagicMock()
+    mock_message.message.content = "This is a test response."
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text="This is a test response.")]
+    mock_response.choices = [mock_message]
     with patch("app.client") as mock_client:
-        mock_client.messages.create.return_value = mock_response
+        mock_client.chat.completions.create.return_value = mock_response
         yield mock_client
 
 
@@ -34,7 +36,7 @@ async def test_health(client):
 
 
 @pytest.mark.asyncio
-async def test_chat_returns_reply(client, mock_anthropic):
+async def test_chat_returns_reply(client, mock_openai):
     resp = await client.post("/chat", json={"message": "Hello"})
     assert resp.status_code == 200
     body = resp.json()
@@ -43,7 +45,7 @@ async def test_chat_returns_reply(client, mock_anthropic):
 
 
 @pytest.mark.asyncio
-async def test_chat_with_history(client, mock_anthropic):
+async def test_chat_with_history(client, mock_openai):
     resp = await client.post(
         "/chat",
         json={
@@ -55,16 +57,17 @@ async def test_chat_with_history(client, mock_anthropic):
         },
     )
     assert resp.status_code == 200
-    call_args = mock_anthropic.messages.create.call_args
+    call_args = mock_openai.chat.completions.create.call_args
     messages = call_args.kwargs["messages"]
-    assert len(messages) == 3
-    assert messages[0]["role"] == "user"
-    assert messages[1]["role"] == "assistant"
-    assert messages[2]["content"] == "Follow up question"
+    assert len(messages) == 4
+    assert messages[0]["role"] == "system"
+    assert messages[1]["role"] == "user"
+    assert messages[2]["role"] == "assistant"
+    assert messages[3]["content"] == "Follow up question"
 
 
 @pytest.mark.asyncio
-async def test_chat_empty_message(client, mock_anthropic):
+async def test_chat_empty_message(client, mock_openai):
     resp = await client.post("/chat", json={"message": ""})
     assert resp.status_code == 200
 
