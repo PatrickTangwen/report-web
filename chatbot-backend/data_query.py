@@ -107,6 +107,11 @@ _PATHWAY_KEYWORDS = [
     "gene", "biological process", "signaling",
 ]
 
+_EMBEDDING_KEYWORDS = [
+    "embedding", "cluster", "umap", "tsne", "similar patient",
+    "patient cluster", "where do", "purity", "overlap",
+]
+
 
 def match_datasets(query):
     q = _normalize(query)
@@ -122,6 +127,16 @@ def match_datasets(query):
     if not matched:
         matched = ["evaluation_metrics"]
     return matched
+
+
+def is_pathway_query(query):
+    q = _normalize(query)
+    return any(kw in q for kw in _PATHWAY_KEYWORDS)
+
+
+def is_embedding_query(query):
+    q = _normalize(query)
+    return any(kw in q for kw in _EMBEDDING_KEYWORDS)
 
 
 # --- Query execution ---

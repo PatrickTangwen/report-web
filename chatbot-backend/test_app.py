@@ -15,9 +15,10 @@ from app import (
     classify_intent,
 )
 from paper_context import PAPER_TEXT
-from data_query import match_disease, match_datasets, query_data, format_data_context
+from data_query import match_disease, match_datasets, query_data, format_data_context, is_pathway_query, is_embedding_query
 from clinical_form import get_available_diseases, get_form_fields
 from risk_assessment import query_patient_risk
+from followup import get_pathway_enrichment, describe_embedding_context
 
 
 def _mock_response(content):
@@ -529,3 +530,178 @@ async def test_assess_no_embedding_disease(client):
         json={"disease": "IPF", "values": {"BMI": 25}},
     )
     assert resp.status_code == 404
+
+
+# --- Followup: pathway enrichment ---
+
+def test_get_pathway_enrichment_valid():
+    result = get_pathway_enrichment("CKD")
+    assert result is not None
+    assert result["disease"] == "CKD"
+    assert "Chronic Kidney Disease" in result["disease_label"]
+    assert len(result["pathways"]) == 10
+    first = result["pathways"][0]
+    assert "pathway" in first
+    assert "source" in first
+    assert "gene_count" in first
+    assert "enrichment_ratio" in first
+    assert "p_adjusted" in first
+
+
+def test_get_pathway_enrichment_top_n():
+    result = get_pathway_enrichment("CKD", top_n=5)
+    assert result is not None
+    assert len(result["pathways"]) == 5
+
+
+def test_get_pathway_enrichment_alias():
+    result = get_pathway_enrichment("mash")
+    assert result is not None
+    assert result["disease"] == "NASH"
+
+
+def test_get_pathway_enrichment_unknown():
+    result = get_pathway_enrichment("nonexistent_xyz")
+    assert result is None
+
+
+def test_get_pathway_enrichment_sources():
+    result = get_pathway_enrichment("CKD", top_n=40)
+    sources = {p["source"] for p in result["pathways"]}
+    assert len(sources) >= 2
+
+
+# --- Followup: embedding context ---
+
+def test_describe_embedding_context_valid():
+    result = describe_embedding_context("CKD")
+    assert result is not None
+    assert result["disease"] == "CKD"
+    assert result["embed_disease"] == "CKD"
+    assert result["total_patients"] > 0
+    assert "x" in result["centroid"]
+    assert "y" in result["centroid"]
+    assert result["mean_purity_2d"] > 0
+    groups = result["groups"]
+    for g in ("pure", "intermediate", "overlap"):
+        assert g in groups
+        assert "count" in groups[g]
+        assert "pct" in groups[g]
+    assert len(result["nearest_clusters"]) == 3
+
+
+def test_describe_embedding_context_alias():
+    result = describe_embedding_context("mash")
+    assert result is not None
+    assert result["disease"] == "NASH"
+    assert result["embed_disease"] == "MASH"
+
+
+def test_describe_embedding_context_unknown():
+    result = describe_embedding_context("nonexistent_xyz")
+    assert result is None
+
+
+def test_describe_embedding_context_no_embedding():
+    result = describe_embedding_context("IPF")
+    assert result is None
+
+
+def test_describe_embedding_context_group_pcts_sum():
+    result = describe_embedding_context("CKD")
+    total_pct = sum(result["groups"][g]["pct"] for g in ("pure", "intermediate", "overlap"))
+    assert 99.5 <= total_pct <= 100.5
+
+
+# --- Keyword detection ---
+
+def test_is_pathway_query():
+    assert is_pathway_query("What pathways are involved?")
+    assert is_pathway_query("Show me the enriched pathways")
+    assert is_pathway_query("KEGG pathways for this disease")
+    assert not is_pathway_query("What's the AUROC?")
+
+
+def test_is_embedding_query():
+    assert is_embedding_query("Where do similar patients cluster?")
+    assert is_embedding_query("Show me the UMAP embedding")
+    assert is_embedding_query("What about patient clustering?")
+    assert not is_embedding_query("What's the AUROC?")
+
+
+# --- Chat with assessed_disease ---
+
+@pytest.mark.asyncio
+async def test_chat_pathway_with_assessed_disease(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.return_value = _mock_response("data_query")
+        resp = await client.post(
+            "/chat",
+            json={
+                "message": "What pathways are involved?",
+                "assessed_disease": "CKD",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["ui"] is not None
+        assert body["ui"]["type"] == "pathway_enrichment"
+        assert body["ui"]["disease"] == "CKD"
+        assert len(body["ui"]["pathways"]) == 10
+        mock_client.chat.completions.create.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_chat_pathway_disease_in_message(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.return_value = _mock_response("data_query")
+        resp = await client.post(
+            "/chat",
+            json={"message": "What pathways are enriched in CKD?"},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["ui"]["type"] == "pathway_enrichment"
+        assert body["ui"]["disease"] == "CKD"
+
+
+@pytest.mark.asyncio
+async def test_chat_embedding_with_assessed_disease(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("data_query"),
+            _mock_response("The CKD patients form a distinct cluster in the UMAP space."),
+        ]
+        resp = await client.post(
+            "/chat",
+            json={
+                "message": "Where do similar patients cluster?",
+                "assessed_disease": "CKD",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "cluster" in body["reply"].lower()
+        calls = mock_client.chat.completions.create.call_args_list
+        system_content = calls[1].kwargs["messages"][0]["content"]
+        assert "EMBEDDING CONTEXT" in system_content
+        assert "CKD" in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_data_query_fallback_assessed_disease(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("data_query"),
+            _mock_response("The top risk factors are BMI and creatinine."),
+        ]
+        resp = await client.post(
+            "/chat",
+            json={
+                "message": "What are the top risk factors?",
+                "assessed_disease": "CKD",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["intent"] == "data_query"

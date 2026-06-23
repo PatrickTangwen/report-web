@@ -443,6 +443,92 @@
   line-height: 1.3;
 }
 
+/* ── Pathway enrichment card ── */
+
+.chatbot-pathway-card {
+  max-width: 100%;
+  padding: 0.7rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+}
+
+.chatbot-pathway-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.chatbot-pathway-table th {
+  text-align: left;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.chatbot-pathway-table td {
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid #e9ecef;
+  color: #333;
+}
+
+.chatbot-pathway-table tr:last-child td {
+  border-bottom: none;
+}
+
+.chatbot-pathway-table td:first-child {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Follow-up suggestions ── */
+
+.chatbot-followup-suggestions {
+  max-width: 100%;
+  padding: 0.5rem;
+  background: transparent;
+}
+
+.chatbot-followup-label {
+  font-size: 0.78rem;
+  color: #666;
+  margin-bottom: 0.35rem;
+}
+
+.chatbot-followup-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chatbot-followup-btn {
+  padding: 0.35rem 0.65rem;
+  border-radius: 16px;
+  border: 1px solid #2c5aa0;
+  background: #fff;
+  color: #2c5aa0;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.3;
+}
+
+.chatbot-followup-btn:hover:not(:disabled) {
+  background: #2c5aa0;
+  color: #fff;
+}
+
+.chatbot-followup-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ── Dark mode ── */
 
 .quarto-dark .chatbot-panel {
@@ -548,6 +634,36 @@
 .quarto-dark .chatbot-report-disclaimer {
   border-top-color: #495057;
   color: #777;
+}
+
+.quarto-dark .chatbot-pathway-card {
+  background: #2b3035;
+  border-color: #495057;
+}
+
+.quarto-dark .chatbot-pathway-table th {
+  color: #aaa;
+  border-bottom-color: #495057;
+}
+
+.quarto-dark .chatbot-pathway-table td {
+  color: #d0d0d0;
+  border-bottom-color: #3a4048;
+}
+
+.quarto-dark .chatbot-followup-label {
+  color: #999;
+}
+
+.quarto-dark .chatbot-followup-btn {
+  background: #2b3035;
+  border-color: #5a8fd4;
+  color: #5a8fd4;
+}
+
+.quarto-dark .chatbot-followup-btn:hover:not(:disabled) {
+  background: #5a8fd4;
+  color: #fff;
 }
 
 /* ── Mobile ── */

@@ -8,9 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from paper_context import PAPER_TEXT
-from data_query import query_data, format_data_context
+from data_query import query_data, format_data_context, match_disease, is_pathway_query, is_embedding_query
 from clinical_form import get_available_diseases, get_form_fields
 from risk_assessment import query_patient_risk
+from followup import get_pathway_enrichment, describe_embedding_context
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -63,6 +64,26 @@ DATA_QUERY_SYSTEM_PROMPT = (
 INTENT_LABELS = ("paper_qa", "clinical", "data_query", "general")
 
 
+def _format_embedding_context(emb):
+    groups = emb["groups"]
+    lines = [
+        f"Disease: {emb['disease_label']} ({emb['embed_disease']})",
+        f"Total patients in embedding space: {emb['total_patients']}",
+        f"UMAP centroid: ({emb['centroid']['x']}, {emb['centroid']['y']})",
+        f"Mean 2D purity: {emb['mean_purity_2d']}",
+        "",
+        "Patient group distribution:",
+        f"  Pure: {groups['pure']['count']} ({groups['pure']['pct']}%)",
+        f"  Intermediate: {groups['intermediate']['count']} ({groups['intermediate']['pct']}%)",
+        f"  Overlap: {groups['overlap']['count']} ({groups['overlap']['pct']}%)",
+        "",
+        "Nearest disease clusters (by UMAP centroid distance):",
+    ]
+    for n in emb["nearest_clusters"]:
+        lines.append(f"  {n['disease']}: distance {n['distance']}")
+    return "\n".join(lines)
+
+
 class Message(BaseModel):
     role: str
     content: str
@@ -71,6 +92,7 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[Message] = []
+    assessed_disease: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -209,8 +231,40 @@ async def chat(req: ChatRequest):
         )
 
     if intent == "data_query":
-        results, disease, dataset_names = query_data(req.message)
-        data_context = format_data_context(results, disease, dataset_names)
+        disease_from_msg = match_disease(req.message)
+        disease = disease_from_msg or req.assessed_disease
+
+        if is_pathway_query(req.message) and disease:
+            pw = get_pathway_enrichment(disease)
+            if pw:
+                return ChatResponse(
+                    reply=f"Here are the top enriched pathways for **{pw['disease_label']}**:",
+                    intent="data_query",
+                    ui={"type": "pathway_enrichment", **pw},
+                )
+
+        if is_embedding_query(req.message) and disease:
+            emb = describe_embedding_context(disease)
+            if emb:
+                emb_context = _format_embedding_context(emb)
+                system = DATA_QUERY_SYSTEM_PROMPT + "--- EMBEDDING CONTEXT ---\n" + emb_context + "\n--- END EMBEDDING CONTEXT ---"
+                messages = [{"role": "system", "content": system}]
+                messages.extend({"role": m.role, "content": m.content} for m in req.history)
+                messages.append({"role": "user", "content": req.message})
+                try:
+                    response = client.chat.completions.create(
+                        model="deepseek-chat", max_tokens=1024, messages=messages,
+                    )
+                    reply = response.choices[0].message.content
+                except APIError as e:
+                    raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
+                return ChatResponse(reply=reply, intent="data_query")
+
+        results, disease_q, dataset_names = query_data(req.message)
+        if not disease_q and req.assessed_disease:
+            results, _, dataset_names = query_data(req.message + " " + req.assessed_disease)
+            disease_q = req.assessed_disease
+        data_context = format_data_context(results, disease_q, dataset_names)
         system = DATA_QUERY_SYSTEM_PROMPT + "--- QUERY RESULTS ---\n" + data_context + "\n--- END QUERY RESULTS ---"
     else:
         system = PAPER_QA_SYSTEM_PROMPT

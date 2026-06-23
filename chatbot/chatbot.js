@@ -5,6 +5,7 @@
 
   var history = [];
   var busy = false;
+  var lastAssessedDisease = null;
 
   // ── Build DOM ──
 
@@ -149,10 +150,15 @@
 
     var typing = showTyping();
 
+    var chatBody = { message: text, history: history.slice(0, -1) };
+    if (lastAssessedDisease) {
+      chatBody.assessed_disease = lastAssessedDisease;
+    }
+
     fetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      body: JSON.stringify(chatBody),
     })
       .then(function (res) {
         if (!res.ok) throw new Error("API returned " + res.status);
@@ -166,6 +172,9 @@
 
         if (data.ui && data.ui.type === "disease_select") {
           renderDiseaseSelect(data.ui.diseases);
+        }
+        if (data.ui && data.ui.type === "pathway_enrichment") {
+          renderPathwayEnrichment(data.ui);
         }
       })
       .catch(function (err) {
@@ -364,7 +373,9 @@
       .then(function (data) {
         typing.remove();
         renderRiskReport(data);
+        lastAssessedDisease = data.disease;
         history.push({ role: "assistant", content: "Risk assessment for " + data.disease_label + ": " + data.risk_level + " risk." });
+        renderFollowupSuggestions(data.disease_label);
       })
       .catch(function (err) {
         typing.remove();
@@ -456,6 +467,73 @@
     card.appendChild(disc);
 
     addRawElement(card);
+  }
+
+  // ── Pathway enrichment card ──
+
+  function renderPathwayEnrichment(data) {
+    var card = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-pathway-card");
+
+    var title = createEl("div", "chatbot-report-title");
+    title.textContent = "Pathway Enrichment: " + data.disease_label;
+    card.appendChild(title);
+
+    var table = createEl("table", "chatbot-pathway-table");
+    var thead = createEl("thead");
+    var headerRow = createEl("tr");
+    ["Pathway", "Source", "Genes", "Enrichment", "p-adj"].forEach(function (h) {
+      var th = createEl("th");
+      th.textContent = h;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    var tbody = createEl("tbody");
+    data.pathways.forEach(function (p) {
+      var tr = createEl("tr");
+      var vals = [p.pathway, p.source, p.gene_count, p.enrichment_ratio + "×", p.p_adjusted];
+      vals.forEach(function (v) {
+        var td = createEl("td");
+        td.textContent = v;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    card.appendChild(table);
+
+    addRawElement(card);
+  }
+
+  // ── Follow-up suggestions ──
+
+  function renderFollowupSuggestions(diseaseLabel) {
+    var container = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-followup-suggestions");
+    var label = createEl("div", "chatbot-followup-label");
+    label.textContent = "You can ask follow-up questions:";
+    container.appendChild(label);
+
+    var grid = createEl("div", "chatbot-followup-grid");
+    var suggestions = [
+      "What pathways are involved?",
+      "Where do similar patients cluster?",
+      "What are the top risk factors?",
+    ];
+    suggestions.forEach(function (text) {
+      var btn = createEl("button", "chatbot-followup-btn");
+      btn.textContent = text;
+      btn.addEventListener("click", function () {
+        grid.querySelectorAll(".chatbot-followup-btn").forEach(function (b) {
+          b.disabled = true;
+        });
+        input.value = text;
+        send();
+      });
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+    addRawElement(container);
   }
 
   // Minimal markdown: **bold**, `code`, newlines → <br>, paragraphs
