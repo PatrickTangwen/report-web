@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from paper_context import PAPER_TEXT
 from data_query import query_data, format_data_context
 from clinical_form import get_available_diseases, get_form_fields
+from risk_assessment import query_patient_risk
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -95,6 +96,21 @@ class ClinicalSubmitResponse(BaseModel):
     message: str
 
 
+class AssessRequest(BaseModel):
+    disease: str
+    values: dict
+
+
+class AssessResponse(BaseModel):
+    disease: str
+    disease_label: str
+    risk_level: str
+    risk_probability: float
+    risk_factors: list[dict]
+    similar_patients: dict
+    disclaimer: str
+
+
 client: OpenAI | None = None
 
 
@@ -164,6 +180,14 @@ async def clinical_submit(req: ClinicalSubmitRequest):
             "Risk assessment report generation will be available in a future update."
         ),
     )
+
+
+@app.post("/assess", response_model=AssessResponse)
+async def assess(req: AssessRequest):
+    result = query_patient_risk(req.values, req.disease)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Unknown disease: {req.disease}")
+    return result
 
 
 @app.post("/chat", response_model=ChatResponse)

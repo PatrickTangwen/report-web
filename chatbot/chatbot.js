@@ -352,7 +352,7 @@
     busy = true;
     sendBtn.disabled = true;
 
-    fetch(API_URL + "/clinical/submit", {
+    fetch(API_URL + "/assess", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ disease: formData.disease, values: values }),
@@ -363,21 +363,99 @@
       })
       .then(function (data) {
         typing.remove();
-        addMessage("assistant", data.message);
-        history.push({ role: "assistant", content: data.message });
+        renderRiskReport(data);
+        history.push({ role: "assistant", content: "Risk assessment for " + data.disease_label + ": " + data.risk_level + " risk." });
       })
       .catch(function (err) {
         typing.remove();
         addMessage(
           "assistant",
-          "Sorry, there was an error submitting your data. Please try again."
+          "Sorry, there was an error generating the risk assessment. Please try again."
         );
-        console.error("Clinical submit error:", err);
+        console.error("Assess error:", err);
       })
       .finally(function () {
         busy = false;
         sendBtn.disabled = false;
       });
+  }
+
+  // ── Risk report ──
+
+  function renderRiskReport(report) {
+    var card = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-risk-report");
+
+    // Title
+    var title = createEl("div", "chatbot-report-title");
+    title.textContent = "Risk Assessment: " + report.disease_label;
+    card.appendChild(title);
+
+    // Risk score badge
+    var scoreSec = createEl("div", "chatbot-report-section");
+    var badge = createEl("span", "chatbot-risk-badge chatbot-risk-" + report.risk_level);
+    badge.textContent = report.risk_level.toUpperCase() + " RISK";
+    scoreSec.appendChild(badge);
+    var prob = createEl("span", "chatbot-risk-prob");
+    prob.textContent = " (" + (report.risk_probability * 100).toFixed(1) + "% probability)";
+    scoreSec.appendChild(prob);
+    card.appendChild(scoreSec);
+
+    // Key risk factors
+    var rfTitle = createEl("div", "chatbot-report-subtitle");
+    rfTitle.textContent = "Key Risk Factors";
+    card.appendChild(rfTitle);
+
+    var rfList = createEl("div", "chatbot-report-factors");
+    report.risk_factors.forEach(function (rf) {
+      var row = createEl("div", "chatbot-factor-row");
+      var name = createEl("span", "chatbot-factor-name");
+      name.textContent = "#" + rf.rank + " " + rf.feature;
+      row.appendChild(name);
+      if (rf.user_value != null && rf.cohort_mean != null) {
+        var vals = createEl("span", "chatbot-factor-vals");
+        vals.textContent = "You: " + rf.user_value + " | Cohort: " + rf.cohort_mean + " (" + rf.cohort_min + "–" + rf.cohort_max + ")";
+        row.appendChild(vals);
+      } else if (rf.user_value != null) {
+        var uv = createEl("span", "chatbot-factor-vals");
+        uv.textContent = "You: " + rf.user_value;
+        row.appendChild(uv);
+      }
+      rfList.appendChild(row);
+    });
+    card.appendChild(rfList);
+
+    // Similar patients
+    var sp = report.similar_patients;
+    var spTitle = createEl("div", "chatbot-report-subtitle");
+    spTitle.textContent = "Similar Patient Statistics";
+    card.appendChild(spTitle);
+
+    var stats = createEl("div", "chatbot-report-stats");
+    var items = [
+      ["Matched patients", sp.count],
+      ["High-risk", sp.high_risk_pct + "%"],
+      ["Mean age", sp.mean_age],
+    ];
+    if (sp.male_pct != null) items.push(["Male", sp.male_pct + "%"]);
+    if (sp.family_history_pct != null) items.push(["Family history", sp.family_history_pct + "%"]);
+    items.forEach(function (pair) {
+      var stat = createEl("div", "chatbot-stat-item");
+      var val = createEl("div", "chatbot-stat-value");
+      val.textContent = pair[1];
+      var lbl = createEl("div", "chatbot-stat-label");
+      lbl.textContent = pair[0];
+      stat.appendChild(val);
+      stat.appendChild(lbl);
+      stats.appendChild(stat);
+    });
+    card.appendChild(stats);
+
+    // Disclaimer
+    var disc = createEl("div", "chatbot-report-disclaimer");
+    disc.textContent = report.disclaimer;
+    card.appendChild(disc);
+
+    addRawElement(card);
   }
 
   // Minimal markdown: **bold**, `code`, newlines → <br>, paragraphs

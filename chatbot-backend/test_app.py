@@ -17,6 +17,7 @@ from app import (
 from paper_context import PAPER_TEXT
 from data_query import match_disease, match_datasets, query_data, format_data_context
 from clinical_form import get_available_diseases, get_form_fields
+from risk_assessment import query_patient_risk
 
 
 def _mock_response(content):
@@ -439,5 +440,92 @@ async def test_clinical_submit_unknown_disease(client):
     resp = await client.post(
         "/clinical/submit",
         json={"disease": "unknown_xyz", "values": {"BMI": 25}},
+    )
+    assert resp.status_code == 404
+
+
+# --- Risk assessment module ---
+
+def test_query_patient_risk_valid():
+    result = query_patient_risk({"BMI": 27.5, "Creatinine": 100}, "CKD")
+    assert result is not None
+    assert result["disease"] == "CKD"
+    assert result["risk_level"] in ("high", "medium", "low")
+    assert 0 <= result["risk_probability"] <= 1
+    assert len(result["risk_factors"]) == 5
+    assert result["similar_patients"]["count"] == 20
+    assert "disclaimer" in result
+
+
+def test_query_patient_risk_alias():
+    result = query_patient_risk({"BMI": 30}, "mash")
+    assert result is not None
+    assert result["disease"] == "NASH"
+
+
+def test_query_patient_risk_unknown_disease():
+    result = query_patient_risk({"BMI": 25}, "nonexistent_xyz")
+    assert result is None
+
+
+def test_query_patient_risk_no_embedding_disease():
+    result = query_patient_risk({"BMI": 25}, "IPF")
+    assert result is None
+
+
+def test_query_patient_risk_no_matching_features():
+    result = query_patient_risk({"Free T4": 15.0}, "CKD")
+    assert result is not None
+    assert result["similar_patients"]["count"] == 20
+
+
+def test_query_patient_risk_factors_have_cohort_data():
+    result = query_patient_risk({"BMI": 27.5, "HbA1c": 38}, "CKD")
+    bmi_factor = next((f for f in result["risk_factors"] if f["feature"] == "BMI"), None)
+    assert bmi_factor is not None
+    assert bmi_factor["user_value"] == 27.5
+    assert "cohort_mean" in bmi_factor
+
+
+def test_query_patient_risk_similar_patients_stats():
+    result = query_patient_risk({"BMI": 27.5}, "CKD")
+    sp = result["similar_patients"]
+    assert 0 <= sp["high_risk_pct"] <= 100
+    assert sp["mean_age"] is not None
+    assert sp["male_pct"] is not None
+    assert sp["family_history_pct"] is not None
+
+
+# --- Assess endpoint ---
+
+@pytest.mark.asyncio
+async def test_assess_endpoint(client):
+    resp = await client.post(
+        "/assess",
+        json={"disease": "CKD", "values": {"BMI": 27.5, "Creatinine": 100}},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["disease"] == "CKD"
+    assert body["risk_level"] in ("high", "medium", "low")
+    assert len(body["risk_factors"]) == 5
+    assert body["similar_patients"]["count"] == 20
+    assert "disclaimer" in body
+
+
+@pytest.mark.asyncio
+async def test_assess_unknown_disease(client):
+    resp = await client.post(
+        "/assess",
+        json={"disease": "unknown_xyz", "values": {"BMI": 25}},
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_assess_no_embedding_disease(client):
+    resp = await client.post(
+        "/assess",
+        json={"disease": "IPF", "values": {"BMI": 25}},
     )
     assert resp.status_code == 404
