@@ -55,7 +55,7 @@
   // Disclaimer
   var disclaimer = createEl("div", "chatbot-disclaimer");
   disclaimer.textContent =
-    "Research prototype — not medical advice. Powered by Claude.";
+    "Research prototype — not medical advice. Powered by DeepSeek.";
 
   // Assemble
   panel.appendChild(header);

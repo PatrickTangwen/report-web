@@ -1,4 +1,5 @@
 import os
+import re
 from contextlib import asynccontextmanager
 
 from openai import OpenAI, APIError
@@ -6,16 +7,49 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-SYSTEM_PROMPT = (
-    "You are a research assistant for the ALIGATEHR-Gen project — a graph attention "
-    "network that integrates EHR data, genetic data, and external medical ontology to "
-    "improve disease risk prediction. You help visitors understand the paper's methodology, "
-    "results, and clinical implications.\n\n"
-    "Keep answers concise and scientifically accurate. If you are unsure about something "
-    "specific to the paper, say so rather than guessing.\n\n"
-    "Important: This is a research prototype for demonstration purposes only. Any clinical "
-    "information discussed should not be used for medical decision-making."
+from paper_context import PAPER_TEXT
+
+INTENT_SYSTEM_PROMPT = (
+    "You are an intent classifier. Given a user message, classify it into exactly one "
+    "of these categories:\n"
+    "- paper_qa: questions about the ALIGATEHR-Gen paper, methodology, results, "
+    "architecture, dataset, evaluation, ablation study, or related academic content\n"
+    "- clinical: requests for clinical risk assessment, patient-specific predictions, "
+    "disease risk evaluation, or guided clinical support\n"
+    "- data_query: requests to look up, filter, or analyze specific data from the "
+    "datasets (e.g. CSV files, specific patient counts, specific metric values)\n"
+    "- general: greetings, off-topic, or anything that does not fit the above\n\n"
+    "Respond with ONLY the category name, nothing else."
 )
+
+PAPER_QA_SYSTEM_PROMPT = (
+    "You are a research assistant for the ALIGATEHR-Gen project. "
+    "Answer questions using ONLY the paper content provided below. "
+    "If the answer is not in the paper, say so explicitly — do not guess or hallucinate.\n\n"
+    "Keep answers concise, scientifically accurate, and well-structured. "
+    "Use specific numbers and facts from the paper when relevant.\n\n"
+    "Important: This is a research prototype for demonstration purposes only. "
+    "Any clinical information discussed should not be used for medical decision-making.\n\n"
+    "--- PAPER CONTENT ---\n"
+    f"{PAPER_TEXT}\n"
+    "--- END PAPER CONTENT ---"
+)
+
+CLINICAL_NOT_READY = (
+    "The clinical risk assessment feature is not yet available. "
+    "It is currently under development and will support guided disease risk evaluation "
+    "in a future update. In the meantime, I can answer questions about the ALIGATEHR-Gen "
+    "paper and methodology — feel free to ask!"
+)
+
+DATA_QUERY_NOT_READY = (
+    "The data query feature is not yet available. "
+    "It is currently under development and will allow you to explore the evaluation "
+    "datasets directly. In the meantime, I can answer questions about the ALIGATEHR-Gen "
+    "paper and its results — feel free to ask!"
+)
+
+INTENT_LABELS = ("paper_qa", "clinical", "data_query", "general")
 
 
 class Message(BaseModel):
@@ -30,6 +64,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    intent: str = "paper_qa"
 
 
 client: OpenAI | None = None
@@ -58,6 +93,23 @@ app.add_middleware(
 )
 
 
+def classify_intent(user_message):
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        max_tokens=16,
+        temperature=0,
+        messages=[
+            {"role": "system", "content": INTENT_SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+    )
+    raw = response.choices[0].message.content.strip().lower()
+    raw = re.sub(r"[^a-z_]", "", raw)
+    if raw in INTENT_LABELS:
+        return raw
+    return "paper_qa"
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -68,7 +120,18 @@ async def chat(req: ChatRequest):
     if client is None:
         raise HTTPException(status_code=503, detail="LLM API key not configured")
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    try:
+        intent = classify_intent(req.message)
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
+
+    if intent == "clinical":
+        return ChatResponse(reply=CLINICAL_NOT_READY, intent=intent)
+
+    if intent == "data_query":
+        return ChatResponse(reply=DATA_QUERY_NOT_READY, intent=intent)
+
+    messages = [{"role": "system", "content": PAPER_QA_SYSTEM_PROMPT}]
     messages.extend({"role": m.role, "content": m.content} for m in req.history)
     messages.append({"role": "user", "content": req.message})
 
@@ -82,4 +145,4 @@ async def chat(req: ChatRequest):
     except APIError as e:
         raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
 
-    return ChatResponse(reply=reply)
+    return ChatResponse(reply=reply, intent=intent)
