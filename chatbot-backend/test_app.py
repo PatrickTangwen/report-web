@@ -198,6 +198,18 @@ def test_match_disease_underscore():
     assert match_disease("pathways for Crohns Disease") == "Crohns_Disease"
 
 
+def test_match_disease_alias_mash():
+    assert match_disease("Top risk factors for MASH?") == "NASH"
+
+
+def test_match_disease_alias_cad():
+    assert match_disease("What about coronary artery disease?") == "Coronary Heart Disease"
+
+
+def test_match_disease_alias_crohn():
+    assert match_disease("pathways for Crohn's disease") == "Crohns_Disease"
+
+
 def test_match_disease_none():
     assert match_disease("What's the best model?") is None
 

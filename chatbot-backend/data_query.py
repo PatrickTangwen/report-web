@@ -30,8 +30,26 @@ def get_datasets():
 
 # --- Disease matching ---
 
+_DISEASE_ALIASES = {
+    "mash": "NASH",
+    "metabolic dysfunction associated steatohepatitis": "NASH",
+    "non alcoholic steatohepatitis": "NASH",
+    "nafld": "NASH",
+    "crohn": "Crohns_Disease",
+    "crohn's": "Crohns_Disease",
+    "crohns": "Crohns_Disease",
+    "idiopathic pulmonary fibrosis": "IPF",
+    "systemic sclerosis": "SSc_Connective_Tissue",
+    "scleroderma": "SSc_Connective_Tissue",
+    "ssc": "SSc_Connective_Tissue",
+    "chronic kidney disease": "CKD",
+    "coronary artery disease": "Coronary Heart Disease",
+    "cad": "Coronary Heart Disease",
+}
+
+
 def _normalize(s):
-    return s.lower().replace("_", " ").replace("-", " ").strip()
+    return s.lower().replace("_", " ").replace("-", " ").replace("'", "").strip()
 
 
 def _all_diseases():
@@ -45,6 +63,11 @@ def _all_diseases():
 
 def match_disease(query):
     q = _normalize(query)
+
+    for alias, canonical in _DISEASE_ALIASES.items():
+        if alias in q:
+            return canonical
+
     best = None
     best_score = 0
     for d in _all_diseases():

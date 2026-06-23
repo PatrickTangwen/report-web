@@ -12,14 +12,21 @@ from data_query import query_data, format_data_context
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
-    "of these categories:\n"
-    "- paper_qa: questions about the ALIGATEHR-Gen paper, methodology, results, "
-    "architecture, dataset, evaluation, ablation study, or related academic content\n"
-    "- clinical: requests for clinical risk assessment, patient-specific predictions, "
-    "disease risk evaluation, or guided clinical support\n"
-    "- data_query: requests to look up, filter, or analyze specific data from the "
-    "datasets (e.g. CSV files, specific patient counts, specific metric values)\n"
+    "of these categories:\n\n"
+    "- data_query: asking for specific metric values, scores, rankings, comparisons "
+    "between models, ablation results, feature importance, risk factors, pathway "
+    "enrichment, or any quantitative lookup. Examples: "
+    '"What\'s the AUROC for CKD?", "Which model performs best on diabetes?", '
+    '"What happens without genetic data?", "Top risk factors for MASH?", '
+    '"What pathways are enriched in CKD?"\n'
+    "- clinical: requests for personal clinical risk assessment, patient-specific "
+    "predictions, or guided clinical support for the user themselves\n"
+    "- paper_qa: questions about how the model works, the methodology, architecture, "
+    "training process, graph construction, attention mechanism, or general discussion "
+    "of the paper's contributions and limitations\n"
     "- general: greetings, off-topic, or anything that does not fit the above\n\n"
+    "If the user asks for a specific number, score, comparison, or ranking, "
+    "classify as data_query.\n\n"
     "Respond with ONLY the category name, nothing else."
 )
 
