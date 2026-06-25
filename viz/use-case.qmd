@@ -358,18 +358,45 @@ featureChart = {
         x: "importance_score",
         y: "feature",
         fill: "#2c5aa0",
-        tip: true,
-        title: d => `${d.feature}\nImportance: ${d.importance_score.toFixed(4)}\nRank: #${d.rank}\nDisease: ${d.disease}`,
       }),
     ],
   });
 
   const container = document.createElement("div");
+  container.style.position = "relative";
   const titleDiv = document.createElement("div");
   titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Top Risk Factors — ${featureDisease}</strong><br><span style="font-size:0.9rem;color:#6c757d;">Top 15 features by global importance score</span>`;
   titleDiv.style.marginBottom = "8px";
   container.appendChild(titleDiv);
   container.appendChild(chart);
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.style.cssText = "position:fixed;display:none;pointer-events:none;padding:8px 12px;border-radius:4px;font-size:0.85rem;line-height:1.4;z-index:1000;background:rgba(0,0,0,0.85);color:#fff;max-width:280px;white-space:nowrap;";
+  container.appendChild(tooltip);
+
+  const rects = chart.querySelectorAll("rect");
+  rects.forEach((rect, i) => {
+    rect.style.transition = "opacity 150ms ease";
+    rect.addEventListener("mouseenter", (e) => {
+      rects.forEach((r, j) => { r.style.opacity = j === i ? "1" : "0.2"; });
+      const d = filtered[i];
+      if (d) {
+        tooltip.innerHTML = `<strong>${d.feature}</strong><br>Importance: ${d.importance_score.toFixed(4)}<br>Rank: #${d.rank}<br>Disease: ${d.disease}`;
+        tooltip.style.display = "block";
+      }
+    });
+    rect.addEventListener("mousemove", (e) => {
+      const x = Math.min(e.clientX + 12, window.innerWidth - tooltip.offsetWidth - 8);
+      const y = Math.min(e.clientY + 12, window.innerHeight - tooltip.offsetHeight - 8);
+      tooltip.style.left = x + "px";
+      tooltip.style.top = y + "px";
+    });
+    rect.addEventListener("mouseleave", () => {
+      rects.forEach(r => { r.style.opacity = "1"; });
+      tooltip.style.display = "none";
+    });
+  });
 
   return container;
 }
@@ -400,7 +427,6 @@ pathwayChart = {
     .filter(d => d.disease === pathwayDisease && d.rank <= 15)
     .sort((a, b) => a.rank - b.rank);
 
-  // Compute -log10(p_adjusted) for color encoding
   const withLogP = filtered.map(d => ({
     ...d,
     neg_log10_padj: -Math.log10(d.p_adjusted),
@@ -430,18 +456,45 @@ pathwayChart = {
         fill: "neg_log10_padj",
         stroke: "#dee2e6",
         strokeWidth: 0.5,
-        tip: true,
-        title: d => `${d.pathway}\nSource: ${d.source}\nGene Count: ${d.gene_count}\nEnrichment Ratio: ${d.enrichment_ratio.toFixed(2)}\nP-value: ${Number(d.p_value).toExponential(2)}\nAdj. P-value: ${Number(d.p_adjusted).toExponential(2)}`,
       }),
     ],
   });
 
   const container = document.createElement("div");
+  container.style.position = "relative";
   const titleDiv = document.createElement("div");
   titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">Pathway Enrichment — ${pathwayDisease}</strong><br><span style="font-size:0.9rem;color:#6c757d;">Top 15 pathways by significance · Dot size = gene count · Color = -log₁₀(adj. p-value)</span>`;
   titleDiv.style.marginBottom = "8px";
   container.appendChild(titleDiv);
   container.appendChild(chart);
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.style.cssText = "position:fixed;display:none;pointer-events:none;padding:8px 12px;border-radius:4px;font-size:0.85rem;line-height:1.4;z-index:1000;background:rgba(0,0,0,0.85);color:#fff;max-width:320px;white-space:nowrap;";
+  container.appendChild(tooltip);
+
+  const circles = chart.querySelectorAll("circle");
+  circles.forEach((circle, i) => {
+    circle.style.transition = "opacity 150ms ease";
+    circle.addEventListener("mouseenter", (e) => {
+      circles.forEach((c, j) => { c.style.opacity = j === i ? "1" : "0.2"; });
+      const d = withLogP[i];
+      if (d) {
+        tooltip.innerHTML = `<strong>${d.pathway}</strong><br>Source: ${d.source}<br>Gene Count: ${d.gene_count}<br>Enrichment Ratio: ${d.enrichment_ratio.toFixed(2)}<br>P-value: ${Number(d.p_value).toExponential(2)}<br>Adj. P-value: ${Number(d.p_adjusted).toExponential(2)}`;
+        tooltip.style.display = "block";
+      }
+    });
+    circle.addEventListener("mousemove", (e) => {
+      const x = Math.min(e.clientX + 12, window.innerWidth - tooltip.offsetWidth - 8);
+      const y = Math.min(e.clientY + 12, window.innerHeight - tooltip.offsetHeight - 8);
+      tooltip.style.left = x + "px";
+      tooltip.style.top = y + "px";
+    });
+    circle.addEventListener("mouseleave", () => {
+      circles.forEach(c => { c.style.opacity = "1"; });
+      tooltip.style.display = "none";
+    });
+  });
 
   return container;
 }
