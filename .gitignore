@@ -17,6 +17,7 @@ ENV/
 .venv
 
 # Data files (keep published viz assets tracked; ignore raw/private sources)
+embedding_data/
 viz/data/raw/**
 viz/data/processed/**
 viz/data/**/*.xlsx
@@ -50,3 +51,4 @@ Thumbs.db
 *.bak
 
 **/*.quarto_ipynb
+.env

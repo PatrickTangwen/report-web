@@ -307,7 +307,7 @@ fibroticUmap = {
     color: d => diseaseColorMap[d.disease],
     opacity: () => 0.7,
     radius: () => 3,
-    tooltip: d => `ID: ${d.eid}\nDisease: ${displayName(d.disease)} (${d.abbrev})\nAge: ${d.age_recruit} · Sex: ${d.is_male === 1 ? "Male" : "Female"}\nBMI: ${d.BMI} · Purity: ${d.group}\nP(true): ${Number(d.p_true).toFixed(3)}`,
+    tooltip: d => `ID: ${d.id}\nDisease: ${displayName(d.disease)} (${d.abbrev})\nAge: ${d.age_recruit} · Sex: ${d.is_male === 1 ? "Male" : "Female"}\nBMI: ${d.BMI} · Purity: ${d.group}\nP(true): ${Number(d.p_true).toFixed(3)}`,
     legendValues: diseaseList,
     legendColor: value => diseaseColorMap[value],
     legendLabel: (value, count) => `${displayName(value)} (n=${count.toLocaleString()})`,

@@ -548,7 +548,7 @@ umapSex = {
     groupAccessor: d => d.sex_male,
     groupLabel: value => value === 1 ? "Male" : "Female",
     countNoun: "patients",
-    tooltip: d => `<strong>ID: ${d.eid}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
+    tooltip: d => `<strong>ID: ${d.id}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
     renderLegend: (legend, { drillGroup }) => {
       legend.style.cssText = "display:flex;gap:20px;font-size:0.9rem;";
       const female = document.createElement("span");
@@ -589,7 +589,7 @@ umapAge = {
     scatterSet: { colorBy: "valueA", pointColor: viridisStops },
     zValues: patientData.map(d => (d.age - minAge) / (maxAge - minAge)),
     countNoun: "patients",
-    tooltip: d => `<strong>ID: ${d.eid}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
+    tooltip: d => `<strong>ID: ${d.id}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
     renderLegend: (legend) => {
       legend.style.cssText = "display:flex;align-items:center;gap:8px;font-size:0.9rem;";
       const gradBar = document.createElement("div");
