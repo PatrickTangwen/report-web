@@ -2,6 +2,10 @@
   "use strict";
 
   var API_URL = "https://patirckistc-report-web.hf.space";
+  var STORAGE_PREFIX = "aligatehr-chatbot-";
+
+  var ICON_EXPAND = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+  var ICON_COLLAPSE = '<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
 
   var history = [];
   var busy = false;
@@ -33,10 +37,15 @@
   var header = createEl("div", "chatbot-header");
   var headerTitle = createEl("span", "chatbot-header-title");
   headerTitle.textContent = "ALIGATEHR-Gen Assistant";
+  var headerActions = createEl("div", "chatbot-header-actions");
+  var expandBtn = createEl("button", "chatbot-expand-btn", { "aria-label": "Expand chat" });
+  expandBtn.innerHTML = ICON_EXPAND;
   var closeBtn = createEl("button", "chatbot-close", { "aria-label": "Close chat" });
   closeBtn.innerHTML = "&times;";
+  headerActions.appendChild(expandBtn);
+  headerActions.appendChild(closeBtn);
   header.appendChild(headerTitle);
-  header.appendChild(closeBtn);
+  header.appendChild(headerActions);
 
   // Messages
   var messagesEl = createEl("div", "chatbot-messages");
@@ -67,12 +76,52 @@
   document.body.appendChild(fab);
   document.body.appendChild(panel);
 
-  // ── Welcome message ──
+  // ── State persistence ──
 
-  addMessage(
-    "assistant",
-    "Hello! I'm the ALIGATEHR-Gen research assistant. I can help you understand our paper's methodology, results, and clinical implications. What would you like to know?"
-  );
+  function saveState() {
+    try {
+      sessionStorage.setItem(STORAGE_PREFIX + "history", JSON.stringify(history));
+      sessionStorage.setItem(STORAGE_PREFIX + "messages", messagesEl.innerHTML);
+      sessionStorage.setItem(STORAGE_PREFIX + "disease", lastAssessedDisease || "");
+      sessionStorage.setItem(STORAGE_PREFIX + "expanded", panel.classList.contains("is-expanded") ? "1" : "");
+      sessionStorage.setItem(STORAGE_PREFIX + "open", panel.classList.contains("is-open") ? "1" : "");
+    } catch (e) { /* quota exceeded or private mode */ }
+  }
+
+  function restoreState() {
+    try {
+      var html = sessionStorage.getItem(STORAGE_PREFIX + "messages");
+      if (!html) return false;
+      messagesEl.innerHTML = html;
+      var stale = messagesEl.querySelectorAll(".chatbot-typing");
+      for (var i = 0; i < stale.length; i++) stale[i].remove();
+      var saved = sessionStorage.getItem(STORAGE_PREFIX + "history");
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) history = parsed;
+      }
+      var disease = sessionStorage.getItem(STORAGE_PREFIX + "disease");
+      if (disease) lastAssessedDisease = disease;
+      if (sessionStorage.getItem(STORAGE_PREFIX + "expanded") === "1") {
+        panel.classList.add("is-expanded");
+        expandBtn.innerHTML = ICON_COLLAPSE;
+        expandBtn.setAttribute("aria-label", "Collapse chat");
+      }
+      if (sessionStorage.getItem(STORAGE_PREFIX + "open") === "1") {
+        panel.classList.add("is-open");
+        fab.style.display = "none";
+      }
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  if (!restoreState()) {
+    addMessage(
+      "assistant",
+      "Hello! I'm the ALIGATEHR-Gen chatbot. I can help you understand our paper's methodology, results, and clinical implications. What would you like to know?"
+    );
+  }
 
   // ── Events ──
 
@@ -83,13 +132,24 @@
     if (opening) {
       fab.style.display = "none";
       input.focus();
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
+    saveState();
   });
 
   closeBtn.addEventListener("click", function () {
     panel.classList.remove("is-open");
     fab.style.display = "";
     fab.setAttribute("aria-label", "Open chat");
+    saveState();
+  });
+
+  expandBtn.addEventListener("click", function () {
+    var expanding = !panel.classList.contains("is-expanded");
+    panel.classList.toggle("is-expanded");
+    expandBtn.innerHTML = expanding ? ICON_COLLAPSE : ICON_EXPAND;
+    expandBtn.setAttribute("aria-label", expanding ? "Collapse chat" : "Expand chat");
+    saveState();
   });
 
   input.addEventListener("keydown", function (e) {
@@ -118,12 +178,14 @@
     }
     messagesEl.appendChild(msg);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    saveState();
     return msg;
   }
 
   function addRawElement(el) {
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    saveState();
   }
 
   function showTyping() {
@@ -188,6 +250,7 @@
       .finally(function () {
         busy = false;
         sendBtn.disabled = false;
+        saveState();
       });
   }
 
@@ -260,6 +323,7 @@
       .finally(function () {
         busy = false;
         sendBtn.disabled = false;
+        saveState();
       });
   }
 
@@ -388,6 +452,7 @@
       .finally(function () {
         busy = false;
         sendBtn.disabled = false;
+        saveState();
       });
   }
 
