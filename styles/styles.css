@@ -1,3 +1,9 @@
+/* Hide Quarto preview render progress dialog */
+.fui-FluentProvider,
+.fui-DialogSurface {
+  display: none !important;
+}
+
 /* Additional custom styles */
 
 /* Homepage: hide Quarto-generated title block and code tools */
