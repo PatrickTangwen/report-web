@@ -2,8 +2,33 @@
   "use strict";
 
   var DEMO = window.ALIGATEHR_EMBEDDING_DEMO;
+  var PROFILE = window.ALIGATEHR_PROFILE_SESSION;
   var API_URL = DEMO.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
   var STORAGE_PREFIX = "aligatehr-chatbot-";
+  var profileSession = PROFILE.create(sessionStorage);
+  var PROFILE_CHOICES = {
+    sex: [
+      ["female", "Female"],
+      ["male", "Male"],
+    ],
+    smoking_status: [
+      ["never", "Never"],
+      ["former", "Former"],
+      ["current", "Current"],
+    ],
+    alcohol_frequency: [
+      ["never", "Never"],
+      ["special_occasions", "Special occasions only"],
+      ["one_to_three_per_month", "1–3 times a month"],
+      ["one_to_two_per_week", "1–2 times a week"],
+      ["three_to_four_per_week", "3–4 times a week"],
+      ["daily_or_almost_daily", "Daily or almost daily"],
+    ],
+    affected_relative: [
+      ["true", "Yes"],
+      ["false", "No"],
+    ],
+  };
 
   var ICON_EXPAND = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
   var ICON_COLLAPSE = '<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
@@ -11,6 +36,7 @@
   var history = [];
   var busy = false;
   var lastAssessedDisease = null;
+  var profileCardCounter = 0;
 
   // ── Build DOM ──
 
@@ -122,9 +148,12 @@
       "assistant",
       "Hello! I'm the ALIGATEHR-Gen chatbot. I can help you understand our paper's methodology, results, and clinical implications. What would you like to know?"
     );
+    renderProfileStarterCard();
     renderPresetDemoCard();
   }
+  profileCardCounter = messagesEl.querySelectorAll(".chatbot-profile-review").length;
   resetPresetDemoCards();
+  updateProfileInputState();
 
   // ── Events ──
 
@@ -165,8 +194,14 @@
   sendBtn.addEventListener("click", send);
 
   messagesEl.addEventListener("click", function (event) {
-    var button = event.target.closest('[data-chatbot-action="preset-embedding-demo"]');
-    if (button) startPresetDemo(button);
+    var button = event.target.closest("[data-chatbot-action]");
+    if (!button) return;
+    var action = button.getAttribute("data-chatbot-action");
+    if (action === "preset-embedding-demo") startPresetDemo(button);
+    if (action === "start-demo-profile") startDemoProfile();
+    if (action === "save-profile-edits") saveProfileEdits(button);
+    if (action === "confirm-demo-profile") confirmDemoProfile(button);
+    if (action === "start-over-demo-profile") startOverDemoProfile();
   });
 
   // Auto-resize textarea
@@ -177,8 +212,9 @@
 
   // ── Core logic ──
 
-  function addMessage(role, text) {
+  function addMessage(role, text, scope) {
     var msg = createEl("div", "chatbot-msg chatbot-msg-" + role);
+    if (scope) msg.setAttribute("data-profile-scope", scope);
     if (role === "assistant") {
       msg.innerHTML = renderMarkdown(text);
     } else {
@@ -194,6 +230,27 @@
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     saveState();
+  }
+
+  function renderProfileStarterCard() {
+    if (messagesEl.querySelector('[data-chatbot-action="start-demo-profile"]')) return;
+    var card = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-starter",
+    );
+    var label = createEl("div", "chatbot-demo-label");
+    label.textContent = "Research Demo Profile";
+    var copy = createEl("p", "chatbot-demo-copy");
+    copy.textContent =
+      "Build an editable synthetic or de-identified profile. Values are reviewed " +
+      "before confirmation and never start matching automatically.";
+    var button = createEl("button", "chatbot-demo-button", {
+      type: "button",
+      "data-chatbot-action": "start-demo-profile",
+    });
+    button.textContent = "Build Demo Profile";
+    card.append(label, copy, button);
+    addRawElement(card);
   }
 
   function renderPresetDemoCard() {
@@ -280,6 +337,390 @@
       });
   }
 
+  function updateProfileInputState() {
+    var phase = profileSession.getState().phase;
+    var startButton = messagesEl.querySelector(
+      '[data-chatbot-action="start-demo-profile"]',
+    );
+    if (startButton) {
+      startButton.disabled = phase !== "inactive";
+      startButton.textContent =
+        phase === "draft"
+          ? "Profile Draft active"
+          : phase === "confirmed"
+            ? "Profile confirmed"
+            : "Build Demo Profile";
+    }
+    input.placeholder =
+      phase === "draft"
+        ? "Add synthetic profile details or a correction…"
+        : "Ask a question…";
+  }
+
+  function startDemoProfile() {
+    if (profileSession.getState().phase === "draft") {
+      input.focus();
+      return;
+    }
+    profileSession.start();
+    addMessage(
+      "assistant",
+      "**Research demo only — not medical advice, diagnosis, or a personal outcome prediction.** " +
+        "Use a synthetic or sufficiently de-identified profile. Do not enter names, " +
+        "exact birth dates, addresses, patient IDs, or real medical records. You can " +
+        "provide details in one message or across several messages.",
+      "active",
+    );
+    updateProfileInputState();
+    input.focus();
+  }
+
+  function validateProfileCandidates(statusEl) {
+    var candidates = profileSession.getState().candidates;
+    if (statusEl) statusEl.textContent = "Validating fields and units…";
+    return fetch(API_URL + "/profile/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidates: candidates }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("API returned " + response.status);
+        return response.json();
+      })
+      .then(function (draft) {
+        profileSession.applyDraft(draft);
+        renderProfileDraft(draft);
+        return draft;
+      });
+  }
+
+  function sendProfileMessage(text) {
+    addMessage("user", text, "active");
+    history.push({ role: "user", content: text, scope: "profile" });
+    input.value = "";
+    input.style.height = "auto";
+    busy = true;
+    sendBtn.disabled = true;
+    var typing = showTyping();
+    typing.setAttribute("data-profile-scope", "active");
+
+    fetch(API_URL + "/profile/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text }),
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          return response.json().catch(function () { return {}; }).then(function (body) {
+            throw new Error(body.detail || "API returned " + response.status);
+          });
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        profileSession.appendCandidates(data.candidates || []);
+        return validateProfileCandidates();
+      })
+      .then(function (draft) {
+        typing.remove();
+        var count = Object.keys(draft.reported_features || {}).length;
+        var reply = count
+          ? "I created an editable Profile Draft. Review every value and status below before confirming."
+          : "I could not identify a supported field yet. Add an easy-to-know measurement such as age, height, weight, or blood pressure.";
+        addMessage("assistant", reply, "active");
+        history.push({ role: "assistant", content: reply, scope: "profile" });
+      })
+      .catch(function (error) {
+        typing.remove();
+        addMessage(
+          "assistant",
+          "I could not update the Profile Draft. " + error.message + " Please correct the message or try again.",
+          "active",
+        );
+      })
+      .finally(function () {
+        busy = false;
+        sendBtn.disabled = false;
+        saveState();
+      });
+  }
+
+  function statusLabel(status) {
+    return {
+      valid: "Valid",
+      ambiguous: "Needs clarification",
+      out_of_range: "Outside accepted input range",
+      outside_reference_support: "Outside reference support",
+      unsupported: "Unsupported for this demo",
+      conflicting: "Conflicting values",
+    }[status] || status;
+  }
+
+  function renderProfileDraft(draft) {
+    profileCardCounter += 1;
+    var cardId = "profile-review-" + profileCardCounter;
+    var oldCards = messagesEl.querySelectorAll(".chatbot-profile-review[data-profile-current='1']");
+    oldCards.forEach(function (card) {
+      card.remove();
+    });
+
+    var card = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-review",
+      { "data-profile-scope": "active", "data-profile-current": "1" },
+    );
+    var title = createEl("div", "chatbot-profile-title");
+    title.textContent = "Profile Draft — review required";
+    card.appendChild(title);
+
+    var notice = createEl("p", "chatbot-profile-notice");
+    notice.textContent =
+      "Demo/research comparison only. No matching or personal prediction has started.";
+    card.appendChild(notice);
+
+    var features = draft.reported_features || {};
+    Object.keys(features).forEach(function (field) {
+      var feature = features[field];
+      var row = createEl("div", "chatbot-profile-field");
+      row.setAttribute("data-profile-field", field);
+      var heading = createEl("div", "chatbot-profile-field-heading");
+      var label = createEl("label", "chatbot-profile-field-label");
+      label.textContent = feature.label;
+      label.setAttribute("for", cardId + "-" + field);
+      var badge = createEl(
+        "span",
+        "chatbot-profile-status status-" + feature.status,
+      );
+      badge.textContent = statusLabel(feature.status);
+      heading.append(label, badge);
+
+      var edit = createEl("div", "chatbot-profile-edit");
+      var inputEl;
+      if (PROFILE_CHOICES[field]) {
+        inputEl = createEl("select", "chatbot-profile-input", {
+          id: cardId + "-" + field,
+          name: field,
+        });
+        var promptOption = createEl("option");
+        promptOption.value = "";
+        promptOption.textContent = "Choose a value";
+        inputEl.appendChild(promptOption);
+        PROFILE_CHOICES[field].forEach(function (choice) {
+          var option = createEl("option");
+          option.value = choice[0];
+          option.textContent = choice[1];
+          inputEl.appendChild(option);
+        });
+        if (feature.normalized_value != null) {
+          inputEl.value = String(feature.normalized_value);
+        }
+      } else {
+        inputEl = createEl("input", "chatbot-profile-input", {
+          id: cardId + "-" + field,
+          name: field,
+          type: "text",
+          value:
+            feature.normalized_value == null
+              ? String(feature.original_value == null ? "" : feature.original_value)
+              : String(feature.normalized_value),
+        });
+      }
+      if (feature.status === "unsupported") inputEl.disabled = true;
+      edit.appendChild(inputEl);
+      if (feature.normalized_unit) {
+        var unit = createEl("span", "chatbot-profile-unit");
+        unit.textContent = feature.normalized_unit;
+        edit.appendChild(unit);
+      }
+
+      var source = createEl("div", "chatbot-profile-source");
+      source.textContent =
+        "Source: “" + feature.source_text + "”" +
+        (feature.original_unit ? " (original unit: " + feature.original_unit + ")" : "");
+      row.append(heading, edit, source);
+      if (feature.message) {
+        var message = createEl("div", "chatbot-profile-field-message");
+        message.textContent = feature.message;
+        row.appendChild(message);
+      }
+      if (feature.alternatives) {
+        var alternatives = createEl("div", "chatbot-profile-conflicts");
+        alternatives.textContent = "Conflicting values: " + feature.alternatives.join("; ");
+        row.appendChild(alternatives);
+      }
+      if (feature.source_texts) {
+        var sources = createEl("div", "chatbot-profile-conflicts");
+        sources.textContent =
+          "Sources: “" + feature.source_texts.join("”; “") + "”";
+        row.appendChild(sources);
+      }
+      if (feature.source_history && feature.source_history.length > 1) {
+        var historyCopy = createEl("div", "chatbot-profile-source-history");
+        historyCopy.textContent =
+          "Source history: " +
+          feature.source_history.map(function (entry) {
+            return (
+              "“" + entry.source_text + "”" +
+              (entry.original_unit ? " (" + entry.original_unit + ")" : "")
+            );
+          }).join("; ");
+        row.appendChild(historyCopy);
+      }
+      card.appendChild(row);
+    });
+
+    var derived = draft.derived_features || {};
+    if (Object.keys(derived).length) {
+      var derivedTitle = createEl("div", "chatbot-profile-subtitle");
+      derivedTitle.textContent = "Derived Match Features";
+      card.appendChild(derivedTitle);
+      Object.keys(derived).forEach(function (field) {
+        var feature = derived[field];
+        var item = createEl("div", "chatbot-profile-derived");
+        var derivedCopy = createEl("span", "chatbot-profile-derived-copy");
+        derivedCopy.textContent =
+          feature.label + ": " + feature.value + " " + feature.unit +
+          " (from " + feature.derived_from.join(" + ") + ")";
+        var derivedBadge = createEl(
+          "span",
+          "chatbot-profile-status status-" + feature.status,
+        );
+        derivedBadge.textContent = statusLabel(feature.status);
+        item.append(derivedCopy, derivedBadge);
+        if (feature.message) {
+          var derivedMessage = createEl("div", "chatbot-profile-field-message");
+          derivedMessage.textContent = feature.message;
+          item.appendChild(derivedMessage);
+        }
+        card.appendChild(item);
+      });
+    }
+
+    var actions = createEl("div", "chatbot-profile-actions");
+    var saveButton = createEl("button", "chatbot-profile-secondary", {
+      type: "button",
+      "data-chatbot-action": "save-profile-edits",
+    });
+    saveButton.textContent = "Save corrections";
+    var confirmButton = createEl("button", "chatbot-profile-primary", {
+      type: "button",
+      "data-chatbot-action": "confirm-demo-profile",
+    });
+    confirmButton.textContent = "Confirm Demo Profile";
+    confirmButton.disabled = !draft.can_confirm;
+    var startOverButton = createEl("button", "chatbot-profile-link", {
+      type: "button",
+      "data-chatbot-action": "start-over-demo-profile",
+    });
+    startOverButton.textContent = "Start Over";
+    actions.append(saveButton, confirmButton, startOverButton);
+    card.appendChild(actions);
+
+    var status = createEl("div", "chatbot-profile-action-status", {
+      "aria-live": "polite",
+    });
+    if (!draft.can_confirm) {
+      status.textContent = "Resolve fields marked for clarification or conflict before confirming.";
+    }
+    card.appendChild(status);
+    addRawElement(card);
+  }
+
+  function saveProfileEdits(button) {
+    var card = button.closest(".chatbot-profile-review");
+    var state = profileSession.getState();
+    if (!card || state.phase !== "draft" || !state.draft) return;
+    var edits = {};
+    card.querySelectorAll("[data-profile-field] input, [data-profile-field] select").forEach(function (fieldInput) {
+      edits[fieldInput.name] = fieldInput.value.trim();
+    });
+    var corrections = PROFILE.createCorrections(state.draft, edits);
+    var status = card.querySelector(".chatbot-profile-action-status");
+    if (!corrections.length) {
+      status.textContent = "No changed values to save.";
+      return;
+    }
+    button.disabled = true;
+    profileSession.appendCandidates(corrections);
+    validateProfileCandidates(status).catch(function (error) {
+      button.disabled = false;
+      status.textContent = "Could not save corrections. " + error.message;
+    });
+  }
+
+  function confirmDemoProfile(button) {
+    var state = profileSession.getState();
+    if (state.phase !== "draft" || !state.draft || !state.draft.can_confirm) return;
+    var card = button.closest(".chatbot-profile-review");
+    var status = card.querySelector(".chatbot-profile-action-status");
+    button.disabled = true;
+    status.textContent = "Confirming the reviewed Profile Draft…";
+    fetch(API_URL + "/profile/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draft: state.draft }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("API returned " + response.status);
+        return response.json();
+      })
+      .then(function (confirmed) {
+        profileSession.confirm(confirmed);
+        card.setAttribute("data-profile-current", "0");
+        card.querySelectorAll("input, button").forEach(function (control) {
+          control.disabled = true;
+        });
+        renderConfirmedProfile(confirmed);
+        updateProfileInputState();
+      })
+      .catch(function (error) {
+        button.disabled = false;
+        status.textContent = "Could not confirm the profile. " + error.message;
+      });
+  }
+
+  function renderConfirmedProfile(confirmed) {
+    var card = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-confirmed",
+      { "data-profile-scope": "active" },
+    );
+    var title = createEl("div", "chatbot-profile-title");
+    title.textContent = "Confirmed Profile";
+    var copy = createEl("p", "chatbot-profile-notice");
+    copy.textContent =
+      "Your reviewed Demo Profile is confirmed for this tab. No cohort matching or " +
+      "risk endpoint was called, and this is not medical advice or a personal prediction.";
+    var count = createEl("div", "chatbot-profile-confirmed-count");
+    count.textContent =
+      Object.keys(confirmed.reported_features || {}).length +
+      " reported features; " +
+      Object.keys(confirmed.derived_features || {}).length +
+      " derived features.";
+    var startOver = createEl("button", "chatbot-profile-link", {
+      type: "button",
+      "data-chatbot-action": "start-over-demo-profile",
+    });
+    startOver.textContent = "Start Over";
+    card.append(title, copy, count, startOver);
+    addRawElement(card);
+  }
+
+  function startOverDemoProfile() {
+    profileSession.reset();
+    history = history.filter(function (item) { return item.scope !== "profile"; });
+    messagesEl.querySelectorAll("[data-profile-scope]").forEach(function (element) {
+      element.remove();
+    });
+    updateProfileInputState();
+    addMessage(
+      "assistant",
+      "The Demo Profile session was cleared. Your unrelated chatbot conversation remains available.",
+    );
+    renderProfileStarterCard();
+    saveState();
+  }
+
   function showTyping() {
     var el = createEl("div", "chatbot-typing");
     for (var i = 0; i < 3; i++) {
@@ -294,6 +735,11 @@
     var text = input.value.trim();
     if (!text || busy) return;
 
+    if (profileSession.getState().phase === "draft") {
+      sendProfileMessage(text);
+      return;
+    }
+
     addMessage("user", text);
     history.push({ role: "user", content: text });
 
@@ -304,7 +750,13 @@
 
     var typing = showTyping();
 
-    var chatBody = { message: text, history: history.slice(0, -1) };
+    var chatBody = {
+      message: text,
+      history: history
+        .slice(0, -1)
+        .filter(function (item) { return item.scope !== "profile"; })
+        .map(function (item) { return { role: item.role, content: item.content }; }),
+    };
     if (lastAssessedDisease) {
       chatBody.assessed_disease = lastAssessedDisease;
     }
@@ -326,6 +778,9 @@
 
         if (data.ui && data.ui.type === "disease_select") {
           renderDiseaseSelect(data.ui.diseases);
+        }
+        if (data.ui && data.ui.type === "demo_profile_start") {
+          renderProfileStarterCard();
         }
         if (data.ui && data.ui.type === "pathway_enrichment") {
           renderPathwayEnrichment(data.ui);

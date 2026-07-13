@@ -4,6 +4,7 @@ project:
   resources:
     - chatbot/chatbot.css
     - chatbot/embedding-demo.js
+    - chatbot/profile-session.js
     - chatbot/chatbot.js
   preview:
     port: 4200
