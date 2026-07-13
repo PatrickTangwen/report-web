@@ -1,0 +1,22 @@
+{
+  "dataset_version": "fibrotic-2026-07-13-9d04ee36876b",
+  "release_date": "2026-07-13",
+  "point_count": 6010,
+  "disease_counts": {
+    "CKD": 1500,
+    "Cardiac_Fibrosis": 379,
+    "Crohns_Disease": 826,
+    "Fibrosis_of_Skin": 1500,
+    "MASH": 849,
+    "Pulmonary_fibrosis": 869,
+    "SSc_Connective_Tissue": 87
+  },
+  "public_schema": [
+    "visual_reference_id",
+    "disease",
+    "group",
+    "tsne_x",
+    "tsne_y"
+  ],
+  "display_sha256": "9d04ee36876bdec4c1c0ecf3618beb67876cef8217fd80f95defdd2f6ea94c60"
+}

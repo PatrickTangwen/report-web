@@ -3,6 +3,7 @@ project:
   output-dir: _site
   resources:
     - chatbot/chatbot.css
+    - chatbot/embedding-demo.js
     - chatbot/chatbot.js
   preview:
     port: 4200

@@ -123,6 +123,7 @@ The chatbot backend is deployed separately (e.g., HuggingFace Spaces). The front
 - GitHub Pages does not publish your local `_site/`. The workflow checks out the repository on GitHub Actions and runs `quarto render` there.
 - Any file referenced by OJS `FileAttachment(...)` in `viz/*.qmd` must exist in the repository and be tracked by Git.
 - Published visualization assets live in `viz/data/`. `viz/data/raw/` and `viz/data/processed/` remain non-published directories and stay ignored.
+- **2026-07-13 exception for #24:** the display-safe fibrotic Dataset Release is patient-derived and is therefore owned and served by the chatbot backend, not copied into `viz/data/` or the GitHub Pages build. The backend release manifest and `/embedding/fibrotic*` endpoints are authoritative; the existing rule still applies to non-patient OJS assets.
 - Before pushing deployment-related changes, run the validation commands below in an environment with Quarto and Python available.
 
 ### Deployment Validation

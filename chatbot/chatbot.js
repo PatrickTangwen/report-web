@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  var API_URL = "https://patirckistc-report-web.hf.space";
+  var DEMO = window.ALIGATEHR_EMBEDDING_DEMO;
+  var API_URL = DEMO.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
   var STORAGE_PREFIX = "aligatehr-chatbot-";
 
   var ICON_EXPAND = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
@@ -121,7 +122,9 @@
       "assistant",
       "Hello! I'm the ALIGATEHR-Gen chatbot. I can help you understand our paper's methodology, results, and clinical implications. What would you like to know?"
     );
+    renderPresetDemoCard();
   }
+  resetPresetDemoCards();
 
   // ── Events ──
 
@@ -161,6 +164,11 @@
 
   sendBtn.addEventListener("click", send);
 
+  messagesEl.addEventListener("click", function (event) {
+    var button = event.target.closest('[data-chatbot-action="preset-embedding-demo"]');
+    if (button) startPresetDemo(button);
+  });
+
   // Auto-resize textarea
   input.addEventListener("input", function () {
     this.style.height = "auto";
@@ -186,6 +194,90 @@
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     saveState();
+  }
+
+  function renderPresetDemoCard() {
+    var card = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-demo-card");
+    var label = createEl("div", "chatbot-demo-label");
+    label.textContent = "Preset research walkthrough";
+    var copy = createEl("p", "chatbot-demo-copy");
+    copy.textContent =
+      "See how a fixed reference selection is highlighted on the fibrotic embedding. " +
+      "This display preset is not a clinical match and does not predict an outcome.";
+    var button = createEl("button", "chatbot-demo-button", {
+      type: "button",
+      "data-chatbot-action": "preset-embedding-demo",
+    });
+    button.textContent = "Try animated demo";
+    var status = createEl("div", "chatbot-demo-status", { "aria-live": "polite" });
+    card.append(label, copy, button, status);
+    addRawElement(card);
+  }
+
+  function resetPresetDemoCards() {
+    var buttons = messagesEl.querySelectorAll(
+      '[data-chatbot-action="preset-embedding-demo"]',
+    );
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].disabled = false;
+      buttons[i].textContent = "Try animated demo";
+      var status = buttons[i].parentElement.querySelector(".chatbot-demo-status");
+      if (status) status.textContent = "";
+    }
+  }
+
+  function findUseCaseUrl() {
+    var links = document.querySelectorAll('a[href]');
+    for (var i = 0; i < links.length; i++) {
+      var candidate = new URL(links[i].href, window.location.href);
+      if (candidate.pathname.endsWith("/viz/use-case.html")) {
+        candidate.hash = "fibrotic-embedding";
+        return candidate.href;
+      }
+    }
+    var script = document.querySelector('script[src*="/chatbot/chatbot.js"]');
+    var scriptUrl = new URL(script ? script.src : "/chatbot/chatbot.js", window.location.href);
+    var siteRoot = scriptUrl.pathname.replace(/\/chatbot\/chatbot\.js$/, "");
+    return scriptUrl.origin + siteRoot + "/viz/use-case.html#fibrotic-embedding";
+  }
+
+  function startPresetDemo(button) {
+    if (button.disabled) return;
+    var status = button.parentElement.querySelector(".chatbot-demo-status");
+    button.disabled = true;
+    button.textContent = "Preparing demo…";
+    status.textContent = "Loading the current dataset release.";
+
+    fetch(API_URL + "/embedding/fibrotic/preset", { cache: "no-store" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("API returned " + response.status);
+        return response.json();
+      })
+      .then(function (preset) {
+        var request = DEMO.createPresetRequest(preset);
+        DEMO.saveRequest(sessionStorage, request);
+        DEMO.notifyRequest(window, request);
+        status.textContent = "Opening the fibrotic embedding walkthrough.";
+        var destination = new URL(findUseCaseUrl());
+        var samePage =
+          destination.origin === window.location.origin &&
+          destination.pathname === window.location.pathname;
+        if (samePage) {
+          window.location.hash = destination.hash;
+          button.disabled = false;
+          button.textContent = "Run preset demo again";
+          status.textContent =
+            "Walkthrough started. Replay and reset controls are available below.";
+        } else {
+          window.location.assign(destination.href);
+        }
+      })
+      .catch(function (error) {
+        button.disabled = false;
+        button.textContent = "Try animated demo";
+        status.textContent = "The demo backend is unavailable. Please try again.";
+        console.error("Preset embedding demo error:", error);
+      });
   }
 
   function showTyping() {

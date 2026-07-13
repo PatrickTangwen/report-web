@@ -269,6 +269,51 @@
 
 /* ── Disease selection ── */
 
+.chatbot-demo-card {
+  max-width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #bfd0e8;
+  background: #f4f8fd;
+}
+
+.chatbot-demo-label {
+  color: #2c5aa0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chatbot-demo-copy {
+  margin: 0.35rem 0 0.6rem;
+  color: #495057;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.chatbot-demo-button {
+  padding: 0.48rem 0.8rem;
+  border: 0;
+  border-radius: 8px;
+  background: #2c5aa0;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.chatbot-demo-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.chatbot-demo-status {
+  min-height: 1.1rem;
+  margin-top: 0.4rem;
+  color: #6c757d;
+  font-size: 0.72rem;
+}
+
 .chatbot-disease-select {
   max-width: 100%;
   padding: 0.5rem;
@@ -602,6 +647,20 @@
 
 .quarto-dark .chatbot-disclaimer {
   color: #777;
+}
+
+.quarto-dark .chatbot-demo-card {
+  border-color: #3d5f8d;
+  background: #26384f;
+}
+
+.quarto-dark .chatbot-demo-label {
+  color: #8cb5e8;
+}
+
+.quarto-dark .chatbot-demo-copy,
+.quarto-dark .chatbot-demo-status {
+  color: #c0c7cf;
 }
 
 .quarto-dark .chatbot-disease-btn {
