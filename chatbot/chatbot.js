@@ -29,6 +29,15 @@
       ["false", "No"],
     ],
   };
+  var COMPARISON_TARGETS = [
+    ["CKD", "Chronic Kidney Disease"],
+    ["Cardiac_Fibrosis", "Cardiac Fibrosis"],
+    ["MASH", "MASH"],
+    ["Pulmonary_fibrosis", "Pulmonary Fibrosis"],
+    ["SSc_Connective_Tissue", "Systemic Sclerosis / Connective Tissue"],
+    ["Crohns_Disease", "Crohn's Disease"],
+    ["Fibrosis_of_Skin", "Skin Fibrosis"],
+  ];
 
   var ICON_EXPAND = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
   var ICON_COLLAPSE = '<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
@@ -105,8 +114,21 @@
 
   // ── State persistence ──
 
+  function syncMessageFormState() {
+    messagesEl.querySelectorAll("input").forEach(function (field) {
+      field.setAttribute("value", field.value);
+    });
+    messagesEl.querySelectorAll("select").forEach(function (field) {
+      Array.from(field.options).forEach(function (option) {
+        if (option.selected) option.setAttribute("selected", "selected");
+        else option.removeAttribute("selected");
+      });
+    });
+  }
+
   function saveState() {
     try {
+      syncMessageFormState();
       sessionStorage.setItem(STORAGE_PREFIX + "history", JSON.stringify(history));
       sessionStorage.setItem(STORAGE_PREFIX + "messages", messagesEl.innerHTML);
       sessionStorage.setItem(STORAGE_PREFIX + "disease", lastAssessedDisease || "");
@@ -201,6 +223,8 @@
     if (action === "start-demo-profile") startDemoProfile();
     if (action === "save-profile-edits") saveProfileEdits(button);
     if (action === "confirm-demo-profile") confirmDemoProfile(button);
+    if (action === "compare-confirmed-profile") compareConfirmedProfile(button);
+    if (action === "view-matched-references") viewMatchedReferences(button);
     if (action === "start-over-demo-profile") startOverDemoProfile();
   });
 
@@ -667,9 +691,10 @@
       .then(function (confirmed) {
         profileSession.confirm(confirmed);
         card.setAttribute("data-profile-current", "0");
-        card.querySelectorAll("input, button").forEach(function (control) {
+        card.querySelectorAll("input, select, button").forEach(function (control) {
           control.disabled = true;
         });
+        status.textContent = "Profile confirmed.";
         renderConfirmedProfile(confirmed);
         updateProfileInputState();
       })
@@ -689,21 +714,220 @@
     title.textContent = "Confirmed Profile";
     var copy = createEl("p", "chatbot-profile-notice");
     copy.textContent =
-      "Your reviewed Demo Profile is confirmed for this tab. No cohort matching or " +
-      "risk endpoint was called, and this is not medical advice or a personal prediction.";
+      "Your reviewed Demo Profile is confirmed for this tab. Matching has not started. " +
+      "Choose one Comparison Target below; this remains a research cohort comparison, " +
+      "not medical advice, diagnosis, prognosis, or a personal outcome prediction.";
     var count = createEl("div", "chatbot-profile-confirmed-count");
     count.textContent =
       Object.keys(confirmed.reported_features || {}).length +
       " reported features; " +
       Object.keys(confirmed.derived_features || {}).length +
       " derived features.";
+    var targetLabel = createEl("label", "chatbot-profile-target-label");
+    targetLabel.textContent = "Comparison Target";
+    var targetSelect = createEl("select", "chatbot-profile-target", {
+      "aria-label": "Comparison Target",
+    });
+    var emptyTarget = createEl("option");
+    emptyTarget.value = "";
+    emptyTarget.textContent = "Choose one target…";
+    targetSelect.appendChild(emptyTarget);
+    COMPARISON_TARGETS.forEach(function (target) {
+      var option = createEl("option");
+      option.value = target[0];
+      option.textContent = target[1];
+      targetSelect.appendChild(option);
+    });
+    var compare = createEl("button", "chatbot-profile-primary", {
+      type: "button",
+      "data-chatbot-action": "compare-confirmed-profile",
+    });
+    compare.textContent = "Compare with reference cohort";
+    var matchStatus = createEl("div", "chatbot-profile-action-status", {
+      "aria-live": "polite",
+    });
     var startOver = createEl("button", "chatbot-profile-link", {
       type: "button",
       "data-chatbot-action": "start-over-demo-profile",
     });
     startOver.textContent = "Start Over";
-    card.append(title, copy, count, startOver);
+    card.append(
+      title,
+      copy,
+      count,
+      targetLabel,
+      targetSelect,
+      compare,
+      matchStatus,
+      startOver,
+    );
     addRawElement(card);
+  }
+
+  function targetLabel(target) {
+    var match = COMPARISON_TARGETS.find(function (candidate) {
+      return candidate[0] === target;
+    });
+    return match ? match[1] : String(target).replace(/_/g, " ");
+  }
+
+  function formatDomain(domain) {
+    return String(domain).replace(/_/g, " ");
+  }
+
+  function renderAggregateDomains(container, aggregate) {
+    if (!aggregate || !Array.isArray(aggregate.domains)) return;
+    aggregate.domains.forEach(function (domain) {
+      var section = createEl("div", "chatbot-match-domain");
+      var heading = createEl("strong");
+      heading.textContent = formatDomain(domain.domain);
+      var list = createEl("ul");
+      domain.metrics.forEach(function (metric) {
+        var item = createEl("li");
+        if (metric.suppressed) {
+          item.textContent = metric.label + ": suppressed because the aggregate cell is too small";
+        } else if (metric.distribution) {
+          item.textContent =
+            metric.label + ": " +
+            metric.distribution.map(function (entry) {
+              return formatDomain(entry.category) + " (n=" + entry.count + ")";
+            }).join(", ");
+        } else {
+          item.textContent =
+            metric.label + ": median " + metric.median +
+            (metric.unit ? " " + metric.unit : "") +
+            "; range " + metric.range[0] + "–" + metric.range[1] +
+            (metric.unit ? " " + metric.unit : "");
+        }
+        list.appendChild(item);
+      });
+      section.append(heading, list);
+      container.appendChild(section);
+    });
+  }
+
+  function renderCohortComparison(result) {
+    var comparison = result.cohort_comparison_result;
+    var card = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-match-result",
+      { "data-profile-scope": "active" },
+    );
+    var title = createEl("div", "chatbot-profile-title");
+    title.textContent = "Cohort Comparison Result";
+    var target = createEl("p", "chatbot-match-target");
+    target.textContent = "Target: " + targetLabel(comparison.target);
+    card.append(title, target);
+
+    if (comparison.status === "insufficient_profile_coverage") {
+      var missing = comparison.profile_coverage.recommended_missing_domain;
+      var coverageCopy = createEl("p", "chatbot-profile-notice");
+      coverageCopy.textContent = missing
+        ? "The confirmed profile does not match a calibrated coverage pattern for this target. Add the " +
+          formatDomain(missing) + " domain, then confirm again."
+        : "The confirmed profile does not match a calibrated coverage pattern for this target.";
+      card.appendChild(coverageCopy);
+    } else if (comparison.status === "no_stable_neighborhood") {
+      var emptyCopy = createEl("p", "chatbot-profile-notice");
+      emptyCopy.textContent =
+        "No Stable Neighborhood: fewer than five references satisfied the validated threshold. " +
+        "The system did not force nearest neighbors into the result.";
+      card.appendChild(emptyCopy);
+    } else {
+      var matchedCopy = createEl("p", "chatbot-profile-notice");
+      matchedCopy.textContent =
+        comparison.neighborhood_size +
+        " threshold-qualified reference patients were selected from the confirmed target cohort.";
+      var coverage = createEl("p", "chatbot-match-coverage");
+      coverage.textContent =
+        "Matching domains: " + comparison.matching_domains.map(formatDomain).join(", ") + ".";
+      card.append(matchedCopy, coverage);
+      renderAggregateDomains(card, result.aggregate_callout_data);
+      var limitations = createEl("p", "chatbot-match-limitations");
+      limitations.textContent = comparison.limitations.join(" ");
+      var view = createEl("button", "chatbot-demo-button", {
+        type: "button",
+        "data-chatbot-action": "view-matched-references",
+      });
+      view.textContent = "View matched reference patients";
+      view.setAttribute("data-match-result", JSON.stringify(result));
+      var viewStatus = createEl("div", "chatbot-demo-status", {
+        "aria-live": "polite",
+      });
+      card.append(limitations, view, viewStatus);
+    }
+    var startOver = createEl("button", "chatbot-profile-link", {
+      type: "button",
+      "data-chatbot-action": "start-over-demo-profile",
+    });
+    startOver.textContent = "Start Over";
+    card.appendChild(startOver);
+    addRawElement(card);
+  }
+
+  function compareConfirmedProfile(button) {
+    var state = profileSession.getState();
+    if (state.phase !== "confirmed" || !state.confirmed) return;
+    var card = button.closest(".chatbot-profile-confirmed");
+    var select = card.querySelector(".chatbot-profile-target");
+    var status = card.querySelector(".chatbot-profile-action-status");
+    if (!select.value) {
+      status.textContent = "Choose one Comparison Target before starting the comparison.";
+      select.focus();
+      return;
+    }
+    button.disabled = true;
+    select.disabled = true;
+    status.textContent = "Checking calibrated Profile Coverage and reference distances…";
+    fetch(API_URL + "/profile/match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        confirmed_profile: state.confirmed,
+        target: select.value,
+      }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("API returned " + response.status);
+        return response.json();
+      })
+      .then(function (result) {
+        status.textContent = "Comparison complete.";
+        renderCohortComparison(result);
+      })
+      .catch(function (error) {
+        button.disabled = false;
+        select.disabled = false;
+        status.textContent = "The comparison backend is unavailable. Please try again.";
+        console.error("Profile matching error:", error);
+      });
+  }
+
+  function viewMatchedReferences(button) {
+    if (button.disabled) return;
+    var status = button.parentElement.querySelector(".chatbot-demo-status");
+    try {
+      var result = JSON.parse(button.getAttribute("data-match-result"));
+      var request = DEMO.createMatchedRequest(result);
+      DEMO.saveRequest(sessionStorage, request);
+      DEMO.notifyRequest(window, request);
+      var destination = new URL(findUseCaseUrl());
+      var samePage =
+        destination.origin === window.location.origin &&
+        destination.pathname === window.location.pathname;
+      status.textContent = "Opening the exact matched references in the fibrotic walkthrough.";
+      if (samePage) {
+        window.location.hash = destination.hash;
+        button.textContent = "Show matched references again";
+        status.textContent = "Walkthrough started. Replay and reset controls are available below.";
+      } else {
+        window.location.assign(destination.href);
+      }
+    } catch (error) {
+      button.disabled = false;
+      status.textContent = "The visualization request is unavailable. Run the comparison again.";
+      console.error("Matched reference walkthrough error:", error);
+    }
   }
 
   function startOverDemoProfile() {

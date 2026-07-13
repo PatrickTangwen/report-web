@@ -39,6 +39,22 @@ export function walkthroughFocusIndices(displayMode, allIndices, selectedIndices
 }
 
 
+export function walkthroughCopy(request) {
+  if (request?.type === "matched_reference_neighborhood") {
+    return {
+      kicker: "Matched reference neighborhood",
+      pointNoun: "matched reference points",
+      note: "Research cohort comparison only; no query patient is embedded and no diagnosis, prognosis, or personal outcome is inferred.",
+    };
+  }
+  return {
+    kicker: "Preset reference selection",
+    pointNoun: "preset reference points",
+    note: "Display preset only; no query patient is embedded and no clinical comparison or personal outcome is inferred.",
+  };
+}
+
+
 export function createRunController() {
   let currentToken = 0;
   return {
@@ -148,7 +164,7 @@ export async function createEmbeddingScatter(config) {
   status.className = "embedding-status";
   status.setAttribute("aria-live", "polite");
   status.textContent = "Overview · waiting for a walkthrough request";
-  const playButton = button("Play preset walkthrough", "embedding-button embedding-button-primary");
+  const playButton = button("Play walkthrough", "embedding-button embedding-button-primary");
   const replayButton = button("Replay");
   const resetButton = button("Reset view");
   replayButton.hidden = true;
@@ -233,12 +249,13 @@ export async function createEmbeddingScatter(config) {
   }
 
   function showCallout(request) {
+    const copy = walkthroughCopy(request);
     region.classList.toggle("is-visible", request.display_mode === "compact");
     summary.hidden = false;
     summary.replaceChildren();
     const kicker = document.createElement("div");
     kicker.className = "embedding-summary-kicker";
-    kicker.textContent = "Preset reference selection";
+    kicker.textContent = copy.kicker;
     const title = document.createElement("h3");
     title.textContent = request.summary.title;
     const description = document.createElement("p");
@@ -261,6 +278,32 @@ export async function createEmbeddingScatter(config) {
     note.textContent =
       "Display preset only; no query patient is embedded and no clinical similarity or personal outcome is inferred.";
     summary.append(kicker, title, description, details, note);
+    if (Array.isArray(request.summary.domains)) {
+      request.summary.domains.forEach((domain) => {
+        const domainSection = document.createElement("section");
+        domainSection.className = "embedding-summary-domain";
+        const domainTitle = document.createElement("h4");
+        domainTitle.textContent = String(domain.domain).replaceAll("_", " ");
+        const list = document.createElement("ul");
+        domain.metrics.forEach((metric) => {
+          const item = document.createElement("li");
+          if (metric.suppressed) {
+            item.textContent = `${metric.label}: suppressed because the aggregate cell is too small`;
+          } else if (metric.distribution) {
+            item.textContent = `${metric.label}: ${metric.distribution
+              .map((entry) => `${String(entry.category).replaceAll("_", " ")} (n=${entry.count})`)
+              .join(", ")}`;
+          } else {
+            const unit = metric.unit ? ` ${metric.unit}` : "";
+            item.textContent = `${metric.label}: median ${metric.median}${unit}; range ${metric.range[0]}–${metric.range[1]}${unit}`;
+          }
+          list.appendChild(item);
+        });
+        domainSection.append(domainTitle, list);
+        summary.insertBefore(domainSection, note);
+      });
+    }
+    note.textContent = copy.note;
     status.textContent = `Walkthrough complete · ${request.summary.reference_count} reference points highlighted`;
     replayButton.hidden = false;
     playButton.hidden = true;
@@ -287,7 +330,7 @@ export async function createEmbeddingScatter(config) {
         await drawDimmed();
         await delay(420);
       } else if (stage === "highlight") {
-        status.textContent = `${animate ? "Highlighting" : "Showing"} ${indices.length} preset reference points`;
+        status.textContent = `${animate ? "Highlighting" : "Showing"} ${indices.length} ${walkthroughCopy(request).pointNoun}`;
         await drawHighlighted(indices);
         if (animate) await delay(420);
       } else if (stage === "zoom") {
@@ -298,7 +341,9 @@ export async function createEmbeddingScatter(config) {
         );
         status.textContent = request.display_mode === "overview"
           ? "Keeping the dispersed selection in the full embedding overview"
-          : "Zooming to the display region";
+          : request.display_mode === "matched_selection"
+            ? "Fitting the exact matched reference selection"
+            : "Zooming to the display region";
         await scatterplot.zoomToPoints(focusIndices, {
           padding: request.display_mode === "overview" ? 0.08 : 0.25,
           transition: animate,
@@ -324,7 +369,7 @@ export async function createEmbeddingScatter(config) {
     playButton.disabled = false;
     replayButton.disabled = false;
     resetButton.disabled = false;
-    status.textContent = "Overview · preset walkthrough ready";
+    status.textContent = "Overview · walkthrough ready";
     await drawOverview();
     await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
   }

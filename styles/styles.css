@@ -535,6 +535,26 @@ figcaption {
   font-weight: 700;
 }
 
+.embedding-summary-domain {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid #d9e4f2;
+}
+
+.embedding-summary-domain h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 0.76rem;
+  text-transform: capitalize;
+}
+
+.embedding-summary-domain ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  color: #495057;
+  font-size: 0.76rem;
+}
+
 .embedding-summary-note {
   color: #6c757d;
   font-style: italic;
@@ -607,8 +627,17 @@ figcaption {
 }
 
 .quarto-dark .embedding-summary h3,
-.quarto-dark .embedding-summary dd {
+.quarto-dark .embedding-summary dd,
+.quarto-dark .embedding-summary-domain h4 {
   color: #e5edf5;
+}
+
+.quarto-dark .embedding-summary-domain {
+  border-top-color: #3f5067;
+}
+
+.quarto-dark .embedding-summary-domain ul {
+  color: #c4d0dc;
 }
 
 .quarto-dark .embedding-summary-kicker {

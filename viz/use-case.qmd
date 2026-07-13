@@ -16,7 +16,7 @@ This page demonstrates the clinical utility of ALIGATEHR-Gen through a focused c
 
 ## Patient Embeddings — 7 Fibrotic Diseases {#fibrotic-embedding}
 
-The plot below loads its display-safe reference points from the same backend Dataset Release used by the walkthrough. It contains no source participant IDs or individual clinical profiles.
+The plot below loads its display-safe reference points from the same backend Dataset Release used by preset and confirmed Demo Profile walkthroughs. It contains no source participant IDs or individual clinical profiles.
 
 ```{ojs}
 //| echo: false

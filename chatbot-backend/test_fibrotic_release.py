@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import subprocess
 import sys
@@ -120,6 +121,9 @@ def test_release_cli_builds_linked_display_and_private_artifacts(tmp_path):
     }
     assert "eid" not in private_rows[0]
     assert "id" not in private_rows[0]
+    assert not {"tsne_x", "tsne_y", "group", "p_true", "p_max", "correct"} & set(
+        private_rows[0]
+    )
 
     display_ids = [row["visual_reference_id"] for row in display_rows]
     private_ids = [row["visual_reference_id"] for row in private_rows]
@@ -131,6 +135,8 @@ def test_release_cli_builds_linked_display_and_private_artifacts(tmp_path):
     assert manifest["dataset_version"].startswith("fibrotic-2026-07-13-")
     assert manifest["point_count"] == 21
     assert manifest["public_schema"] == list(display_rows[0])
+    assert manifest["private_schema"] == list(private_rows[0])
+    assert manifest["private_sha256"] == hashlib.sha256(private_path.read_bytes()).hexdigest()
     assert set(manifest["disease_counts"]) == {disease for disease, _, _ in TARGETS}
 
     assert preset["dataset_version"] == manifest["dataset_version"]

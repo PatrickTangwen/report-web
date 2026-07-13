@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from openai import OpenAI, APIError
-from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -21,6 +21,7 @@ from demo_profile import (
     confirm_profile,
     parse_feature_candidates,
 )
+from profile_matching import load_matching_release, match_confirmed_profile
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -141,6 +142,19 @@ class ProfileConfirmRequest(BaseModel):
     draft: ProfileDraftInput
 
 
+class ProfileMatchRequest(BaseModel):
+    confirmed_profile: ProfileDraftInput
+    target: Literal[
+        "CKD",
+        "Cardiac_Fibrosis",
+        "MASH",
+        "Pulmonary_fibrosis",
+        "SSc_Connective_Tissue",
+        "Crohns_Disease",
+        "Fibrosis_of_Skin",
+    ]
+
+
 class FormFieldsResponse(BaseModel):
     disease: str
     disease_label: str
@@ -175,6 +189,16 @@ class AssessResponse(BaseModel):
 
 client: OpenAI | None = None
 profile_rate_limiter = ProfileRateLimiter()
+
+
+def get_profile_matching_release():
+    try:
+        return load_matching_release()
+    except (FileNotFoundError, RuntimeError, ValueError) as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Profile matching release unavailable: {error}",
+        )
 
 
 def enforce_profile_rate_limit(request):
@@ -290,6 +314,28 @@ async def profile_confirm(req: ProfileConfirmRequest, request: Request):
         return confirm_profile(req.draft.model_dump())
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error))
+
+
+@app.post("/profile/match")
+async def profile_match(
+    req: ProfileMatchRequest,
+    request: Request,
+    release=Depends(get_profile_matching_release),
+):
+    enforce_profile_rate_limit(request)
+    if req.confirmed_profile.state != "confirmed":
+        raise HTTPException(status_code=409, detail="Profile must be explicitly confirmed")
+    try:
+        confirmed = confirm_profile(req.confirmed_profile.model_dump())
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+    return match_confirmed_profile(
+        confirmed,
+        req.target,
+        release["rows"],
+        release["calibration"],
+        release["dataset_version"],
+    )
 
 
 @app.get("/form-fields", response_model=FormFieldsResponse)

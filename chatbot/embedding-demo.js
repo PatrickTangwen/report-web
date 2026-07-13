@@ -47,6 +47,41 @@
     };
   }
 
+  function createMatchedRequest(result, createdAt) {
+    var comparison = result && result.cohort_comparison_result;
+    var aggregate = result && result.aggregate_callout_data;
+    if (
+      !result ||
+      !result.dataset_version ||
+      !comparison ||
+      comparison.status !== "matched_reference_neighborhood" ||
+      !comparison.target ||
+      !Array.isArray(result.visual_reference_ids) ||
+      !result.visual_reference_ids.length ||
+      !aggregate ||
+      aggregate.reference_count !== result.visual_reference_ids.length
+    ) {
+      throw new Error("Match response is missing the visualization contract");
+    }
+    return {
+      type: "matched_reference_neighborhood",
+      dataset_version: result.dataset_version,
+      target: comparison.target,
+      display_mode: "matched_selection",
+      visual_reference_ids: result.visual_reference_ids.slice(),
+      summary: {
+        reference_count: aggregate.reference_count,
+        title: aggregate.title,
+        description: aggregate.description,
+        domains: Array.isArray(aggregate.domains)
+          ? JSON.parse(JSON.stringify(aggregate.domains))
+          : [],
+      },
+      created_at: createdAt || new Date().toISOString(),
+      consumed: false,
+    };
+  }
+
   function saveRequest(storage, request) {
     storage.setItem(REQUEST_KEY, JSON.stringify(request));
   }
@@ -98,6 +133,7 @@
     REQUEST_KEY: REQUEST_KEY,
     REQUEST_EVENT: REQUEST_EVENT,
     createPresetRequest: createPresetRequest,
+    createMatchedRequest: createMatchedRequest,
     saveRequest: saveRequest,
     notifyRequest: notifyRequest,
     connectRequestConsumer: connectRequestConsumer,

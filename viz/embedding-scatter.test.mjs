@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import test from "node:test";
 
 import {
@@ -6,9 +7,13 @@ import {
   createRunController,
   normalizePoints,
   resolveReferenceIndices,
+  walkthroughCopy,
   walkthroughFocusIndices,
   walkthroughPlan,
 } from "./embedding-scatter.js";
+
+const require = createRequire(import.meta.url);
+const demo = require("../chatbot/embedding-demo.js");
 
 
 test("normalization preserves aspect ratio inside WebGL coordinates", () => {
@@ -98,4 +103,67 @@ test("production control binding routes play, replay, and reset", () => {
     ["play", request],
     ["reset"],
   ]);
+});
+
+
+test("walkthrough copy distinguishes a live match from a fixed preset", () => {
+  assert.deepEqual(
+    walkthroughCopy({ type: "matched_reference_neighborhood" }),
+    {
+      kicker: "Matched reference neighborhood",
+      pointNoun: "matched reference points",
+      note: "Research cohort comparison only; no query patient is embedded and no diagnosis, prognosis, or personal outcome is inferred.",
+    },
+  );
+  assert.equal(
+    walkthroughCopy({ type: "preset_selection" }).kicker,
+    "Preset reference selection",
+  );
+});
+
+
+test("live match crosses session request boundary and focuses exact graph references", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  };
+  const result = {
+    dataset_version: "fibrotic-test-release",
+    cohort_comparison_result: {
+      status: "matched_reference_neighborhood",
+      target: "MASH",
+    },
+    visual_reference_ids: ["vr_match_two", "vr_match_one"],
+    aggregate_callout_data: {
+      reference_count: 2,
+      title: "Matched reference neighborhood",
+      description: "Aggregate context.",
+      domains: [],
+    },
+  };
+  const data = [
+    { visual_reference_id: "vr_other" },
+    { visual_reference_id: "vr_match_one" },
+    { visual_reference_id: "vr_match_two" },
+  ];
+
+  demo.saveRequest(
+    storage,
+    demo.createMatchedRequest(result, "2026-07-13T12:00:00Z"),
+  );
+  const consumed = demo.consumeRequest(storage, "fibrotic-test-release");
+  const selected = resolveReferenceIndices(
+    data,
+    consumed.request.visual_reference_ids,
+  );
+
+  assert.equal(consumed.should_play, true);
+  assert.equal(consumed.request.display_mode, "matched_selection");
+  assert.deepEqual(selected, [2, 1]);
+  assert.deepEqual(
+    walkthroughFocusIndices("matched_selection", [0, 1, 2], selected),
+    [2, 1],
+  );
 });
