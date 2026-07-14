@@ -1,11 +1,12 @@
 import os
 import re
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from openai import OpenAI, APIError
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from paper_context import PAPER_TEXT
 from data_query import query_data, format_data_context, match_disease, is_pathway_query, is_embedding_query
@@ -13,6 +14,13 @@ from clinical_form import get_available_diseases, get_form_fields
 from risk_assessment import query_patient_risk
 from followup import get_pathway_enrichment, describe_embedding_context
 from fibrotic_release import load_fibrotic_release
+from demo_profile import (
+    FEATURE_EXTRACTION_SYSTEM_PROMPT,
+    ProfileRateLimiter,
+    build_profile_draft,
+    confirm_profile,
+    parse_feature_candidates,
+)
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -48,8 +56,10 @@ PAPER_QA_SYSTEM_PROMPT = (
 )
 
 CLINICAL_PROMPT = (
-    "I can help assess your risk for the following diseases. "
-    "Please select one to begin the clinical risk assessment:"
+    "I can help you build a synthetic or sufficiently de-identified Demo Profile "
+    "for a research comparison. This is not medical advice, diagnosis, or a personal "
+    "outcome prediction. Do not enter names, exact birth dates, addresses, patient "
+    "IDs, or real medical records."
 )
 
 DATA_QUERY_SYSTEM_PROMPT = (
@@ -102,6 +112,35 @@ class ChatResponse(BaseModel):
     ui: dict | None = None
 
 
+class FeatureCandidate(BaseModel):
+    field: str = Field(min_length=1, max_length=80)
+    raw_value: str | float | int | bool | None
+    raw_unit: str | None = Field(default=None, max_length=40)
+    source_text: str = Field(min_length=1, max_length=500)
+    operation: Literal["set", "correct", "remove"] = "set"
+
+
+class ProfileExtractRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class ProfileExtractResponse(BaseModel):
+    candidates: list[FeatureCandidate]
+
+
+class ProfileValidateRequest(BaseModel):
+    candidates: list[FeatureCandidate] = Field(max_length=100)
+
+
+class ProfileDraftInput(BaseModel):
+    state: str
+    candidates: list[FeatureCandidate] = Field(max_length=100)
+
+
+class ProfileConfirmRequest(BaseModel):
+    draft: ProfileDraftInput
+
+
 class FormFieldsResponse(BaseModel):
     disease: str
     disease_label: str
@@ -135,6 +174,13 @@ class AssessResponse(BaseModel):
 
 
 client: OpenAI | None = None
+profile_rate_limiter = ProfileRateLimiter()
+
+
+def enforce_profile_rate_limit(request):
+    client_key = request.client.host if request.client else "unknown"
+    if not profile_rate_limiter.allow(client_key):
+        raise HTTPException(status_code=429, detail="Too many profile requests")
 
 
 @asynccontextmanager
@@ -206,6 +252,46 @@ async def fibrotic_preset(response: Response):
     return preset
 
 
+@app.post("/profile/extract", response_model=ProfileExtractResponse)
+async def profile_extract(req: ProfileExtractRequest, request: Request):
+    enforce_profile_rate_limit(request)
+    if client is None:
+        raise HTTPException(status_code=503, detail="LLM API key not configured")
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            max_tokens=900,
+            temperature=0,
+            messages=[
+                {"role": "system", "content": FEATURE_EXTRACTION_SYSTEM_PROMPT},
+                {"role": "user", "content": req.message},
+            ],
+        )
+        candidates = parse_feature_candidates(
+            req.message, response.choices[0].message.content
+        )
+    except APIError as error:
+        raise HTTPException(status_code=502, detail=f"LLM API error: {error.message}")
+    except (AttributeError, ValueError) as error:
+        raise HTTPException(status_code=502, detail=str(error))
+    return {"candidates": candidates}
+
+
+@app.post("/profile/validate")
+async def profile_validate(req: ProfileValidateRequest, request: Request):
+    enforce_profile_rate_limit(request)
+    return build_profile_draft([candidate.model_dump() for candidate in req.candidates])
+
+
+@app.post("/profile/confirm")
+async def profile_confirm(req: ProfileConfirmRequest, request: Request):
+    enforce_profile_rate_limit(request)
+    try:
+        return confirm_profile(req.draft.model_dump())
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+
+
 @app.get("/form-fields", response_model=FormFieldsResponse)
 async def form_fields(disease: str = Query(min_length=1)):
     result = get_form_fields(disease)
@@ -248,11 +334,10 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
 
     if intent == "clinical":
-        diseases = get_available_diseases()
         return ChatResponse(
             reply=CLINICAL_PROMPT,
             intent=intent,
-            ui={"type": "disease_select", "diseases": diseases},
+            ui={"type": "demo_profile_start"},
         )
 
     if intent == "data_query":

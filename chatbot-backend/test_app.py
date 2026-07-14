@@ -108,7 +108,7 @@ async def test_chat_with_history(client, mock_openai_with_intent):
 # --- Intent classification ---
 
 @pytest.mark.asyncio
-async def test_intent_clinical_returns_disease_select(client):
+async def test_intent_clinical_offers_the_research_demo_profile(client):
     with patch("app.client") as mock_client:
         mock_client.chat.completions.create.return_value = _mock_response("clinical")
         resp = await client.post(
@@ -118,12 +118,8 @@ async def test_intent_clinical_returns_disease_select(client):
         body = resp.json()
         assert body["intent"] == "clinical"
         assert body["reply"] == CLINICAL_PROMPT
-        assert body["ui"]["type"] == "disease_select"
-        diseases = body["ui"]["diseases"]
-        assert len(diseases) == 7
-        ids = [d["id"] for d in diseases]
-        assert "CKD" in ids
-        assert "NASH" in ids
+        assert body["ui"] == {"type": "demo_profile_start"}
+        assert "not medical advice" in body["reply"]
         mock_client.chat.completions.create.assert_called_once()
 
 
