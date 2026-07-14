@@ -1,0 +1,7 @@
+---
+status: accepted
+---
+
+# Use a guided form for Demo Profiles
+
+The public Build a Demo Profile task will collect fields through a staged, optional-field form instead of asking visitors to describe a profile in natural language. The visitor must select exactly one Comparison Target before entering fields so the form can explain target-relevant Profile Coverage without implying diagnosis; the system does not infer, recommend, or provide a fallback target. After target selection, the visitor may build a profile or load the fixed, reviewed Synthetic Example Profile versioned for that target; all seven targets have their own example, each remains editable, and none confirms or compares automatically. No individual field is universally required, but the UI will prevent comparison until the Profile Draft satisfies a reviewed target-specific coverage pattern and will identify optional additions that can reach eligibility. A final review surface keeps the privacy and research-use notice visible, and the explicit Confirm and compare with reference cohort action both confirms the reviewed Profile Draft and starts comparison without a separate affirmation checkbox. Reviewed controls make the supported fields, units, privacy boundary, and confirmation sequence visible without requiring prompt-writing; the backend text-extraction capability may remain available for future use but is not part of the default public flow.
