@@ -194,11 +194,10 @@ app = FastAPI(title="ALIGATEHR-Gen Chatbot", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:4200",
-        "http://127.0.0.1:4200",
         "https://patricktangwen.github.io",
         "https://patirckistc-report-web.hf.space",
     ],
+    allow_origin_regex=r"^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$",
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )

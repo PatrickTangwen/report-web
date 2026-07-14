@@ -105,7 +105,12 @@ async def test_public_pages_origin_is_allowed_by_cors(client):
 
 @pytest.mark.asyncio
 async def test_local_preview_origins_are_allowed_by_cors(client):
-    for origin in ("http://localhost:4200", "http://127.0.0.1:4200"):
+    for origin in (
+        "http://localhost:4200",
+        "http://localhost:4210",
+        "http://127.0.0.1:4999",
+        "http://[::1]:4200",
+    ):
         response = await client.options(
             "/chat",
             headers={
