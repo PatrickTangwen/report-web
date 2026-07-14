@@ -1,6 +1,8 @@
 import csv
 from pathlib import Path
 
+import pytest
+
 from icd_keyword import load_icd_vocabulary, match_icd_keywords, validate_vocabulary
 
 
@@ -55,26 +57,35 @@ def test_more_specific_reviewed_phrase_wins_without_guessing():
 def test_ambiguous_and_unsupported_input_never_produce_actions():
     ambiguous_vocabulary = {
         "version": "test",
+        "icd_version": "ICD-10 2019",
+        "ambiguities": [
+            {"term": "shared term", "entry_ids": ["left", "right"]},
+        ],
         "entries": [
             {
                 "id": "left",
                 "canonical_keyword": "shared term",
                 "aliases": [],
                 "display_label": "Left",
-                "selector": {"type": "exact", "code": "A15"},
-                "selector_label": "A15",
+                "selector": {"type": "exact", "code": "A00"},
+                "selector_label": "A00",
+                "source": "reviewed test fixture",
+                "icd_version": "ICD-10 2019",
             },
             {
                 "id": "right",
                 "canonical_keyword": "shared term",
                 "aliases": [],
                 "display_label": "Right",
-                "selector": {"type": "exact", "code": "A16"},
-                "selector_label": "A16",
+                "selector": {"type": "exact", "code": "A01"},
+                "selector_label": "A01",
+                "source": "reviewed test fixture",
+                "icd_version": "ICD-10 2019",
             },
         ],
     }
 
+    assert validate_vocabulary(ambiguous_vocabulary, embedding_codes()) == []
     ambiguous = match_icd_keywords("shared term", ambiguous_vocabulary)
     unsupported = match_icd_keywords("eczema")
 
@@ -90,3 +101,17 @@ def test_ambiguous_and_unsupported_input_never_produce_actions():
         "matches": [],
         "ambiguities": [],
     }
+
+
+def test_unreviewed_duplicate_terms_remain_vocabulary_errors():
+    vocabulary = load_icd_vocabulary()
+    duplicate = dict(vocabulary["entries"][0])
+    duplicate["id"] = "unreviewed-duplicate"
+    vocabulary = {**vocabulary, "entries": [*vocabulary["entries"], duplicate]}
+
+    assert any(
+        "is also assigned" in error
+        for error in validate_vocabulary(vocabulary, embedding_codes())
+    )
+    with pytest.raises(ValueError, match="ambiguous without a reviewed declaration"):
+        match_icd_keywords(vocabulary["entries"][0]["canonical_keyword"], vocabulary)

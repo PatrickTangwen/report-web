@@ -77,21 +77,38 @@ export function createIcdInteraction(config) {
 }
 
 
-export function createIcdRequestQueue() {
+export function createIcdRequestQueue(interruptActiveMotion = () => {}) {
   let generation = 0;
   let tail = Promise.resolve();
+  let hasWork = false;
+
+  function interrupt() {
+    try {
+      return Promise.resolve(interruptActiveMotion()).catch(() => {});
+    } catch (_error) {
+      return Promise.resolve();
+    }
+  }
 
   return {
     enqueue(task) {
       generation += 1;
       const token = generation;
+      const interruption = hasWork ? interrupt() : Promise.resolve();
+      hasWork = true;
       const isCurrent = () => token === generation;
-      const run = tail.catch(() => {}).then(() => task(isCurrent));
-      tail = run.catch(() => {});
+      const run = Promise.all([tail.catch(() => {}), interruption])
+        .then(() => task(isCurrent));
+      tail = run.catch(() => {}).finally(() => {
+        if (isCurrent()) hasWork = false;
+      });
       return run;
     },
     cancel() {
       generation += 1;
+      const interruption = hasWork ? interrupt() : Promise.resolve();
+      hasWork = false;
+      return interruption;
     },
   };
 }
@@ -255,7 +272,13 @@ export async function createIcdKeywordScatter(config) {
       zoomToPoints: (indices, options) => scatterplot.zoomToPoints(indices, options),
     },
   });
-  const requestQueue = createIcdRequestQueue();
+  const requestQueue = createIcdRequestQueue(() => {
+    return scatterplot.zoomToPoints(allIndices, {
+      padding: 0.08,
+      transition: true,
+      transitionDuration: 0,
+    });
+  });
   let activeRequest = config.request || null;
   let motionActive = false;
 

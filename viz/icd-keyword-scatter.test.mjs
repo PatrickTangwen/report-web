@@ -92,10 +92,15 @@ test("reduced motion jumps directly to the final highlighted state", async () =>
 });
 
 
-test("new ICD requests invalidate stale work and run in deterministic order", async () => {
-  const queue = createIcdRequestQueue();
+test("new ICD requests interrupt stale motion before the next render starts", async () => {
   const calls = [];
   let releaseFirst;
+  let releaseInterrupt;
+  const queue = createIcdRequestQueue(() => {
+    calls.push("cancel-motion");
+    releaseFirst();
+    return new Promise((resolve) => { releaseInterrupt = resolve; });
+  });
   const first = queue.enqueue(async (isCurrent) => {
     calls.push("first-start");
     await new Promise((resolve) => { releaseFirst = resolve; });
@@ -106,9 +111,70 @@ test("new ICD requests invalidate stale work and run in deterministic order", as
     calls.push("second-start");
     if (isCurrent()) calls.push("second-result");
   });
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
+  assert.deepEqual(calls, ["first-start", "cancel-motion"]);
+  releaseInterrupt();
+
+  await Promise.all([first, second]);
+
+  assert.deepEqual(calls, [
+    "first-start",
+    "cancel-motion",
+    "second-start",
+    "second-result",
+  ]);
+});
+
+
+test("explicit cancellation interrupts active motion and suppresses stale results", async () => {
+  const calls = [];
+  let release;
+  const queue = createIcdRequestQueue(() => {
+    calls.push("cancel-motion");
+    release();
+  });
+  const active = queue.enqueue(async (isCurrent) => {
+    await new Promise((resolve) => { release = resolve; });
+    if (isCurrent()) calls.push("stale-result");
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  await queue.cancel();
+  await active;
+
+  assert.deepEqual(calls, ["cancel-motion"]);
+});
+
+
+test("a synchronous interruption error cannot block the replacement request", async () => {
+  const calls = [];
+  let releaseFirst;
+  const queue = createIcdRequestQueue(() => {
+    calls.push("cancel-error");
+    throw new Error("renderer is already stopping");
+  });
+  const first = queue.enqueue(async (isCurrent) => {
+    calls.push("first-start");
+    await new Promise((resolve) => { releaseFirst = resolve; });
+    if (isCurrent()) calls.push("first-result");
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const second = queue.enqueue(async (isCurrent) => {
+    calls.push("second-start");
+    if (isCurrent()) calls.push("second-result");
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(calls, ["first-start", "cancel-error"]);
   releaseFirst();
   await Promise.all([first, second]);
 
-  assert.deepEqual(calls, ["first-start", "second-start", "second-result"]);
+  assert.deepEqual(calls, [
+    "first-start",
+    "cancel-error",
+    "second-start",
+    "second-result",
+  ]);
 });

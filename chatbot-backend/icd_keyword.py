@@ -32,11 +32,20 @@ def load_icd_vocabulary(path=VOCABULARY_PATH):
         return json.load(handle)
 
 
+def reviewed_ambiguities(vocabulary):
+    return {
+        normalize_keyword(item.get("term")): set(item.get("entry_ids", []))
+        for item in vocabulary.get("ambiguities", [])
+        if normalize_keyword(item.get("term"))
+    }
+
+
 def validate_vocabulary(vocabulary, codes):
     errors = []
     seen_ids = set()
     seen_terms = {}
     normalized_codes = [normalize_code(code) for code in codes]
+    ambiguity_registry = reviewed_ambiguities(vocabulary)
 
     for entry in vocabulary.get("entries", []):
         entry_id = entry.get("id")
@@ -61,12 +70,28 @@ def validate_vocabulary(vocabulary, codes):
             if not normalized_term:
                 errors.append(f"{entry_id}: keyword or alias is empty")
                 continue
-            owner = seen_terms.get(normalized_term)
-            if owner and owner != entry_id:
-                errors.append(
-                    f"{entry_id}: keyword {normalized_term!r} is also assigned to {owner}"
-                )
-            seen_terms[normalized_term] = entry_id
+            owners = seen_terms.setdefault(normalized_term, set())
+            owners.add(entry_id)
+
+    for normalized_term, owners in seen_terms.items():
+        if len(owners) < 2:
+            continue
+        if ambiguity_registry.get(normalized_term) != owners:
+            owner_list = ", ".join(sorted(owners))
+            errors.append(
+                f"keyword {normalized_term!r} is also assigned to {owner_list} "
+                "without a matching reviewed ambiguity"
+            )
+
+    for normalized_term, entry_ids in ambiguity_registry.items():
+        if len(entry_ids) < 2:
+            errors.append(
+                f"Reviewed ambiguity {normalized_term!r} must name at least two entries"
+            )
+        elif seen_terms.get(normalized_term) != entry_ids:
+            errors.append(
+                f"Reviewed ambiguity {normalized_term!r} does not match its vocabulary entries"
+            )
 
     return errors
 
@@ -88,6 +113,7 @@ def _public_match(entry, matched_keyword):
 
 def match_icd_keywords(message, vocabulary=None):
     vocabulary = vocabulary or load_icd_vocabulary()
+    ambiguity_registry = reviewed_ambiguities(vocabulary)
     normalized_message = normalize_keyword(message)
     candidates = []
 
@@ -120,6 +146,10 @@ def match_icd_keywords(message, vocabulary=None):
     for (start, _, term), entries in sorted(grouped.items()):
         if len(entries) < 2:
             continue
+        if ambiguity_registry.get(term) != set(entries):
+            raise ValueError(
+                f"ICD keyword {term!r} is ambiguous without a reviewed declaration"
+            )
         ambiguities.append(
             {
                 "matched_keyword": term,
