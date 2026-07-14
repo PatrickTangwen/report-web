@@ -231,6 +231,7 @@
   // Auto-resize textarea
   input.addEventListener("input", function () {
     this.style.height = "auto";
+    this.style.overflowY = this.scrollHeight > 80 ? "auto" : "hidden";
     this.style.height = Math.min(this.scrollHeight, 80) + "px";
   });
 

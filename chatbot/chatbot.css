@@ -225,6 +225,7 @@
   resize: none;
   max-height: 80px;
   line-height: 1.35;
+  overflow-y: hidden;
 }
 
 .chatbot-input:focus {

@@ -5,6 +5,7 @@ const test = require("node:test");
 
 
 const source = fs.readFileSync(path.join(__dirname, "chatbot.js"), "utf8");
+const styles = fs.readFileSync(path.join(__dirname, "chatbot.css"), "utf8");
 
 
 test("every public chatbot API request uses the bounded JSON request helper", () => {
@@ -19,4 +20,16 @@ test("every public chatbot API request uses the bounded JSON request helper", ()
 test("a failed ordinary chat exposes an explicit retry action", () => {
   assert.match(source, /"data-chatbot-action"\s*:\s*"retry-chat"/);
   assert.match(source, /if \(action === "retry-chat"\) retryChat\(button\)/);
+});
+
+
+test("the message input shows a scrollbar only after real vertical overflow", () => {
+  assert.match(
+    styles,
+    /\.chatbot-input\s*{[^}]*overflow-y:\s*hidden;/s,
+  );
+  assert.match(
+    source,
+    /this\.style\.overflowY = this\.scrollHeight > 80 \? "auto" : "hidden"/,
+  );
 });
