@@ -121,3 +121,51 @@ test("API authority is resolved once for local preview and deployment", () => {
     "https://example.test",
   );
 });
+
+
+test("matched result request stores exact references and aggregate context without profile values", () => {
+  const result = {
+    dataset_version: "fibrotic-2026-07-13-example",
+    cohort_comparison_result: {
+      status: "matched_reference_neighborhood",
+      target: "MASH",
+      neighborhood_size: 2,
+    },
+    visual_reference_ids: ["vr_match_one", "vr_match_two"],
+    aggregate_callout_data: {
+      reference_count: 2,
+      title: "MASH matched reference neighborhood",
+      description: "Aggregate comparison context.",
+      domains: [
+        {
+          domain: "demographics",
+          metrics: [
+            { feature: "age", median: 55, range: [50, 60], unit: "years" },
+          ],
+        },
+      ],
+    },
+  };
+
+  const request = demo.createMatchedRequest(
+    result,
+    "2026-07-13T12:00:00.000Z",
+  );
+
+  assert.deepEqual(Object.keys(request).sort(), [
+    "consumed",
+    "created_at",
+    "dataset_version",
+    "display_mode",
+    "summary",
+    "target",
+    "type",
+    "visual_reference_ids",
+  ]);
+  assert.equal(request.type, "matched_reference_neighborhood");
+  assert.equal(request.display_mode, "matched_selection");
+  assert.deepEqual(request.visual_reference_ids, ["vr_match_one", "vr_match_two"]);
+  assert.equal(request.summary.domains[0].metrics[0].median, 55);
+  assert.equal(JSON.stringify(request).includes("confirmed_profile"), false);
+  assert.equal(JSON.stringify(request).includes("reported_features"), false);
+});

@@ -284,12 +284,65 @@
 }
 
 .chatbot-profile-review,
-.chatbot-profile-confirmed {
+.chatbot-profile-confirmed,
+.chatbot-match-result {
   align-self: stretch;
   max-width: 100%;
   padding: 0.8rem;
   border: 1px solid #bfd0e8;
   background: #f8fafc;
+}
+
+.chatbot-profile-target-label {
+  display: block;
+  margin-top: 0.7rem;
+  color: #273444;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.chatbot-profile-target {
+  width: 100%;
+  margin: 0.25rem 0 0.55rem;
+  padding: 0.42rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.chatbot-match-target,
+.chatbot-match-coverage,
+.chatbot-match-limitations {
+  margin: 0.3rem 0;
+  color: #53606d;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.chatbot-match-domain {
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border-left: 3px solid #2c5aa0;
+  background: #edf4fc;
+  color: #334155;
+  font-size: 0.7rem;
+}
+
+.chatbot-match-domain strong {
+  text-transform: capitalize;
+}
+
+.chatbot-match-domain ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
+}
+
+.chatbot-match-limitations {
+  margin-top: 0.55rem;
+  font-style: italic;
 }
 
 .chatbot-profile-title {
@@ -852,9 +905,28 @@
 
 .quarto-dark .chatbot-profile-starter,
 .quarto-dark .chatbot-profile-review,
-.quarto-dark .chatbot-profile-confirmed {
+.quarto-dark .chatbot-profile-confirmed,
+.quarto-dark .chatbot-match-result {
   border-color: #3d5f8d;
   background: #26323f;
+}
+
+.quarto-dark .chatbot-profile-target {
+  border-color: #56616d;
+  background: #1f252b;
+  color: #edf2f7;
+}
+
+.quarto-dark .chatbot-profile-target-label,
+.quarto-dark .chatbot-match-target,
+.quarto-dark .chatbot-match-coverage,
+.quarto-dark .chatbot-match-limitations {
+  color: #c6d2df;
+}
+
+.quarto-dark .chatbot-match-domain {
+  background: #223a55;
+  color: #dbeafe;
 }
 
 .quarto-dark .chatbot-profile-title,

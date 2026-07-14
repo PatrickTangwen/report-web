@@ -74,6 +74,7 @@ def build_release(source, public_dir, private_output, release_date):
     _write_csv(private_output, MATCH_FIELDS, private_rows)
 
     display_digest = hashlib.sha256(display_path.read_bytes()).hexdigest()
+    private_digest = hashlib.sha256(private_output.read_bytes()).hexdigest()
     dataset_version = f"fibrotic-{release_date}-{display_digest[:12]}"
     manifest = {
         "dataset_version": dataset_version,
@@ -82,6 +83,8 @@ def build_release(source, public_dir, private_output, release_date):
         "disease_counts": dict(sorted(disease_counts.items())),
         "public_schema": PUBLIC_FIELDS,
         "display_sha256": display_digest,
+        "private_schema": MATCH_FIELDS,
+        "private_sha256": private_digest,
     }
     (public_dir / "fibrotic_manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n"
