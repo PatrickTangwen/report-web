@@ -22,6 +22,7 @@ from demo_profile import (
     parse_feature_candidates,
 )
 from profile_matching import load_matching_release, match_confirmed_profile
+from icd_keyword import is_icd_keyword_request, match_icd_keywords
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -371,6 +372,59 @@ async def assess(req: AssessRequest):
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
+    mapping = match_icd_keywords(req.message)
+    if is_icd_keyword_request(
+        req.message,
+        has_reviewed_keyword=mapping["status"] in {"supported", "ambiguous"},
+    ):
+        if mapping["status"] == "supported":
+            count = len(mapping["matches"])
+            return ChatResponse(
+                reply=(
+                    f"I found {count} reviewed ICD Keyword "
+                    f"{'Match' if count == 1 else 'Matches'}. "
+                    "Each action opens one code selection independently; these are "
+                    "navigation aids, not patient history or clinical similarity."
+                ),
+                intent="icd_keyword_match",
+                ui={
+                    "type": "icd_keyword_matches",
+                    "vocabulary_version": mapping["vocabulary_version"],
+                    "matches": mapping["matches"],
+                },
+            )
+        if mapping["status"] == "ambiguous":
+            labels = sorted(
+                {
+                    option["display_label"]
+                    for ambiguity in mapping["ambiguities"]
+                    for option in ambiguity["options"]
+                }
+            )
+            return ChatResponse(
+                reply=(
+                    "That keyword is ambiguous in the reviewed vocabulary. Please "
+                    f"specify one of: {', '.join(labels)}."
+                ),
+                intent="icd_keyword_match",
+                ui={
+                    "type": "icd_keyword_ambiguous",
+                    "vocabulary_version": mapping["vocabulary_version"],
+                    "ambiguities": mapping["ambiguities"],
+                },
+            )
+        return ChatResponse(
+            reply=(
+                "That keyword is not in the reviewed ICD Keyword Vocabulary, so I "
+                "will not guess a code or range."
+            ),
+            intent="icd_keyword_match",
+            ui={
+                "type": "icd_keyword_unsupported",
+                "vocabulary_version": mapping["vocabulary_version"],
+            },
+        )
+
     if client is None:
         raise HTTPException(status_code=503, detail="LLM API key not configured")
 

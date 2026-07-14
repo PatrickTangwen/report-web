@@ -189,6 +189,102 @@ def test_classify_intent_garbage_defaults():
         assert result == "paper_qa"
 
 
+# --- ICD keyword walkthrough ---
+
+@pytest.mark.asyncio
+async def test_chat_returns_separate_deterministic_icd_actions_without_llm(client):
+    with patch("app.client") as mock_client:
+        resp = await client.post(
+            "/chat",
+            json={"message": "Show tuberculosis and CKD on the ICD graph"},
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["intent"] == "icd_keyword_match"
+    assert body["ui"]["type"] == "icd_keyword_matches"
+    assert [match["id"] for match in body["ui"]["matches"]] == [
+        "tuberculosis",
+        "chronic-kidney-disease",
+    ]
+    assert set(body["ui"]["matches"][0]) == {
+        "id",
+        "canonical_keyword",
+        "matched_keyword",
+        "display_label",
+        "selector",
+        "selector_label",
+    }
+    assert "not patient history or clinical similarity" in body["reply"]
+    mock_client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_explicit_unsupported_icd_request_is_not_guessed(client):
+    with patch("app.client") as mock_client:
+        resp = await client.post(
+            "/chat", json={"message": "Highlight eczema on the ICD graph"}
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["intent"] == "icd_keyword_match"
+    assert body["ui"] == {
+        "type": "icd_keyword_unsupported",
+        "vocabulary_version": "2026-07-13.v1",
+    }
+    assert "not in the reviewed ICD Keyword Vocabulary" in body["reply"]
+    mock_client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_plain_disease_question_keeps_existing_intent_routing(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("paper_qa"),
+            _mock_response("Paper answer."),
+        ]
+        resp = await client.post(
+            "/chat", json={"message": "What does the paper say about CKD?"}
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["intent"] == "paper_qa"
+    assert mock_client.chat.completions.create.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_unrelated_highlight_request_keeps_existing_intent_routing(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("paper_qa"),
+            _mock_response("Paper answer."),
+        ]
+        resp = await client.post(
+            "/chat", json={"message": "Highlight the paper's main contribution"}
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["intent"] == "paper_qa"
+    assert mock_client.chat.completions.create.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_basic_reviewed_keyword_action_does_not_require_graph_jargon(client):
+    with patch("app.client") as mock_client:
+        resp = await client.post(
+            "/chat", json={"message": "Find type 2 diabetes"}
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["intent"] == "icd_keyword_match"
+    assert [match["id"] for match in body["ui"]["matches"]] == [
+        "type-2-diabetes"
+    ]
+    mock_client.chat.completions.create.assert_not_called()
+
+
 # --- Data query module ---
 
 def test_match_disease_exact():

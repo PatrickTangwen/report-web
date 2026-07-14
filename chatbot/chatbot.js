@@ -2,6 +2,7 @@
   "use strict";
 
   var DEMO = window.ALIGATEHR_EMBEDDING_DEMO;
+  var ICD = window.ALIGATEHR_ICD_KEYWORD;
   var PROFILE = window.ALIGATEHR_PROFILE_SESSION;
   var API_URL = DEMO.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
   var STORAGE_PREFIX = "aligatehr-chatbot-";
@@ -226,6 +227,7 @@
     if (action === "confirm-demo-profile") confirmDemoProfile(button);
     if (action === "compare-confirmed-profile") compareConfirmedProfile(button);
     if (action === "view-matched-references") viewMatchedReferences(button);
+    if (action === "view-icd-keyword") viewIcdKeyword(button);
     if (action === "start-over-demo-profile") startOverDemoProfile();
   });
 
@@ -308,19 +310,88 @@
     }
   }
 
-  function findUseCaseUrl() {
+  function findVisualizationUrl(path, hash) {
     var links = document.querySelectorAll('a[href]');
     for (var i = 0; i < links.length; i++) {
       var candidate = new URL(links[i].href, window.location.href);
-      if (candidate.pathname.endsWith("/viz/use-case.html")) {
-        candidate.hash = "fibrotic-embedding";
+      if (candidate.pathname.endsWith(path)) {
+        candidate.hash = hash;
         return candidate.href;
       }
     }
     var script = document.querySelector('script[src*="/chatbot/chatbot.js"]');
     var scriptUrl = new URL(script ? script.src : "/chatbot/chatbot.js", window.location.href);
     var siteRoot = scriptUrl.pathname.replace(/\/chatbot\/chatbot\.js$/, "");
-    return scriptUrl.origin + siteRoot + "/viz/use-case.html#fibrotic-embedding";
+    return scriptUrl.origin + siteRoot + path + "#" + hash;
+  }
+
+  function findUseCaseUrl() {
+    return findVisualizationUrl("/viz/use-case.html", "fibrotic-embedding");
+  }
+
+  function findPerformanceUrl() {
+    return findVisualizationUrl("/viz/overall-performance.html", "icd-embedding");
+  }
+
+  function renderIcdKeywordMatches(ui) {
+    var matches = Array.isArray(ui.matches) ? ui.matches : [];
+    matches.forEach(function (match, index) {
+      var card = createEl(
+        "div",
+        "chatbot-msg chatbot-msg-assistant chatbot-demo-card chatbot-icd-card",
+      );
+      var label = createEl("div", "chatbot-demo-label");
+      label.textContent = matches.length > 1
+        ? "ICD Keyword Match " + (index + 1) + " of " + matches.length
+        : "ICD Keyword Match";
+      var title = createEl("div", "chatbot-icd-title");
+      title.textContent = match.display_label;
+      var selector = createEl("code", "chatbot-icd-selector");
+      selector.textContent = match.selector_label;
+      var copy = createEl("p", "chatbot-demo-copy");
+      copy.textContent =
+        "Reviewed code selector for graph navigation only. It does not use ICD " +
+        "history, a Demo Profile, or patient-level similarity.";
+      var button = createEl("button", "chatbot-demo-button", {
+        type: "button",
+        "data-chatbot-action": "view-icd-keyword",
+      });
+      button.textContent = "View ICD: " + match.display_label + " (" + match.selector_label + ")";
+      button.setAttribute("data-icd-match", JSON.stringify(match));
+      button.setAttribute("data-vocabulary-version", ui.vocabulary_version);
+      var status = createEl("div", "chatbot-demo-status", { "aria-live": "polite" });
+      card.append(label, title, selector, copy, button, status);
+      addRawElement(card);
+    });
+  }
+
+  function viewIcdKeyword(button) {
+    if (button.disabled) return;
+    var status = button.parentElement.querySelector(".chatbot-demo-status");
+    try {
+      var match = JSON.parse(button.getAttribute("data-icd-match"));
+      var request = ICD.createRequest(
+        match,
+        button.getAttribute("data-vocabulary-version"),
+      );
+      ICD.saveRequest(sessionStorage, request);
+      ICD.notifyRequest(window, request);
+      var destination = new URL(findPerformanceUrl());
+      var samePage =
+        destination.origin === window.location.origin &&
+        destination.pathname === window.location.pathname;
+      status.textContent = "Opening this reviewed ICD selector on the code graph.";
+      if (samePage) {
+        window.location.hash = destination.hash;
+        button.textContent = "Show this ICD match again";
+        status.textContent = "ICD points highlighted. Explanation and reset controls are below.";
+      } else {
+        window.location.assign(destination.href);
+      }
+    } catch (error) {
+      status.textContent = "This ICD visualization request is unavailable. Ask for the keyword again.";
+      console.error("ICD Keyword Match visualization error:", error);
+    }
   }
 
   function startPresetDemo(button) {
@@ -1064,6 +1135,9 @@
         }
         if (data.ui && data.ui.type === "pathway_enrichment") {
           renderPathwayEnrichment(data.ui);
+        }
+        if (data.ui && data.ui.type === "icd_keyword_matches") {
+          renderIcdKeywordMatches(data.ui);
         }
       })
       .catch(function (err) {

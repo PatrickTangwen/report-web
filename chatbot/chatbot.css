@@ -604,6 +604,24 @@
   font-size: 0.72rem;
 }
 
+.chatbot-icd-title {
+  margin-top: 0.35rem;
+  color: #273444;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.chatbot-icd-selector {
+  display: inline-block;
+  margin-top: 0.28rem;
+  padding: 0.15rem 0.38rem;
+  border-radius: 5px;
+  background: #2c5aa0;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
 .chatbot-disease-select {
   max-width: 100%;
   padding: 0.5rem;
@@ -1051,6 +1069,15 @@
 .quarto-dark .chatbot-demo-copy,
 .quarto-dark .chatbot-demo-status {
   color: #c0c7cf;
+}
+
+.quarto-dark .chatbot-icd-title {
+  color: #e5edf5;
+}
+
+.quarto-dark .chatbot-icd-selector {
+  background: #2c5aa0;
+  color: #fff;
 }
 
 .quarto-dark .chatbot-disease-btn {
