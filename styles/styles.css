@@ -226,13 +226,17 @@ figcaption {
 }
 
 .patient-embedding-explorer .embedding-controls {
-  position: sticky;
-  top: 4.5rem;
+  position: relative;
   z-index: 4;
   margin: 0 0 0.75rem;
   padding: 0.55rem 0 0.65rem;
   border-bottom: 1px solid #d9e2ec;
   background: #fff;
+}
+
+.patient-embedding-explorer.has-active-focus:hover .embedding-controls {
+  position: sticky;
+  top: 4.5rem;
 }
 
 .patient-embedding-legend {

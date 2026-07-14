@@ -131,6 +131,7 @@ reglDrilldownScatter = {
       backBtn.disabled = stack.length <= 1;
       replayBtn.hidden = stack.length <= 1;
       resetBtn.disabled = stack.length <= 1;
+      container.classList.toggle("has-active-focus", stack.length > 1);
     }
 
     async function applyCurrent() {

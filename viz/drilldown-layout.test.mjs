@@ -19,7 +19,11 @@ test("patient embedding controls remain visible before the plot", () => {
   );
   assert.match(
     styles,
-    /\.patient-embedding-explorer \.embedding-controls\s*{[^}]*position:\s*sticky;[^}]*top:\s*4\.5rem;/s,
+    /\.patient-embedding-explorer \.embedding-controls\s*{[^}]*position:\s*relative;/s,
+  );
+  assert.match(
+    styles,
+    /\.patient-embedding-explorer\.has-active-focus:hover \.embedding-controls\s*{[^}]*position:\s*sticky;[^}]*top:\s*4\.5rem;/s,
   );
   assert.match(styles, /\.cell-output:has\(\.patient-embedding-explorer\)\s*{[^}]*overflow:\s*visible;/s);
 });
@@ -29,6 +33,7 @@ test("patient embeddings use the inline fibrotic walkthrough shell", () => {
   assert.match(source, /container\.className = "embedding-walkthrough patient-embedding-explorer"/);
   assert.match(source, /controls\.className = "embedding-controls"/);
   assert.match(source, /resetBtn\.textContent = "Reset view"/);
+  assert.match(source, /container\.classList\.toggle\("has-active-focus", stack\.length > 1\)/);
   assert.doesNotMatch(source, /classList\.toggle\("is-focused"/);
   assert.doesNotMatch(styles, /\.drilldown-shell\.is-focused/);
 });
