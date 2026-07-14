@@ -128,3 +128,28 @@ test("the composer is not part of the Research Task Menu and is gated by the act
 test("Research Task cards are semantic, focusable buttons rather than decorative elements", () => {
   assert.match(source, /createEl\("button", "chatbot-task-card", \{/);
 });
+
+
+test("Explore Visualizations shows exactly the three Visualization Destination cards", () => {
+  assert.match(source, /label: "Performance"/);
+  assert.match(source, /label: "Ablation"/);
+  assert.match(source, /label: "Use Case"/);
+  const destinationIds = source.match(/id: "(performance|ablation|use-case)"/g) || [];
+  assert.equal(destinationIds.length, 3);
+});
+
+
+test("selecting a Visualization Destination collapses the Assistant", () => {
+  assert.match(source, /"data-chatbot-action"\s*:\s*"open-visualization-destination"/);
+  const openDestination = extractFunctionSource("openVisualizationDestination");
+  assert.match(openDestination, /closeAssistant\(\)/);
+});
+
+
+test("the Assistant no longer exposes ICD prompt actions or a Preset Walkthrough card", () => {
+  assert.doesNotMatch(source, /"data-chatbot-action"\s*:\s*"view-icd-keyword"/);
+  assert.doesNotMatch(source, /"data-chatbot-action"\s*:\s*"preset-embedding-demo"/);
+  assert.doesNotMatch(source, /function renderIcdKeywordMatches/);
+  assert.doesNotMatch(source, /function startPresetDemo/);
+  assert.doesNotMatch(source, /function renderPresetDemoCard/);
+});

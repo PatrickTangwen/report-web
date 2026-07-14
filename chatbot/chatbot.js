@@ -2,7 +2,6 @@
   "use strict";
 
   var DEMO = window.ALIGATEHR_EMBEDDING_DEMO;
-  var ICD = window.ALIGATEHR_ICD_KEYWORD;
   var PROFILE = window.ALIGATEHR_PROFILE_SESSION;
   var SHELL = window.ALIGATEHR_ASSISTANT_SHELL;
   var API_URL = DEMO.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
@@ -54,12 +53,35 @@
     {
       id: "visualizations",
       label: "Explore Visualizations",
-      description: "See a guided walkthrough of the fibrotic patient embedding visualization.",
+      description: "Choose Performance, Ablation, or Use Case to open the destination that matches what you want to learn.",
     },
     {
       id: "profile",
       label: "Build a Demo Profile",
       description: "Build an editable synthetic or de-identified profile and compare it with the reference cohort.",
+    },
+  ];
+
+  // Visualization Destinations — the three full-page research experiences
+  // Explore Visualizations can open. Chart interaction stays page-owned.
+  var VISUALIZATION_DESTINATIONS = [
+    {
+      id: "performance",
+      label: "Performance",
+      description: "See patient and ICD code embeddings alongside evaluation metrics across diseases.",
+      path: "/viz/overall-performance.html",
+    },
+    {
+      id: "ablation",
+      label: "Ablation",
+      description: "See how each model component contributes to overall performance.",
+      path: "/viz/ablation.html",
+    },
+    {
+      id: "use-case",
+      label: "Use Case",
+      description: "See a fibrotic disease case study with patient embeddings and pathway enrichment.",
+      path: "/viz/use-case.html",
     },
   ];
 
@@ -285,6 +307,13 @@
 
   // ── Events ──
 
+  function closeAssistant() {
+    panel.classList.remove("is-open");
+    fab.style.display = "";
+    fab.setAttribute("aria-label", "Open the Guided Research Assistant");
+    saveState();
+  }
+
   fab.addEventListener("click", function () {
     var opening = !panel.classList.contains("is-open");
     panel.classList.toggle("is-open");
@@ -299,12 +328,7 @@
     saveState();
   });
 
-  closeBtn.addEventListener("click", function () {
-    panel.classList.remove("is-open");
-    fab.style.display = "";
-    fab.setAttribute("aria-label", "Open the Guided Research Assistant");
-    saveState();
-  });
+  closeBtn.addEventListener("click", closeAssistant);
 
   expandBtn.addEventListener("click", function () {
     var expanding = !panel.classList.contains("is-expanded");
@@ -330,13 +354,12 @@
     if (action === "select-task") selectTask(button.getAttribute("data-task"));
     if (action === "back-to-tasks") backToTasks();
     if (action === "clear-paper-conversation") clearPaperConversation();
-    if (action === "preset-embedding-demo") startPresetDemo(button);
+    if (action === "open-visualization-destination") openVisualizationDestination(button.getAttribute("data-destination"));
     if (action === "start-demo-profile") startDemoProfile();
     if (action === "save-profile-edits") saveProfileEdits(button);
     if (action === "confirm-demo-profile") confirmDemoProfile(button);
     if (action === "compare-confirmed-profile") compareConfirmedProfile(button);
     if (action === "view-matched-references") viewMatchedReferences(button);
-    if (action === "view-icd-keyword") viewIcdKeyword(button);
     if (action === "start-over-demo-profile") startOverDemoProfile();
     if (action === "retry-chat") retryChat(button);
   });
@@ -389,67 +412,6 @@
     paperMessagesEl.innerHTML = "";
     renderPaperWelcome();
     saveState();
-  }
-
-  function renderIcdKeywordMatches(ui) {
-    var matches = Array.isArray(ui.matches) ? ui.matches : [];
-    matches.forEach(function (match, index) {
-      var card = createEl(
-        "div",
-        "chatbot-msg chatbot-msg-assistant chatbot-demo-card chatbot-icd-card",
-      );
-      var label = createEl("div", "chatbot-demo-label");
-      label.textContent = matches.length > 1
-        ? "ICD Keyword Match " + (index + 1) + " of " + matches.length
-        : "ICD Keyword Match";
-      var title = createEl("div", "chatbot-icd-title");
-      title.textContent = match.display_label;
-      var selector = createEl("code", "chatbot-icd-selector");
-      selector.textContent = match.selector_label;
-      var copy = createEl("p", "chatbot-demo-copy");
-      copy.textContent =
-        "Reviewed code selector for graph navigation only. It does not use ICD " +
-        "history, a Demo Profile, or patient-level similarity.";
-      var button = createEl("button", "chatbot-demo-button", {
-        type: "button",
-        "data-chatbot-action": "view-icd-keyword",
-      });
-      button.textContent = "View ICD: " + match.display_label + " (" + match.selector_label + ")";
-      button.setAttribute("data-icd-match", JSON.stringify(match));
-      button.setAttribute("data-vocabulary-version", ui.vocabulary_version);
-      var status = createEl("div", "chatbot-demo-status", { "aria-live": "polite" });
-      card.append(label, title, selector, copy, button, status);
-      addRawElement(paperMessagesEl, card);
-    });
-  }
-
-  function viewIcdKeyword(button) {
-    if (button.disabled) return;
-    var status = button.parentElement.querySelector(".chatbot-demo-status");
-    try {
-      var match = JSON.parse(button.getAttribute("data-icd-match"));
-      var request = ICD.createRequest(
-        match,
-        button.getAttribute("data-vocabulary-version"),
-      );
-      ICD.saveRequest(sessionStorage, request);
-      ICD.notifyRequest(window, request);
-      var destination = new URL(findPerformanceUrl());
-      var samePage =
-        destination.origin === window.location.origin &&
-        destination.pathname === window.location.pathname;
-      status.textContent = "Opening this reviewed ICD selector on the code graph.";
-      if (samePage) {
-        window.location.hash = destination.hash;
-        button.textContent = "Show this ICD match again";
-        status.textContent = "ICD points highlighted. Explanation and reset controls are below.";
-      } else {
-        window.location.assign(destination.href);
-      }
-    } catch (error) {
-      status.textContent = "This ICD visualization request is unavailable. Ask for the keyword again.";
-      console.error("ICD Keyword Match visualization error:", error);
-    }
   }
 
   function renderChatRetry(text, error) {
@@ -526,9 +488,6 @@
         if (data.ui && data.ui.type === "pathway_enrichment") {
           renderPathwayEnrichment(data.ui);
         }
-        if (data.ui && data.ui.type === "icd_keyword_matches") {
-          renderIcdKeywordMatches(data.ui);
-        }
       })
       .catch(function (err) {
         typing.remove();
@@ -586,97 +545,59 @@
     addRawElement(paperMessagesEl, card);
   }
 
-  // ── Explore Visualizations (preset embedding walkthrough) ──
+  // ── Explore Visualizations (Visualization Destination navigation) ──
 
   function findVisualizationUrl(path, hash) {
     var links = document.querySelectorAll('a[href]');
     for (var i = 0; i < links.length; i++) {
       var candidate = new URL(links[i].href, window.location.href);
       if (candidate.pathname.endsWith(path)) {
-        candidate.hash = hash;
+        candidate.hash = hash || "";
         return candidate.href;
       }
     }
     var script = document.querySelector('script[src*="/chatbot/chatbot.js"]');
     var scriptUrl = new URL(script ? script.src : "/chatbot/chatbot.js", window.location.href);
     var siteRoot = scriptUrl.pathname.replace(/\/chatbot\/chatbot\.js$/, "");
-    return scriptUrl.origin + siteRoot + path + "#" + hash;
+    return scriptUrl.origin + siteRoot + path + (hash ? "#" + hash : "");
   }
 
   function findUseCaseUrl() {
     return findVisualizationUrl("/viz/use-case.html", "fibrotic-embedding");
   }
 
-  function findPerformanceUrl() {
-    return findVisualizationUrl("/viz/overall-performance.html", "icd-embedding");
-  }
-
   function initVisualizationsView() {
     if (visualizationsView.children.length) return;
-    renderPresetDemoCard();
-  }
-
-  function renderPresetDemoCard() {
-    var card = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-demo-card");
-    var label = createEl("div", "chatbot-demo-label");
-    label.textContent = "Preset research walkthrough";
-    var copy = createEl("p", "chatbot-demo-copy");
-    copy.textContent =
-      "See how a fixed reference selection is highlighted on the fibrotic embedding. " +
-      "This display preset is not a clinical match and does not predict an outcome.";
-    var button = createEl("button", "chatbot-demo-button", {
-      type: "button",
-      "data-chatbot-action": "preset-embedding-demo",
-    });
-    button.textContent = "Try animated demo";
-    var status = createEl("div", "chatbot-demo-status", { "aria-live": "polite" });
-    card.append(label, copy, button, status);
-    addRawElement(visualizationsView, card);
-  }
-
-  function startPresetDemo(button) {
-    if (button.disabled) return;
-    var status = button.parentElement.querySelector(".chatbot-demo-status");
-    button.disabled = true;
-    button.textContent = "Preparing demo…";
-    status.textContent = "Loading the current dataset release.";
-    var coldStartNotice = setTimeout(function () {
-      status.textContent = "The backend is still waking from a cold start. You remain in control and can retry if it times out.";
-    }, 4000);
-
-    DEMO.requestJson(
-      fetch,
-      API_URL + "/embedding/fibrotic/preset",
-      { cache: "no-store" },
-      30000,
-    )
-      .then(function (preset) {
-        clearTimeout(coldStartNotice);
-        var request = DEMO.createPresetRequest(preset);
-        DEMO.saveRequest(sessionStorage, request);
-        DEMO.notifyRequest(window, request);
-        status.textContent = "Opening the fibrotic embedding walkthrough.";
-        var destination = new URL(findUseCaseUrl());
-        var samePage =
-          destination.origin === window.location.origin &&
-          destination.pathname === window.location.pathname;
-        if (samePage) {
-          window.location.hash = destination.hash;
-          button.disabled = false;
-          button.textContent = "Run preset demo again";
-          status.textContent =
-            "Walkthrough started. Replay and reset controls are available below.";
-        } else {
-          window.location.assign(destination.href);
-        }
-      })
-      .catch(function (error) {
-        clearTimeout(coldStartNotice);
-        button.disabled = false;
-        button.textContent = "Try animated demo";
-        status.textContent = "The demo backend is unavailable. Please try again.";
-        console.error("Preset embedding demo error:", error);
+    VISUALIZATION_DESTINATIONS.forEach(function (destination) {
+      var card = createEl("button", "chatbot-task-card", {
+        type: "button",
+        "data-chatbot-action": "open-visualization-destination",
+        "data-destination": destination.id,
       });
+      var label = createEl("span", "chatbot-task-card-label");
+      label.textContent = destination.label;
+      var description = createEl("span", "chatbot-task-card-description");
+      description.textContent = destination.description;
+      card.append(label, description);
+      visualizationsView.appendChild(card);
+    });
+  }
+
+  function openVisualizationDestination(destinationId) {
+    var destination = VISUALIZATION_DESTINATIONS.filter(function (candidate) {
+      return candidate.id === destinationId;
+    })[0];
+    if (!destination) return;
+    closeAssistant();
+    var destinationUrl = new URL(findVisualizationUrl(destination.path, null));
+    var samePage =
+      destinationUrl.origin === window.location.origin &&
+      destinationUrl.pathname === window.location.pathname;
+    if (samePage) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    } else {
+      window.location.assign(destinationUrl.href);
+    }
   }
 
   // ── Build a Demo Profile ──
