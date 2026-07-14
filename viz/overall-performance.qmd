@@ -73,6 +73,18 @@ reglDrilldownScatter = {
     return { xMin, xMax, yMin, yMax, width: xMax - xMin, height: yMax - yMin };
   }
 
+  function nearestIndices(points, baseIndices, clickedIndex, k) {
+    const c = points[clickedIndex];
+    return baseIndices
+      .map(i => {
+        const p = points[i];
+        return { i, d: (p.x - c.x) ** 2 + (p.y - c.y) ** 2 };
+      })
+      .sort((a, b) => a.d - b.d)
+      .slice(0, k)
+      .map(o => o.i);
+  }
+
   function localRegion(points, baseIndices, clickedIndex, scale = 0.32) {
     const rect = rectForIndices(points, baseIndices);
     const center = points[clickedIndex];
@@ -86,7 +98,11 @@ reglDrilldownScatter = {
       const p = points[i];
       return p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
     });
-    return selected.length ? selected : [clickedIndex];
+    // Never dead-end on a single point: fall back to K nearest neighbours
+    // so a click always opens a legible local cluster.
+    const minRegion = Math.min(24, baseIndices.length);
+    if (selected.length >= minRegion) return selected;
+    return nearestIndices(points, baseIndices, clickedIndex, minRegion);
   }
 
   return async function(config) {
@@ -239,9 +255,22 @@ reglDrilldownScatter = {
     });
 
     canvas.addEventListener("mousemove", (e) => {
-      const rect = canvas.getBoundingClientRect();
-      tooltip.style.left = (e.clientX - rect.left + 15) + "px";
-      tooltip.style.top = (e.clientY - rect.top + 15) + "px";
+      if (tooltip.style.display === "none") return;
+      const canvasRect = canvas.getBoundingClientRect();
+      const shellRect = container.getBoundingClientRect();
+      const cursorX = e.clientX - shellRect.left;
+      const cursorY = e.clientY - shellRect.top;
+      const tipW = tooltip.offsetWidth || 200;
+      const tipH = tooltip.offsetHeight || 60;
+      const rightEdge = canvasRect.right - shellRect.left;
+      const bottomEdge = canvasRect.bottom - shellRect.top;
+      // Flip the tooltip to the opposite side when it would overflow the canvas.
+      let left = cursorX + 15;
+      if (left + tipW > rightEdge) left = cursorX - tipW - 15;
+      let top = cursorY + 15;
+      if (top + tipH > bottomEdge) top = cursorY - tipH - 15;
+      tooltip.style.left = Math.max(0, left) + "px";
+      tooltip.style.top = Math.max(0, top) + "px";
     });
 
     backBtn.addEventListener("click", async () => {
@@ -543,6 +572,8 @@ umapSex = {
     yField: "umap_2",
     title: "Patient Embeddings — Coloured by Sex",
     subtitle: `Pre-trained EHR Encoder (UKB ${patientData.length.toLocaleString()} patients)`,
+    pointSize: 2,
+    opacity: 0.45,
     scatterSet: { colorBy: "valueA", pointColor: ["#e07b39", "#4a90d9"] },
     zValues: patientData.map(d => d.sex_male),
     groupAccessor: d => d.sex_male,
@@ -586,8 +617,16 @@ umapAge = {
     yField: "umap_2",
     title: "Patient Embeddings — Coloured by Age",
     subtitle: `Pre-trained EHR Encoder (UKB ${patientData.length.toLocaleString()} patients)`,
+    pointSize: 2,
+    opacity: 0.45,
     scatterSet: { colorBy: "valueA", pointColor: viridisStops },
-    zValues: patientData.map(d => (d.age - minAge) / (maxAge - minAge)),
+    // regl-scatterplot's categorical colour path needs integer indices; a
+    // continuous 0–1 value falls back to the default grey. Bin age into the
+    // viridis stops so the gradient actually renders.
+    zValues: patientData.map(d => {
+      const t = (d.age - minAge) / (maxAge - minAge);
+      return Math.min(viridisStops.length - 1, Math.max(0, Math.floor(t * viridisStops.length)));
+    }),
     countNoun: "patients",
     tooltip: d => `<strong>ID: ${d.id}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
     renderLegend: (legend) => {
