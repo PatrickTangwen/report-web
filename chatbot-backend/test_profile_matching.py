@@ -248,11 +248,19 @@ def test_adaptive_neighborhood_caps_at_twenty_and_keeps_callouts_aggregate_only(
         "target": "CKD",
         "profile_coverage": {
             "available_domains": ["demographics"],
+            "unavailable_domains": [
+                "body_composition",
+                "blood_pressure",
+                "lifestyle",
+                "family_history",
+                "optional_laboratory",
+            ],
             "eligible": True,
             "calibration_pattern": "demographics",
         },
         "matching_domains": ["demographics"],
         "neighborhood_size": 20,
+        "minimum_display_region_size": 5,
         "limitations": [
             "Research cohort comparison only; the Demo Profile is not embedded and no diagnosis, prognosis, or personal outcome is inferred."
         ],
@@ -376,11 +384,136 @@ def test_insufficient_coverage_requests_the_nearest_calibrated_missing_domain():
     assert comparison["status"] == "insufficient_profile_coverage"
     assert comparison["profile_coverage"] == {
         "available_domains": ["demographics"],
+        "unavailable_domains": [
+            "body_composition",
+            "blood_pressure",
+            "lifestyle",
+            "family_history",
+            "optional_laboratory",
+        ],
         "eligible": False,
-        "recommended_missing_domain": "lifestyle",
+        "coverage_recommendation": {
+            "calibration_pattern": "demographics|lifestyle",
+            "missing_domains": ["lifestyle"],
+            "measurements_by_domain": {
+                "lifestyle": ["smoking status", "alcohol frequency"]
+            },
+        },
     }
     assert result["visual_reference_ids"] == []
     assert result["aggregate_callout_data"] is None
+
+
+def test_insufficient_coverage_recommends_the_nearest_complete_calibrated_pattern():
+    profile = confirmed_profile(candidate("age", 55, source="age 55"))
+    calibration = {
+        "methodology": {
+            "minimum_group_size": 5,
+            "maximum_references": 20,
+            "aggregate_cell_suppression_minimum": 5,
+        },
+        "targets": {
+            "CKD": {
+                "eligible_patterns": {
+                    "blood_pressure|body_composition|demographics|lifestyle": {
+                        "distance_threshold": 0.1,
+                        "median_top5_overlap": 0.6,
+                        "p10_top5_overlap": 0.2,
+                    },
+                    "blood_pressure|body_composition|demographics|family_history|lifestyle": {
+                        "distance_threshold": 0.1,
+                        "median_top5_overlap": 0.8,
+                        "p10_top5_overlap": 0.6,
+                    },
+                }
+            }
+        },
+    }
+
+    result = match_confirmed_profile(
+        profile,
+        "CKD",
+        [],
+        calibration,
+        "fibrotic-test-release",
+    )
+
+    recommendation = result["cohort_comparison_result"]["profile_coverage"][
+        "coverage_recommendation"
+    ]
+    assert recommendation["calibration_pattern"] == (
+        "blood_pressure|body_composition|demographics|lifestyle"
+    )
+    assert recommendation["missing_domains"] == [
+        "body_composition",
+        "blood_pressure",
+        "lifestyle",
+    ]
+
+
+def test_eligible_partial_profile_reports_only_calibrated_available_domains():
+    profile = confirmed_profile(
+        candidate("age", 55, source="age 55"),
+        candidate("smoking_status", "former", source="former smoker"),
+    )
+    rows = [
+        {
+            "visual_reference_id": f"vr_{index}",
+            "disease": "MASH",
+            "age_recruit": "55",
+            "smoking_status": "1",
+            "creatinine": "100",
+        }
+        for index in range(5)
+    ]
+    calibration = {
+        "methodology": {
+            "minimum_group_size": 5,
+            "maximum_references": 20,
+            "aggregate_cell_suppression_minimum": 5,
+        },
+        "targets": {
+            "MASH": {
+                "eligible_patterns": {
+                    "demographics|lifestyle": {
+                        "distance_threshold": 0.1,
+                        "median_top5_overlap": 0.8,
+                        "p10_top5_overlap": 0.4,
+                    }
+                }
+            }
+        },
+    }
+
+    result = match_confirmed_profile(
+        profile,
+        "MASH",
+        rows,
+        calibration,
+        "fibrotic-test-release",
+    )
+
+    comparison = result["cohort_comparison_result"]
+    assert comparison["profile_coverage"] == {
+        "available_domains": ["demographics", "lifestyle"],
+        "unavailable_domains": [
+            "body_composition",
+            "blood_pressure",
+            "family_history",
+            "optional_laboratory",
+        ],
+        "eligible": True,
+        "calibration_pattern": "demographics|lifestyle",
+        "masking_stability": {
+            "median_top5_overlap": 0.8,
+            "p10_top5_overlap": 0.4,
+        },
+    }
+    assert comparison["matching_domains"] == ["demographics", "lifestyle"]
+    assert comparison["minimum_display_region_size"] == 5
+    assert [
+        domain["domain"] for domain in result["aggregate_callout_data"]["domains"]
+    ] == ["demographics", "lifestyle"]
 
 
 def test_threshold_failure_returns_no_stable_neighborhood_without_forced_neighbors():
@@ -421,6 +554,48 @@ def test_threshold_failure_returns_no_stable_neighborhood_without_forced_neighbo
     assert result["cohort_comparison_result"]["neighborhood_size"] == 0
     assert result["visual_reference_ids"] == []
     assert result["aggregate_callout_data"] is None
+
+
+def test_outside_reference_support_is_preserved_as_an_honest_edge_state():
+    profile = confirmed_profile(candidate("age", 32, source="age 32"))
+    rows = [
+        {
+            "visual_reference_id": f"vr_{index}",
+            "disease": "CKD",
+            "age_recruit": "33",
+            "sex": "0",
+        }
+        for index in range(5)
+    ]
+    calibration = {
+        "methodology": {
+            "minimum_group_size": 5,
+            "maximum_references": 20,
+            "aggregate_cell_suppression_minimum": 5,
+        },
+        "targets": {
+            "CKD": {
+                "eligible_patterns": {
+                    "demographics": {"distance_threshold": 0.001}
+                }
+            }
+        },
+    }
+
+    result = match_confirmed_profile(
+        profile,
+        "CKD",
+        rows,
+        calibration,
+        "fibrotic-test-release",
+    )
+
+    comparison = result["cohort_comparison_result"]
+    assert comparison["status"] == "no_stable_neighborhood"
+    assert comparison["profile_coverage"]["outside_reference_support_domains"] == [
+        "demographics"
+    ]
+    assert result["visual_reference_ids"] == []
 
 
 def test_calibration_records_masking_stability_and_fifth_neighbor_thresholds():

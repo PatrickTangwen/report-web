@@ -37,7 +37,13 @@ fibroticWalkthrough = {
   const host = document.createElement("div");
   host.className = "embedding-loader";
   host.setAttribute("aria-live", "polite");
+  host.setAttribute("aria-atomic", "true");
   let removeRequestListener = () => {};
+  let loadController = null;
+  invalidation.then(() => {
+    removeRequestListener();
+    if (loadController) loadController.cancel();
+  });
   const colors = [
     "#4477aa", "#ee7733", "#228833", "#cc3311",
     "#aa3377", "#66ccee", "#bbbb44"
@@ -57,6 +63,7 @@ fibroticWalkthrough = {
   const displayName = value => names[value] || String(value).replace(/_/g, " ");
 
   function loading() {
+    host.setAttribute("aria-busy", "true");
     host.innerHTML =
       '<div class="embedding-load-state"><div class="embedding-spinner" aria-hidden="true"></div>' +
       '<strong>Loading the current fibrotic Dataset Release…</strong>' +
@@ -64,9 +71,12 @@ fibroticWalkthrough = {
   }
 
   function failure(message) {
+    host.setAttribute("aria-busy", "false");
     host.innerHTML = "";
     const state = document.createElement("div");
     state.className = "embedding-load-state embedding-load-error";
+    state.setAttribute("role", "alert");
+    state.tabIndex = -1;
     const title = document.createElement("strong");
     title.textContent = "The fibrotic embedding is temporarily unavailable.";
     const detail = document.createElement("span");
@@ -78,6 +88,7 @@ fibroticWalkthrough = {
     retry.addEventListener("click", load);
     state.append(title, detail, retry);
     host.appendChild(state);
+    state.focus({ preventScroll: true });
   }
 
   async function requestHelper() {
@@ -90,19 +101,37 @@ fibroticWalkthrough = {
 
   async function load() {
     loading();
+    let run = null;
+    let coldStartNotice = null;
     try {
       const helper = await requestHelper();
       if (!helper) throw new Error("The visualization request helper is unavailable.");
+      if (!loadController) loadController = helper.createRequestController();
+      run = loadController.start();
+      coldStartNotice = window.setTimeout(() => {
+        if (!loadController.isCurrent(run.token)) return;
+        const detail = host.querySelector(".embedding-load-state span");
+        if (detail) {
+          detail.textContent = "The backend is still waking from a cold start. This attempt will time out safely and offer Retry.";
+        }
+      }, 4000);
       const apiUrl = helper.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
-      const [embeddingResponse, presetResponse] = await Promise.all([
-        fetch(apiUrl + "/embedding/fibrotic", { cache: "no-store" }),
-        fetch(apiUrl + "/embedding/fibrotic/preset", { cache: "no-store" }),
+      const [embedding, preset] = await Promise.all([
+        helper.requestJson(
+          fetch,
+          apiUrl + "/embedding/fibrotic",
+          { cache: "no-store", signal: run.signal },
+          30000,
+        ),
+        helper.requestJson(
+          fetch,
+          apiUrl + "/embedding/fibrotic/preset",
+          { cache: "no-store", signal: run.signal },
+          30000,
+        ),
       ]);
-      if (!embeddingResponse.ok || !presetResponse.ok) {
-        throw new Error("Backend returned an unavailable response. No local patient-data fallback was used.");
-      }
-      const embedding = await embeddingResponse.json();
-      const preset = await presetResponse.json();
+      window.clearTimeout(coldStartNotice);
+      if (!loadController.isCurrent(run.token)) return;
       if (embedding.dataset_version !== preset.dataset_version) {
         throw new Error("Dataset versions differ. Refresh after the backend release finishes updating.");
       }
@@ -123,6 +152,7 @@ fibroticWalkthrough = {
         autoplay: consumed.should_play,
       });
       host.replaceChildren(chart);
+      host.setAttribute("aria-busy", "false");
       removeRequestListener();
       removeRequestListener = helper.connectRequestConsumer(
         window,
@@ -130,9 +160,10 @@ fibroticWalkthrough = {
         embedding.dataset_version,
         request => chart.embeddingWalkthrough.play(request),
       );
-      invalidation.then(() => removeRequestListener());
       window.__ALIGATEHR_FIBROTIC_READY__ = true;
     } catch (error) {
+      if (coldStartNotice) window.clearTimeout(coldStartNotice);
+      if (run && loadController && !loadController.isCurrent(run.token)) return;
       console.error("Fibrotic embedding load error:", error);
       failure(error.message || "Please retry when the backend is available.");
     }

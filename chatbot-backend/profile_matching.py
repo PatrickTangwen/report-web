@@ -58,6 +58,14 @@ DOMAIN_FEATURES = {
         ("hba1c", "HbA1c", "continuous"),
     ),
 }
+DOMAIN_MEASUREMENTS = {
+    "demographics": ["age", "sex when supplied"],
+    "body_composition": ["height and weight", "BMI", "waist and hip circumference"],
+    "blood_pressure": ["systolic and diastolic blood pressure"],
+    "lifestyle": ["smoking status", "alcohol frequency"],
+    "family_history": ["affected-relative status"],
+    "optional_laboratory": ["creatinine", "HbA1c"],
+}
 FEATURE_PRESENTATION = {
     "age": ("Age", "years"),
     "bmi": ("BMI", "kg/m²"),
@@ -139,6 +147,17 @@ def _profile_values(confirmed_profile):
         if feature and feature.get("status") in {"valid", "outside_reference_support"}:
             values[field] = feature.get("value")
     return values
+
+
+def _outside_reference_support_domains(confirmed_profile):
+    domains = set()
+    for section in ("reported_features", "derived_features"):
+        for feature in confirmed_profile.get(section, {}).values():
+            if feature.get("status") == "outside_reference_support" and feature.get(
+                "domain"
+            ) in DOMAIN_FEATURES:
+                domains.add(feature["domain"])
+    return [domain for domain in DOMAIN_FEATURES if domain in domains]
 
 
 def _row_value(row, row_field):
@@ -261,7 +280,7 @@ def _aggregate_callout(profile_values, selected_rows, suppression_minimum):
     }
 
 
-def _recommended_missing_domain(available_domains, eligible_patterns):
+def _coverage_recommendation(available_domains, eligible_patterns):
     available = set(available_domains)
     candidates = []
     for pattern, evidence in eligible_patterns.items():
@@ -269,17 +288,28 @@ def _recommended_missing_domain(available_domains, eligible_patterns):
         if not available <= domains:
             continue
         missing = domains - available
-        if len(missing) != 1:
+        if not missing:
             continue
         candidates.append(
             (
+                len(missing),
                 -evidence.get("p10_top5_overlap", 0),
                 -evidence.get("median_top5_overlap", 0),
                 pattern,
-                missing.pop(),
+                missing,
             )
         )
-    return min(candidates)[3] if candidates else None
+    if not candidates:
+        return None
+    _, _, _, pattern, missing = min(candidates)
+    ordered_missing = [domain for domain in DOMAIN_FEATURES if domain in missing]
+    return {
+        "calibration_pattern": pattern,
+        "missing_domains": ordered_missing,
+        "measurements_by_domain": {
+            domain: DOMAIN_MEASUREMENTS[domain] for domain in ordered_missing
+        },
+    }
 
 
 def match_confirmed_profile(confirmed_profile, target, rows, calibration, dataset_version):
@@ -290,14 +320,29 @@ def match_confirmed_profile(confirmed_profile, target, rows, calibration, datase
         if any(feature[0] in values for feature in features)
     ]
     pattern = "|".join(sorted(available_domains))
+    outside_support_domains = _outside_reference_support_domains(confirmed_profile)
+    unavailable_domains = [
+        domain for domain in DOMAIN_FEATURES if domain not in available_domains
+    ]
     target_calibration = calibration.get("targets", {}).get(target, {})
     eligible_patterns = target_calibration.get("eligible_patterns", {})
     pattern_calibration = eligible_patterns.get(pattern)
     if not pattern_calibration:
-        profile_coverage = {"available_domains": available_domains, "eligible": False}
-        recommended = _recommended_missing_domain(available_domains, eligible_patterns)
-        if recommended:
-            profile_coverage["recommended_missing_domain"] = recommended
+        profile_coverage = {
+            "available_domains": available_domains,
+            "unavailable_domains": unavailable_domains,
+            "eligible": False,
+        }
+        if outside_support_domains:
+            profile_coverage["outside_reference_support_domains"] = (
+                outside_support_domains
+            )
+        recommendation = _coverage_recommendation(
+            available_domains,
+            eligible_patterns,
+        )
+        if recommendation:
+            profile_coverage["coverage_recommendation"] = recommendation
         return {
             "dataset_version": dataset_version,
             "cohort_comparison_result": {
@@ -329,18 +374,34 @@ def match_confirmed_profile(confirmed_profile, target, rows, calibration, datase
     )
     if status == "no_stable_neighborhood":
         visual_reference_ids = []
+    profile_coverage = {
+        "available_domains": available_domains,
+        "unavailable_domains": unavailable_domains,
+        "eligible": True,
+        "calibration_pattern": pattern,
+    }
+    if outside_support_domains:
+        profile_coverage["outside_reference_support_domains"] = (
+            outside_support_domains
+        )
+    masking_stability = {
+        key: pattern_calibration[key]
+        for key in ("median_top5_overlap", "p10_top5_overlap")
+        if key in pattern_calibration
+    }
+    if masking_stability:
+        profile_coverage["masking_stability"] = masking_stability
     return {
         "dataset_version": dataset_version,
         "cohort_comparison_result": {
             "status": status,
             "target": target,
-            "profile_coverage": {
-                "available_domains": available_domains,
-                "eligible": True,
-                "calibration_pattern": pattern,
-            },
+            "profile_coverage": profile_coverage,
             "matching_domains": available_domains,
             "neighborhood_size": len(visual_reference_ids),
+            "minimum_display_region_size": calibration["methodology"][
+                "aggregate_cell_suppression_minimum"
+            ],
             "limitations": [
                 "Research cohort comparison only; the Demo Profile is not embedded and no diagnosis, prognosis, or personal outcome is inferred."
             ],

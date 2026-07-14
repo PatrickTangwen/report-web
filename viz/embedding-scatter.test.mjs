@@ -4,8 +4,13 @@ import test from "node:test";
 
 import {
   bindWalkthroughControls,
+  classifyDisplayRegions,
+  createRendererQueue,
+  createRegionNavigator,
   createRunController,
+  layoutForRequest,
   normalizePoints,
+  regionOutlinePercentages,
   resolveReferenceIndices,
   walkthroughCopy,
   walkthroughFocusIndices,
@@ -64,6 +69,139 @@ test("overview presets keep the full embedding while compact presets focus", () 
 });
 
 
+function displayPoint(id, x, y, disease = "MASH") {
+  return {
+    visual_reference_id: id,
+    disease,
+    tsne_x: x,
+    tsne_y: y,
+  };
+}
+
+
+test("matched layout distinguishes compact, multi-region, and dispersed selections", () => {
+  const compactCluster = Array.from({ length: 7 }, (_, index) =>
+    displayPoint(`compact_${index}`, index * 0.01, 0),
+  );
+  const secondCluster = Array.from({ length: 7 }, (_, index) =>
+    displayPoint(`second_${index}`, 10 + index * 0.01, 10),
+  );
+  const dispersedSupport = Array.from({ length: 5 }, (_, cluster) =>
+    Array.from({ length: 6 }, (_, index) =>
+      displayPoint(`support_${cluster}_${index}`, cluster * 20 + index * 0.01, 30),
+    ),
+  ).flat();
+  const dispersedIds = dispersedSupport
+    .filter((_, index) => index % 6 === 0)
+    .map((point) => point.visual_reference_id);
+
+  const compact = classifyDisplayRegions(
+    [...compactCluster, ...secondCluster],
+    compactCluster.slice(0, 5).map((point) => point.visual_reference_id),
+    5,
+  );
+  const multi = classifyDisplayRegions(
+    [...compactCluster, ...secondCluster],
+    [
+      ...compactCluster.slice(0, 5),
+      ...secondCluster.slice(0, 5),
+    ].map((point) => point.visual_reference_id),
+    5,
+  );
+  const dispersed = classifyDisplayRegions(dispersedSupport, dispersedIds, 5);
+
+  assert.equal(compact.mode, "compact");
+  assert.deepEqual(compact.regions.map((region) => region.length), [5]);
+  assert.equal(multi.mode, "multi_region");
+  assert.deepEqual(multi.regions.map((region) => region.length), [5, 5]);
+  assert.equal(dispersed.mode, "overview");
+  assert.deepEqual(dispersed.regions, []);
+});
+
+
+test("a locally connected chain remains a dispersed overview", () => {
+  const chain = [0, 1, 2, 3, 4].map((x) => displayPoint(`chain_${x}`, x, 0));
+  const layout = classifyDisplayRegions(
+    chain,
+    chain.slice(0, 4).map((point) => point.visual_reference_id),
+    2,
+  );
+
+  assert.equal(layout.mode, "overview");
+  assert.deepEqual(layout.regions, []);
+});
+
+
+test("multi-region preset rejects missing or contradictory geometry", () => {
+  const first = Array.from({ length: 7 }, (_, index) =>
+    displayPoint(`first_${index}`, index * 0.01, 0),
+  );
+  const second = Array.from({ length: 7 }, (_, index) =>
+    displayPoint(`second_${index}`, 10 + index * 0.01, 10),
+  );
+  const data = [...first, ...second];
+  const visualReferenceIds = [
+    ...first.slice(0, 5),
+    ...second.slice(0, 5),
+  ].map((point) => point.visual_reference_id);
+  const indices = resolveReferenceIndices(data, visualReferenceIds);
+
+  assert.throws(
+    () => layoutForRequest(data, {
+      type: "preset_selection",
+      display_mode: "multi_region",
+      visual_reference_ids: visualReferenceIds,
+    }, indices),
+    /missing its geometry contract/,
+  );
+  assert.equal(layoutForRequest(data, {
+    type: "preset_selection",
+    display_mode: "multi_region",
+    minimum_region_size: 5,
+    visual_reference_ids: visualReferenceIds,
+  }, indices).mode, "multi_region");
+});
+
+
+test("region navigator exposes bounded Back and Next states", () => {
+  const navigator = createRegionNavigator([[1, 2, 3, 4, 5], [8, 9, 10, 11, 12]]);
+
+  assert.deepEqual(navigator.state(), {
+    index: 0,
+    count: 2,
+    region: [1, 2, 3, 4, 5],
+    canBack: false,
+    canNext: true,
+  });
+  navigator.next();
+  assert.equal(navigator.state().index, 1);
+  assert.equal(navigator.state().canNext, false);
+  navigator.next();
+  assert.equal(navigator.state().index, 1);
+  navigator.back();
+  assert.equal(navigator.state().index, 0);
+});
+
+
+test("multi-region overview exposes one numbered outline per display region", () => {
+  const outlines = regionOutlinePercentages(
+    [
+      { x: -0.8, y: 0.7 },
+      { x: -0.7, y: 0.6 },
+      { x: 0.6, y: -0.5 },
+      { x: 0.8, y: -0.7 },
+    ],
+    [[0, 1], [2, 3]],
+  );
+
+  assert.deepEqual(outlines.map((outline) => outline.label), ["1", "2"]);
+  assert.equal(outlines.every((outline) =>
+    outline.left >= 0 && outline.top >= 0 &&
+    outline.left + outline.width <= 100 &&
+    outline.top + outline.height <= 100), true);
+});
+
+
 test("run controller deterministically cancels an active animation", () => {
   const controller = createRunController();
   const first = controller.start();
@@ -74,6 +212,32 @@ test("run controller deterministically cancels an active animation", () => {
   assert.equal(controller.isCurrent(first), false);
   const second = controller.start();
   assert.equal(controller.isCurrent(second), true);
+});
+
+
+test("renderer queue applies the neutral reset after an in-flight stale write", async () => {
+  const queue = createRendererQueue();
+  const writes = [];
+  let releaseStale;
+  let markStarted;
+  const started = new Promise((resolve) => {
+    markStarted = resolve;
+  });
+  const stale = queue.run(() => new Promise((resolve) => {
+    releaseStale = () => {
+      writes.push("stale highlight");
+      resolve();
+    };
+    markStarted();
+  }));
+  const neutral = queue.run(() => {
+    writes.push("neutral overview");
+  });
+
+  await started;
+  releaseStale();
+  await Promise.all([stale, neutral]);
+  assert.deepEqual(writes, ["stale highlight", "neutral overview"]);
 });
 
 
@@ -134,6 +298,7 @@ test("live match crosses session request boundary and focuses exact graph refere
     cohort_comparison_result: {
       status: "matched_reference_neighborhood",
       target: "MASH",
+      minimum_display_region_size: 5,
     },
     visual_reference_ids: ["vr_match_two", "vr_match_one"],
     aggregate_callout_data: {
