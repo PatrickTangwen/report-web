@@ -92,15 +92,10 @@ test("reduced motion jumps directly to the final highlighted state", async () =>
 });
 
 
-test("new ICD requests interrupt stale motion before the next render starts", async () => {
+test("new ICD requests wait for active renderer work before replacement starts", async () => {
   const calls = [];
   let releaseFirst;
-  let releaseInterrupt;
-  const queue = createIcdRequestQueue(() => {
-    calls.push("cancel-motion");
-    releaseFirst();
-    return new Promise((resolve) => { releaseInterrupt = resolve; });
-  });
+  const queue = createIcdRequestQueue();
   const first = queue.enqueue(async (isCurrent) => {
     calls.push("first-start");
     await new Promise((resolve) => { releaseFirst = resolve; });
@@ -113,68 +108,78 @@ test("new ICD requests interrupt stale motion before the next render starts", as
   });
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assert.deepEqual(calls, ["first-start", "cancel-motion"]);
-  releaseInterrupt();
+  assert.deepEqual(calls, ["first-start"]);
+  releaseFirst();
 
   await Promise.all([first, second]);
 
   assert.deepEqual(calls, [
     "first-start",
-    "cancel-motion",
     "second-start",
     "second-result",
   ]);
 });
 
 
-test("explicit cancellation interrupts active motion and suppresses stale results", async () => {
+test("explicit cancellation suppresses stale results", async () => {
   const calls = [];
   let release;
-  const queue = createIcdRequestQueue(() => {
-    calls.push("cancel-motion");
-    release();
-  });
+  const queue = createIcdRequestQueue();
   const active = queue.enqueue(async (isCurrent) => {
     await new Promise((resolve) => { release = resolve; });
     if (isCurrent()) calls.push("stale-result");
   });
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  await queue.cancel();
+  const cancelled = queue.cancel();
+  release();
+  await cancelled;
   await active;
 
-  assert.deepEqual(calls, ["cancel-motion"]);
+  assert.deepEqual(calls, []);
 });
 
 
-test("a synchronous interruption error cannot block the replacement request", async () => {
+test("a failed request cannot block the replacement request", async () => {
   const calls = [];
-  let releaseFirst;
-  const queue = createIcdRequestQueue(() => {
-    calls.push("cancel-error");
-    throw new Error("renderer is already stopping");
-  });
-  const first = queue.enqueue(async (isCurrent) => {
+  const queue = createIcdRequestQueue();
+  const first = queue.enqueue(async () => {
     calls.push("first-start");
-    await new Promise((resolve) => { releaseFirst = resolve; });
-    if (isCurrent()) calls.push("first-result");
+    throw new Error("renderer failed");
   });
-  await new Promise((resolve) => setTimeout(resolve, 0));
 
   const second = queue.enqueue(async (isCurrent) => {
     calls.push("second-start");
     if (isCurrent()) calls.push("second-result");
   });
-  await new Promise((resolve) => setTimeout(resolve, 0));
-
-  assert.deepEqual(calls, ["first-start", "cancel-error"]);
-  releaseFirst();
-  await Promise.all([first, second]);
+  await assert.rejects(first, /renderer failed/);
+  await second;
 
   assert.deepEqual(calls, [
     "first-start",
-    "cancel-error",
     "second-start",
     "second-result",
   ]);
+});
+
+
+test("rapid replay never calls the renderer concurrently with an active draw", async () => {
+  let rendererBusy = false;
+  let rendererCorrupted = false;
+  let releaseFirst;
+  const queue = createIcdRequestQueue();
+  const first = queue.enqueue(async () => {
+    rendererBusy = true;
+    await new Promise((resolve) => { releaseFirst = resolve; });
+    rendererBusy = false;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const replay = queue.enqueue(async () => {
+    if (rendererBusy) rendererCorrupted = true;
+    assert.equal(rendererCorrupted, false);
+  });
+  releaseFirst();
+
+  await Promise.all([first, replay]);
 });

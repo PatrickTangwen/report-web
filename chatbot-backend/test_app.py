@@ -15,9 +15,15 @@ from app import (
     classify_intent,
 )
 from paper_context import PAPER_TEXT
-from data_query import match_disease, match_datasets, query_data, format_data_context, is_pathway_query, is_embedding_query
-from clinical_form import get_available_diseases, get_form_fields
-from risk_assessment import query_patient_risk
+from data_query import (
+    format_data_context,
+    is_embedding_query,
+    is_feature_importance_query,
+    is_pathway_query,
+    match_disease,
+    match_datasets,
+    query_data,
+)
 from followup import get_pathway_enrichment, describe_embedding_context
 
 
@@ -63,6 +69,65 @@ async def test_health(client):
     resp = await client.get("/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_superseded_risk_routes_are_not_public(client):
+    assert (await client.get("/form-fields", params={"disease": "CKD"})).status_code == 404
+    assert (
+        await client.post(
+            "/clinical/submit",
+            json={"disease": "CKD", "values": {"BMI": 25}},
+        )
+    ).status_code == 404
+    assert (
+        await client.post(
+            "/assess",
+            json={"disease": "CKD", "values": {"BMI": 25}},
+        )
+    ).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_public_pages_origin_is_allowed_by_cors(client):
+    response = await client.options(
+        "/chat",
+        headers={
+            "Origin": "https://patricktangwen.github.io",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://patricktangwen.github.io"
+
+
+@pytest.mark.asyncio
+async def test_local_preview_origins_are_allowed_by_cors(client):
+    for origin in ("http://localhost:4200", "http://127.0.0.1:4200"):
+        response = await client.options(
+            "/chat",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == origin
+
+
+def test_superseded_mock_and_duplicate_patient_assets_are_absent():
+    root = os.path.dirname(os.path.dirname(__file__))
+    legacy_paths = [
+        "chatbot-backend/data/feature_importance.csv",
+        "chatbot-backend/data/fibrotic_patient_embeddings.csv",
+        "viz/data/feature_importance.csv",
+        "viz/data/fibrotic_patient_embeddings.csv",
+    ]
+
+    assert [path for path in legacy_paths if os.path.exists(os.path.join(root, path))] == []
 
 
 # --- Paper Q&A ---
@@ -270,6 +335,43 @@ async def test_unrelated_highlight_request_keeps_existing_intent_routing(client)
 
 
 @pytest.mark.asyncio
+async def test_paper_risk_factor_question_keeps_paper_routing(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("paper_qa"),
+            _mock_response("Paper answer."),
+        ]
+        response = await client.post(
+            "/chat",
+            json={"message": "What risk factors does the paper discuss?"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["intent"] == "paper_qa"
+    assert response.json()["reply"] == "Paper answer."
+    assert mock_client.chat.completions.create.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_ranked_paper_risk_factor_question_keeps_paper_routing(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("paper_qa"),
+            _mock_response("Paper answer."),
+        ]
+        response = await client.post(
+            "/chat",
+            json={
+                "message": "What are the most important risk factors discussed in the paper?"
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["intent"] == "paper_qa"
+    assert response.json()["reply"] == "Paper answer."
+
+
+@pytest.mark.asyncio
 async def test_basic_reviewed_keyword_action_does_not_require_graph_jargon(client):
     with patch("app.client") as mock_client:
         resp = await client.post(
@@ -331,8 +433,9 @@ def test_match_datasets_ablation_keywords():
 
 
 def test_match_datasets_feature_keywords():
-    result = match_datasets("What are the top risk factors for MASH?")
-    assert "feature_importance" in result
+    query = "What are the top risk factors for MASH?"
+    assert is_feature_importance_query(query)
+    assert "feature_importance" not in match_datasets(query)
 
 
 def test_match_datasets_pathway_keywords():
@@ -361,8 +464,8 @@ def test_query_data_ablation():
 
 def test_query_data_feature_importance():
     results, disease, names = query_data("Top risk factors for NASH?")
-    assert "feature_importance" in results
-    assert "NASH" in results["feature_importance"]
+    assert "feature_importance" not in results
+    assert "feature_importance" not in names
 
 
 def test_query_data_pathway():
@@ -423,206 +526,6 @@ async def test_response_includes_intent_field(client, mock_openai_with_intent):
     assert "reply" in body
 
 
-# --- Clinical form module ---
-
-def test_get_available_diseases():
-    diseases = get_available_diseases()
-    assert len(diseases) == 7
-    ids = [d["id"] for d in diseases]
-    assert "CKD" in ids
-    assert "NASH" in ids
-    assert "IPF" in ids
-    assert "Crohns_Disease" in ids
-    for d in diseases:
-        assert "id" in d
-        assert "label" in d
-        assert len(d["label"]) > 0
-
-
-def test_get_form_fields_valid_disease():
-    result = get_form_fields("CKD")
-    assert result is not None
-    assert result["disease"] == "CKD"
-    assert "Chronic Kidney Disease" in result["disease_label"]
-    assert len(result["fields"]) == 10
-    first = result["fields"][0]
-    assert first["rank"] == 1
-    assert "key" in first
-    assert "label" in first
-    assert "type" in first
-
-
-def test_get_form_fields_respects_top_n():
-    result = get_form_fields("CKD", top_n=5)
-    assert result is not None
-    assert len(result["fields"]) == 5
-
-
-def test_get_form_fields_alias():
-    result = get_form_fields("mash")
-    assert result is not None
-    assert result["disease"] == "NASH"
-
-
-def test_get_form_fields_unknown_disease():
-    result = get_form_fields("nonexistent_disease_xyz")
-    assert result is None
-
-
-def test_get_form_fields_field_metadata():
-    result = get_form_fields("CKD", top_n=50)
-    for field in result["fields"]:
-        assert "key" in field
-        assert "label" in field
-        assert "type" in field
-        if field["type"] == "numeric":
-            assert "min" in field
-            assert "max" in field
-            assert "step" in field
-        elif field["type"] == "select":
-            assert "options" in field
-
-
-# --- Form-fields endpoint ---
-
-@pytest.mark.asyncio
-async def test_form_fields_endpoint(client):
-    resp = await client.get("/form-fields", params={"disease": "CKD"})
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["disease"] == "CKD"
-    assert len(body["fields"]) == 10
-
-
-@pytest.mark.asyncio
-async def test_form_fields_with_alias(client):
-    resp = await client.get("/form-fields", params={"disease": "mash"})
-    assert resp.status_code == 200
-    assert resp.json()["disease"] == "NASH"
-
-
-@pytest.mark.asyncio
-async def test_form_fields_unknown_disease(client):
-    resp = await client.get("/form-fields", params={"disease": "unknown_xyz"})
-    assert resp.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_form_fields_empty_disease(client):
-    resp = await client.get("/form-fields", params={"disease": ""})
-    assert resp.status_code == 422
-
-
-# --- Clinical submit endpoint ---
-
-@pytest.mark.asyncio
-async def test_clinical_submit(client):
-    resp = await client.post(
-        "/clinical/submit",
-        json={"disease": "CKD", "values": {"BMI": 25.3, "Free T4": 15.2}},
-    )
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["status"] == "received"
-    assert body["disease"] == "CKD"
-    assert "Chronic Kidney Disease" in body["message"]
-
-
-@pytest.mark.asyncio
-async def test_clinical_submit_unknown_disease(client):
-    resp = await client.post(
-        "/clinical/submit",
-        json={"disease": "unknown_xyz", "values": {"BMI": 25}},
-    )
-    assert resp.status_code == 404
-
-
-# --- Risk assessment module ---
-
-def test_query_patient_risk_valid():
-    result = query_patient_risk({"BMI": 27.5, "Creatinine": 100}, "CKD")
-    assert result is not None
-    assert result["disease"] == "CKD"
-    assert result["risk_level"] in ("high", "medium", "low")
-    assert 0 <= result["risk_probability"] <= 1
-    assert len(result["risk_factors"]) == 5
-    assert result["similar_patients"]["count"] == 20
-    assert "disclaimer" in result
-
-
-def test_query_patient_risk_alias():
-    result = query_patient_risk({"BMI": 30}, "mash")
-    assert result is not None
-    assert result["disease"] == "NASH"
-
-
-def test_query_patient_risk_unknown_disease():
-    result = query_patient_risk({"BMI": 25}, "nonexistent_xyz")
-    assert result is None
-
-
-def test_query_patient_risk_no_embedding_disease():
-    result = query_patient_risk({"BMI": 25}, "IPF")
-    assert result is None
-
-
-def test_query_patient_risk_no_matching_features():
-    result = query_patient_risk({"Free T4": 15.0}, "CKD")
-    assert result is not None
-    assert result["similar_patients"]["count"] == 20
-
-
-def test_query_patient_risk_factors_have_cohort_data():
-    result = query_patient_risk({"BMI": 27.5, "HbA1c": 38}, "CKD")
-    bmi_factor = next((f for f in result["risk_factors"] if f["feature"] == "BMI"), None)
-    assert bmi_factor is not None
-    assert bmi_factor["user_value"] == 27.5
-    assert "cohort_mean" in bmi_factor
-
-
-def test_query_patient_risk_similar_patients_stats():
-    result = query_patient_risk({"BMI": 27.5}, "CKD")
-    sp = result["similar_patients"]
-    assert 0 <= sp["high_risk_pct"] <= 100
-    assert sp["mean_age"] is not None
-    assert sp["male_pct"] is not None
-    assert sp["family_history_pct"] is not None
-
-
-# --- Assess endpoint ---
-
-@pytest.mark.asyncio
-async def test_assess_endpoint(client):
-    resp = await client.post(
-        "/assess",
-        json={"disease": "CKD", "values": {"BMI": 27.5, "Creatinine": 100}},
-    )
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["disease"] == "CKD"
-    assert body["risk_level"] in ("high", "medium", "low")
-    assert len(body["risk_factors"]) == 5
-    assert body["similar_patients"]["count"] == 20
-    assert "disclaimer" in body
-
-
-@pytest.mark.asyncio
-async def test_assess_unknown_disease(client):
-    resp = await client.post(
-        "/assess",
-        json={"disease": "unknown_xyz", "values": {"BMI": 25}},
-    )
-    assert resp.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_assess_no_embedding_disease(client):
-    resp = await client.post(
-        "/assess",
-        json={"disease": "IPF", "values": {"BMI": 25}},
-    )
-    assert resp.status_code == 404
-
 
 # --- Followup: pathway enrichment ---
 
@@ -671,9 +574,10 @@ def test_describe_embedding_context_valid():
     assert result["disease"] == "CKD"
     assert result["embed_disease"] == "CKD"
     assert result["total_patients"] > 0
+    assert result["dataset_version"].startswith("fibrotic-")
     assert "x" in result["centroid"]
     assert "y" in result["centroid"]
-    assert result["mean_purity_2d"] > 0
+    assert "mean_purity_2d" not in result
     groups = result["groups"]
     for g in ("pure", "intermediate", "overlap"):
         assert g in groups
@@ -721,27 +625,7 @@ def test_is_embedding_query():
     assert not is_embedding_query("What's the AUROC?")
 
 
-# --- Chat with assessed_disease ---
-
-@pytest.mark.asyncio
-async def test_chat_pathway_with_assessed_disease(client):
-    with patch("app.client") as mock_client:
-        mock_client.chat.completions.create.return_value = _mock_response("data_query")
-        resp = await client.post(
-            "/chat",
-            json={
-                "message": "What pathways are involved?",
-                "assessed_disease": "CKD",
-            },
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["ui"] is not None
-        assert body["ui"]["type"] == "pathway_enrichment"
-        assert body["ui"]["disease"] == "CKD"
-        assert len(body["ui"]["pathways"]) == 10
-        mock_client.chat.completions.create.assert_called_once()
-
+# --- Chat data queries with explicit disease context ---
 
 @pytest.mark.asyncio
 async def test_chat_pathway_disease_in_message(client):
@@ -758,42 +642,49 @@ async def test_chat_pathway_disease_in_message(client):
 
 
 @pytest.mark.asyncio
-async def test_chat_embedding_with_assessed_disease(client):
+async def test_chat_embedding_uses_the_authoritative_release(client):
     with patch("app.client") as mock_client:
         mock_client.chat.completions.create.side_effect = [
             _mock_response("data_query"),
-            _mock_response("The CKD patients form a distinct cluster in the UMAP space."),
+            _mock_response("The CKD display group is visible in the t-SNE view."),
         ]
-        resp = await client.post(
+        response = await client.post(
             "/chat",
-            json={
-                "message": "Where do similar patients cluster?",
-                "assessed_disease": "CKD",
-            },
+            json={"message": "Where are CKD patients in the embedding?"},
         )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "cluster" in body["reply"].lower()
-        calls = mock_client.chat.completions.create.call_args_list
-        system_content = calls[1].kwargs["messages"][0]["content"]
-        assert "EMBEDDING CONTEXT" in system_content
-        assert "CKD" in system_content
+
+    assert response.status_code == 200
+    system = mock_client.chat.completions.create.call_args_list[1].kwargs["messages"][0][
+        "content"
+    ]
+    assert "Dataset Release:" in system
+    assert "Display-only t-SNE centroid" in system
+    assert "purity" not in system.lower()
 
 
 @pytest.mark.asyncio
-async def test_chat_data_query_fallback_assessed_disease(client):
+async def test_chat_refuses_the_superseded_mock_top_10(client):
     with patch("app.client") as mock_client:
-        mock_client.chat.completions.create.side_effect = [
-            _mock_response("data_query"),
-            _mock_response("The top risk factors are BMI and creatinine."),
-        ]
-        resp = await client.post(
+        mock_client.chat.completions.create.return_value = _mock_response("data_query")
+        response = await client.post(
             "/chat",
-            json={
-                "message": "What are the top risk factors?",
-                "assessed_disease": "CKD",
-            },
+            json={"message": "What are the top risk factors for MASH?"},
         )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["intent"] == "data_query"
+
+    assert response.status_code == 200
+    assert "superseded mock ranking" in response.json()["reply"]
+    mock_client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_chat_refuses_mock_top_10_before_icd_keyword_routing(client):
+    with patch("app.client", None):
+        response = await client.post(
+            "/chat",
+            json={"message": "Show the Top 10 risk factors for CKD"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["intent"] == "data_query"
+    assert response.json()["ui"] is None
+    assert "superseded mock ranking" in response.json()["reply"]

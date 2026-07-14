@@ -1,20 +1,15 @@
+import {
+  createEmbeddingRenderer,
+  fitEmbeddingWidth,
+  normalizeCoordinates,
+} from "./embedding-renderer.js";
+
+
 let embeddingInstanceCounter = 0;
 
 
 export function normalizePoints(data) {
-  const xs = data.map((point) => Number(point.tsne_x));
-  const ys = data.map((point) => Number(point.tsne_y));
-  const xMin = Math.min(...xs);
-  const xMax = Math.max(...xs);
-  const yMin = Math.min(...ys);
-  const yMax = Math.max(...ys);
-  const xMid = (xMin + xMax) / 2;
-  const yMid = (yMin + yMax) / 2;
-  const span = Math.max(xMax - xMin, yMax - yMin) || 1;
-  return data.map((point) => ({
-    x: ((Number(point.tsne_x) - xMid) / span) * 1.9,
-    y: ((Number(point.tsne_y) - yMid) / span) * 1.9,
-  }));
+  return normalizeCoordinates(data, "tsne_x", "tsne_y");
 }
 
 
@@ -273,16 +268,6 @@ export function bindWalkthroughControls(config) {
 }
 
 
-function fitWidth(maxWidth) {
-  const main = document.querySelector("main.content") || document.querySelector("main");
-  const mainWidth = main?.clientWidth || maxWidth;
-  const viewportWidth = document.documentElement.clientWidth - 32;
-  return Math.floor(
-    Math.min(maxWidth, Math.max(320, Math.min(mainWidth, viewportWidth))),
-  );
-}
-
-
 function delay(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
@@ -303,7 +288,7 @@ export async function createEmbeddingScatter(config) {
   const allIndices = data.map((_, index) => index);
   const diseases = [...new Set(data.map((point) => point.disease))];
   const diseaseIndex = new Map(diseases.map((disease, index) => [disease, index]));
-  const width = fitWidth(config.width || 1000);
+  const width = fitEmbeddingWidth(config.width || 1000);
   const height = Math.max(380, Math.round(width * 0.62));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   embeddingInstanceCounter += 1;
@@ -406,18 +391,21 @@ export async function createEmbeddingScatter(config) {
   });
   shell.appendChild(legend);
 
-  const scatterplot = config.createScatterplot({
+  const renderer = createEmbeddingRenderer({
+    data,
+    xField: "tsne_x",
+    yField: "tsne_y",
+    zValues: data.map((point) => diseaseIndex.get(point.disease)),
     canvas,
     width,
     height,
     pointSize: 3,
     opacity: 0.72,
-    lassoOnLongPress: false,
+    pointColor: config.colors,
+    createScatterplot: config.createScatterplot,
   });
-  const columns = {
-    x: normalized.map((point) => point.x),
-    y: normalized.map((point) => point.y),
-  };
+  const scatterplot = renderer.scatterplot;
+  const columns = renderer.columns;
   let activeRequest = config.request || config.preset;
   let activeLayout = null;
   let regionNavigator = null;
@@ -427,19 +415,7 @@ export async function createEmbeddingScatter(config) {
   const rendererQueue = createRendererQueue();
 
   async function renderOverview() {
-    scatterplot.set({
-      colorBy: "valueA",
-      opacityBy: null,
-      sizeBy: null,
-      pointColor: config.colors,
-      opacity: 0.72,
-      pointSize: 3,
-    });
-    await scatterplot.draw({
-      ...columns,
-      z: data.map((point) => diseaseIndex.get(point.disease)),
-    });
-    scatterplot.deselect({ preventEvent: true });
+    await renderer.drawOverview();
   }
 
   function drawOverview() {
@@ -461,26 +437,11 @@ export async function createEmbeddingScatter(config) {
   }
 
   function drawHighlighted(indices) {
-    return rendererQueue.run(async () => {
-      const selected = new Set(indices);
-      scatterplot.set({
-        colorBy: "valueA",
-        opacityBy: "valueA",
-        sizeBy: "valueA",
-        pointColor: ["#aeb7c2", "#1565c0"],
-        opacity: [0.14, 1],
-        pointSize: [2.5, 8],
-      });
-      await scatterplot.draw(
-        { ...columns, z: data.map((_, index) => (selected.has(index) ? 1 : 0)) },
-        { preventFilterReset: true },
-      );
-      scatterplot.select(indices, { preventEvent: true });
-    });
+    return rendererQueue.run(() => renderer.drawHighlighted(indices));
   }
 
   function zoomToPoints(indices, options) {
-    return rendererQueue.run(() => scatterplot.zoomToPoints(indices, options));
+    return rendererQueue.run(() => renderer.zoomToPoints(indices, options));
   }
 
   function restoreOverview() {

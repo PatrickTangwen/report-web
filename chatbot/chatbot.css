@@ -622,123 +622,6 @@
   font-weight: 700;
 }
 
-.chatbot-disease-select {
-  max-width: 100%;
-  padding: 0.5rem;
-  background: transparent;
-}
-
-.chatbot-disease-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.chatbot-disease-btn {
-  padding: 0.4rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid #2c5aa0;
-  background: #fff;
-  color: #2c5aa0;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  line-height: 1.3;
-}
-
-.chatbot-disease-btn:hover:not(:disabled) {
-  background: #2c5aa0;
-  color: #fff;
-}
-
-.chatbot-disease-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.chatbot-disease-btn.selected {
-  background: #2c5aa0;
-  color: #fff;
-  opacity: 1;
-}
-
-/* ── Clinical form ── */
-
-.chatbot-clinical-form {
-  max-width: 100%;
-  padding: 0.5rem;
-  background: transparent;
-}
-
-.chatbot-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.chatbot-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.chatbot-form-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #555;
-}
-
-.chatbot-form-input {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  background: #fff;
-  color: #1a1a1a;
-  outline: none;
-}
-
-.chatbot-form-input:focus {
-  border-color: #2c5aa0;
-}
-
-.chatbot-form-input:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.chatbot-form-submit {
-  margin-top: 0.4rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
-  background: #2c5aa0;
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.chatbot-form-submit:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.chatbot-form-submit:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-/* ── Risk report ── */
-
-.chatbot-risk-report {
-  max-width: 100%;
-  padding: 0.7rem;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 10px;
-}
 
 .chatbot-report-title {
   font-weight: 700;
@@ -747,95 +630,6 @@
   color: #1a1a1a;
 }
 
-.chatbot-report-section {
-  margin-bottom: 0.5rem;
-}
-
-.chatbot-risk-badge {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: #fff;
-}
-
-.chatbot-risk-high { background: #dc3545; }
-.chatbot-risk-medium { background: #fd7e14; }
-.chatbot-risk-low { background: #28a745; }
-
-.chatbot-risk-prob {
-  font-size: 0.78rem;
-  color: #666;
-}
-
-.chatbot-report-subtitle {
-  font-weight: 600;
-  font-size: 0.8rem;
-  color: #555;
-  margin: 0.5rem 0 0.25rem;
-  border-top: 1px solid #e9ecef;
-  padding-top: 0.4rem;
-}
-
-.chatbot-report-factors {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.chatbot-factor-row {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.78rem;
-  padding: 0.2rem 0;
-}
-
-.chatbot-factor-name {
-  font-weight: 600;
-  color: #333;
-}
-
-.chatbot-factor-vals {
-  color: #666;
-  font-size: 0.74rem;
-}
-
-.chatbot-report-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.35rem;
-  margin-top: 0.25rem;
-}
-
-.chatbot-stat-item {
-  text-align: center;
-  padding: 0.3rem 0.2rem;
-  background: #e9ecef;
-  border-radius: 6px;
-}
-
-.chatbot-stat-value {
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: #2c5aa0;
-}
-
-.chatbot-stat-label {
-  font-size: 0.68rem;
-  color: #777;
-}
-
-.chatbot-report-disclaimer {
-  margin-top: 0.5rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid #e9ecef;
-  font-size: 0.68rem;
-  color: #999;
-  font-style: italic;
-  line-height: 1.3;
-}
 
 /* ── Pathway enrichment card ── */
 
@@ -881,47 +675,6 @@
   white-space: nowrap;
 }
 
-/* ── Follow-up suggestions ── */
-
-.chatbot-followup-suggestions {
-  max-width: 100%;
-  padding: 0.5rem;
-  background: transparent;
-}
-
-.chatbot-followup-label {
-  font-size: 0.78rem;
-  color: #666;
-  margin-bottom: 0.35rem;
-}
-
-.chatbot-followup-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.chatbot-followup-btn {
-  padding: 0.35rem 0.65rem;
-  border-radius: 16px;
-  border: 1px solid #2c5aa0;
-  background: #fff;
-  color: #2c5aa0;
-  font-size: 0.76rem;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  line-height: 1.3;
-}
-
-.chatbot-followup-btn:hover:not(:disabled) {
-  background: #2c5aa0;
-  color: #fff;
-}
-
-.chatbot-followup-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
 
 /* ── Dark mode ── */
 
@@ -1080,78 +833,11 @@
   color: #fff;
 }
 
-.quarto-dark .chatbot-disease-btn {
-  background: #2b3035;
-  border-color: #5a8fd4;
-  color: #5a8fd4;
-}
-
-.quarto-dark .chatbot-disease-btn:hover:not(:disabled) {
-  background: #5a8fd4;
-  color: #fff;
-}
-
-.quarto-dark .chatbot-disease-btn.selected {
-  background: #5a8fd4;
-  color: #fff;
-}
-
-.quarto-dark .chatbot-form-label {
-  color: #aaa;
-}
-
-.quarto-dark .chatbot-form-input {
-  background: #2b3035;
-  border-color: #495057;
-  color: #e0e0e0;
-}
-
-.quarto-dark .chatbot-form-submit {
-  background: #5a8fd4;
-}
-
-.quarto-dark .chatbot-risk-report {
-  background: #2b3035;
-  border-color: #495057;
-}
 
 .quarto-dark .chatbot-report-title {
   color: #e0e0e0;
 }
 
-.quarto-dark .chatbot-risk-prob {
-  color: #aaa;
-}
-
-.quarto-dark .chatbot-report-subtitle {
-  color: #aaa;
-  border-top-color: #495057;
-}
-
-.quarto-dark .chatbot-factor-name {
-  color: #d0d0d0;
-}
-
-.quarto-dark .chatbot-factor-vals {
-  color: #999;
-}
-
-.quarto-dark .chatbot-stat-item {
-  background: #343a40;
-}
-
-.quarto-dark .chatbot-stat-value {
-  color: #5a8fd4;
-}
-
-.quarto-dark .chatbot-stat-label {
-  color: #888;
-}
-
-.quarto-dark .chatbot-report-disclaimer {
-  border-top-color: #495057;
-  color: #777;
-}
 
 .quarto-dark .chatbot-pathway-card {
   background: #2b3035;
@@ -1168,20 +854,6 @@
   border-bottom-color: #3a4048;
 }
 
-.quarto-dark .chatbot-followup-label {
-  color: #999;
-}
-
-.quarto-dark .chatbot-followup-btn {
-  background: #2b3035;
-  border-color: #5a8fd4;
-  color: #5a8fd4;
-}
-
-.quarto-dark .chatbot-followup-btn:hover:not(:disabled) {
-  background: #5a8fd4;
-  color: #fff;
-}
 
 /* ── Mobile ── */
 

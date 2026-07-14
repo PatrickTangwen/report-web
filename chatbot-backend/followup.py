@@ -1,13 +1,32 @@
 import os
+
 import pandas as pd
 
-from clinical_form import DISEASE_DISPLAY_NAMES, _resolve_disease
-from risk_assessment import _EMBED_DISEASE_MAP
+from data_query import _DISEASE_ALIASES, _normalize
+from fibrotic_release import load_fibrotic_release
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+DISEASE_DISPLAY_NAMES = {
+    "CKD": "Chronic Kidney Disease (CKD)",
+    "Cardiac_Fibrosis": "Cardiac Fibrosis",
+    "Crohns_Disease": "Crohn's Disease",
+    "Fibrosis_of_Skin": "Skin Fibrosis",
+    "IPF": "Idiopathic Pulmonary Fibrosis (IPF)",
+    "NASH": "Metabolic Dysfunction-Associated Steatohepatitis (MASH)",
+    "Pulmonary Fibrosis": "Pulmonary Fibrosis",
+    "SSc_Connective_Tissue": "Systemic Sclerosis (SSc)",
+}
+EMBED_DISEASE_MAP = {
+    "CKD": "CKD",
+    "NASH": "MASH",
+    "Pulmonary Fibrosis": "Pulmonary_fibrosis",
+    "SSc_Connective_Tissue": "SSc_Connective_Tissue",
+    "Crohns_Disease": "Crohns_Disease",
+    "Fibrosis_of_Skin": "Fibrosis_of_Skin",
+}
 
 _pathway_df = None
-_embed_df = None
 
 
 def _load_pathways():
@@ -18,33 +37,38 @@ def _load_pathways():
     return _pathway_df
 
 
-def _load_embeddings():
-    global _embed_df
-    if _embed_df is None:
-        path = os.path.join(DATA_DIR, "fibrotic_patient_embeddings.csv")
-        _embed_df = pd.read_csv(path)
-    return _embed_df
+def _resolve_disease(query, diseases):
+    normalized = _normalize(query)
+    for disease in diseases:
+        if _normalize(disease) == normalized:
+            return disease
+    for alias, canonical in _DISEASE_ALIASES.items():
+        if alias == normalized and canonical in diseases:
+            return canonical
+    return None
 
 
 def get_pathway_enrichment(disease_query, top_n=10):
-    canonical = _resolve_disease(disease_query)
+    df = _load_pathways()
+    canonical = _resolve_disease(disease_query, set(df["disease"].unique()))
     if canonical is None:
         return None
 
-    df = _load_pathways()
     cohort = df[df["disease"] == canonical].sort_values("rank").head(top_n)
     if cohort.empty:
         return None
 
     pathways = []
     for _, row in cohort.iterrows():
-        pathways.append({
-            "pathway": row["pathway"],
-            "source": row["source"],
-            "gene_count": int(row["gene_count"]),
-            "enrichment_ratio": round(float(row["enrichment_ratio"]), 2),
-            "p_adjusted": f"{row['p_adjusted']:.2e}",
-        })
+        pathways.append(
+            {
+                "pathway": row["pathway"],
+                "source": row["source"],
+                "gene_count": int(row["gene_count"]),
+                "enrichment_ratio": round(float(row["enrichment_ratio"]), 2),
+                "p_adjusted": f"{row['p_adjusted']:.2e}",
+            }
+        )
 
     return {
         "disease": canonical,
@@ -53,54 +77,52 @@ def get_pathway_enrichment(disease_query, top_n=10):
     }
 
 
+def _centroid(points):
+    return {
+        "x": round(sum(float(point["tsne_x"]) for point in points) / len(points), 2),
+        "y": round(sum(float(point["tsne_y"]) for point in points) / len(points), 2),
+    }
+
+
 def describe_embedding_context(disease_query):
-    canonical = _resolve_disease(disease_query)
+    embedding, _ = load_fibrotic_release()
+    points = embedding["points"]
+    display_diseases = {point["disease"] for point in points}
+    canonical = _resolve_disease(disease_query, set(EMBED_DISEASE_MAP))
     if canonical is None:
         return None
 
-    embed_disease = _EMBED_DISEASE_MAP.get(canonical)
-    if embed_disease is None:
+    embed_disease = EMBED_DISEASE_MAP.get(canonical)
+    if embed_disease not in display_diseases:
         return None
-
-    df = _load_embeddings()
-    cohort = df[df["disease"] == embed_disease]
-    if cohort.empty:
-        return None
-
+    cohort = [point for point in points if point["disease"] == embed_disease]
     total = len(cohort)
-    group_counts = cohort["group"].value_counts()
 
-    # Purity distribution
     groups = {}
-    for g in ("pure", "intermediate", "overlap"):
-        count = int(group_counts.get(g, 0))
-        groups[g] = {"count": count, "pct": round(100.0 * count / total, 1)}
+    for group in ("pure", "intermediate", "overlap"):
+        count = sum(point["group"] == group for point in cohort)
+        groups[group] = {"count": count, "pct": round(100.0 * count / total, 1)}
 
-    # Centroid in UMAP space
-    centroid_x = round(float(cohort["tsne_x"].mean()), 2)
-    centroid_y = round(float(cohort["tsne_y"].mean()), 2)
-
-    # Mean purity
-    mean_purity = round(float(cohort["purity_2d"].mean()), 3)
-
-    # Nearest other disease clusters by centroid distance
-    other_diseases = df[df["disease"] != embed_disease]["disease"].unique()
+    centroid = _centroid(cohort)
     neighbors = []
-    for other in other_diseases:
-        other_cohort = df[df["disease"] == other]
-        ox = float(other_cohort["tsne_x"].mean())
-        oy = float(other_cohort["tsne_y"].mean())
-        dist = ((centroid_x - ox) ** 2 + (centroid_y - oy) ** 2) ** 0.5
-        neighbors.append({"disease": other, "distance": round(dist, 2)})
-    neighbors.sort(key=lambda x: x["distance"])
+    for other in sorted(display_diseases - {embed_disease}):
+        other_centroid = _centroid(
+            [point for point in points if point["disease"] == other]
+        )
+        distance = (
+            (centroid["x"] - other_centroid["x"]) ** 2
+            + (centroid["y"] - other_centroid["y"]) ** 2
+        ) ** 0.5
+        neighbors.append({"disease": other, "distance": round(distance, 2)})
+    neighbors.sort(key=lambda item: item["distance"])
 
     return {
         "disease": canonical,
         "disease_label": DISEASE_DISPLAY_NAMES.get(canonical, canonical),
         "embed_disease": embed_disease,
+        "dataset_version": embedding["dataset_version"],
         "total_patients": total,
-        "centroid": {"x": centroid_x, "y": centroid_y},
-        "mean_purity_2d": mean_purity,
+        "centroid": centroid,
         "groups": groups,
         "nearest_clusters": neighbors[:3],
     }

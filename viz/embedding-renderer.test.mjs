@@ -1,0 +1,98 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  createEmbeddingRenderer,
+  fitEmbeddingWidth,
+  normalizeCoordinates,
+} from "./embedding-renderer.js";
+
+
+test("shared coordinate normalization preserves aspect ratio for every embedding", () => {
+  assert.deepEqual(
+    normalizeCoordinates(
+      [
+        { left: 10, top: 0 },
+        { left: 30, top: 10 },
+      ],
+      "left",
+      "top",
+    ),
+    [
+      { x: -0.95, y: -0.475 },
+      { x: 0.95, y: 0.475 },
+    ],
+  );
+});
+
+
+test("shared embedding width respects content, viewport, and minimum bounds", () => {
+  function documentAt(mainWidth, viewportWidth) {
+    return {
+      documentElement: { clientWidth: viewportWidth },
+      querySelector: (selector) => (
+        selector === "main.content" ? { clientWidth: mainWidth } : null
+      ),
+    };
+  }
+
+  assert.equal(fitEmbeddingWidth(1000, documentAt(900, 1200)), 900);
+  assert.equal(fitEmbeddingWidth(1000, documentAt(1200, 700)), 668);
+  assert.equal(fitEmbeddingWidth(1000, documentAt(200, 300)), 320);
+});
+
+
+test("shared renderer owns overview, highlight, and zoom", async () => {
+  const calls = [];
+  const scatterplot = {
+    set: (options) => calls.push(["set", options]),
+    draw: async (columns, options) => calls.push(["draw", columns, options]),
+    select: (indices, options) => calls.push(["select", indices, options]),
+    deselect: (options) => calls.push(["deselect", options]),
+    zoomToPoints: async (indices, options) => calls.push(["zoom", indices, options]),
+  };
+  const data = [
+    { x: 0, y: 0, group: 0 },
+    { x: 2, y: 1, group: 1 },
+  ];
+  const renderer = createEmbeddingRenderer({
+    data,
+    xField: "x",
+    yField: "y",
+    zValues: data.map((point) => point.group),
+    canvas: {},
+    width: 600,
+    height: 400,
+    pointColor: ["#111", "#222"],
+    createScatterplot: () => scatterplot,
+  });
+
+  await renderer.drawOverview();
+  await renderer.drawHighlighted([1]);
+  await renderer.zoomToPoints([1], { transition: true });
+
+  assert.deepEqual(renderer.allIndices, [0, 1]);
+  assert.deepEqual(calls, [
+    ["set", {
+      colorBy: "valueA",
+      opacityBy: null,
+      sizeBy: null,
+      pointColor: ["#111", "#222"],
+      opacity: 0.72,
+      pointSize: 3,
+    }],
+    ["draw", { x: [-0.95, 0.95], y: [-0.475, 0.475], z: [0, 1] }, undefined],
+    ["deselect", { preventEvent: true }],
+    ["set", {
+      colorBy: "valueA",
+      opacityBy: "valueA",
+      sizeBy: "valueA",
+      pointColor: ["#aeb7c2", "#1565c0"],
+      opacity: [0.14, 1],
+      pointSize: [2.5, 8],
+    }],
+    ["draw", { x: [-0.95, 0.95], y: [-0.475, 0.475], z: [0, 1] }, { preventFilterReset: true }],
+    ["select", [1], { preventEvent: true }],
+    ["zoom", [1], { transition: true }],
+  ]);
+});

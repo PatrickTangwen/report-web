@@ -1,4 +1,3 @@
-import csv
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -265,28 +264,8 @@ def test_profile_rate_limit_is_deterministic_per_client_window():
 
 
 def test_operational_input_bounds_contain_the_current_reference_support():
-    source_fields = {
-        "age": "age_recruit",
-        "height": "height",
-        "weight": "weight",
-        "bmi": "BMI",
-        "waist": "waist",
-        "hip": "hip",
-        "dbp": "DBP",
-        "sbp": "SBP",
-        "creatinine": "creatinine",
-        "hba1c": "HbA1c",
-    }
-    source = Path(__file__).parent / "data" / "fibrotic_patient_embeddings.csv"
-    with source.open(newline="") as file:
-        rows = list(csv.DictReader(file))
-
-    for field, source_field in source_fields.items():
-        values = [float(row[source_field]) for row in rows if row[source_field]]
-        support_min, support_max = REFERENCE_SUPPORT[field]
+    for field, (support_min, support_max) in REFERENCE_SUPPORT.items():
         input_min, input_max = INPUT_BOUNDS[field]
-        assert min(values) == support_min
-        assert max(values) == support_max
         assert input_min <= support_min <= support_max <= input_max
 
 

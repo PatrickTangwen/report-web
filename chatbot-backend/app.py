@@ -4,14 +4,19 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from openai import OpenAI, APIError
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from paper_context import PAPER_TEXT
-from data_query import query_data, format_data_context, match_disease, is_pathway_query, is_embedding_query
-from clinical_form import get_available_diseases, get_form_fields
-from risk_assessment import query_patient_risk
+from data_query import (
+    format_data_context,
+    is_embedding_query,
+    is_feature_importance_query,
+    is_pathway_query,
+    match_disease,
+    query_data,
+)
 from followup import get_pathway_enrichment, describe_embedding_context
 from fibrotic_release import load_fibrotic_release
 from demo_profile import (
@@ -81,16 +86,16 @@ def _format_embedding_context(emb):
     groups = emb["groups"]
     lines = [
         f"Disease: {emb['disease_label']} ({emb['embed_disease']})",
+        f"Dataset Release: {emb['dataset_version']}",
         f"Total patients in embedding space: {emb['total_patients']}",
-        f"UMAP centroid: ({emb['centroid']['x']}, {emb['centroid']['y']})",
-        f"Mean 2D purity: {emb['mean_purity_2d']}",
+        f"Display-only t-SNE centroid: ({emb['centroid']['x']}, {emb['centroid']['y']})",
         "",
         "Patient group distribution:",
         f"  Pure: {groups['pure']['count']} ({groups['pure']['pct']}%)",
         f"  Intermediate: {groups['intermediate']['count']} ({groups['intermediate']['pct']}%)",
         f"  Overlap: {groups['overlap']['count']} ({groups['overlap']['pct']}%)",
         "",
-        "Nearest disease clusters (by UMAP centroid distance):",
+        "Nearest disease display groups (by t-SNE centroid distance):",
     ]
     for n in emb["nearest_clusters"]:
         lines.append(f"  {n['disease']}: distance {n['distance']}")
@@ -105,7 +110,6 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[Message] = []
-    assessed_disease: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -156,38 +160,6 @@ class ProfileMatchRequest(BaseModel):
     ]
 
 
-class FormFieldsResponse(BaseModel):
-    disease: str
-    disease_label: str
-    fields: list[dict]
-
-
-class ClinicalSubmitRequest(BaseModel):
-    disease: str
-    values: dict
-
-
-class ClinicalSubmitResponse(BaseModel):
-    status: str
-    disease: str
-    message: str
-
-
-class AssessRequest(BaseModel):
-    disease: str
-    values: dict
-
-
-class AssessResponse(BaseModel):
-    disease: str
-    disease_label: str
-    risk_level: str
-    risk_probability: float
-    risk_factors: list[dict]
-    similar_patients: dict
-    disclaimer: str
-
-
 client: OpenAI | None = None
 profile_rate_limiter = ProfileRateLimiter()
 
@@ -223,6 +195,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:4200",
+        "http://127.0.0.1:4200",
         "https://patricktangwen.github.io",
         "https://patirckistc-report-web.hf.space",
     ],
@@ -339,39 +312,18 @@ async def profile_match(
     )
 
 
-@app.get("/form-fields", response_model=FormFieldsResponse)
-async def form_fields(disease: str = Query(min_length=1)):
-    result = get_form_fields(disease)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"Unknown disease: {disease}")
-    return result
-
-
-@app.post("/clinical/submit", response_model=ClinicalSubmitResponse)
-async def clinical_submit(req: ClinicalSubmitRequest):
-    result = get_form_fields(req.disease)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"Unknown disease: {req.disease}")
-    return ClinicalSubmitResponse(
-        status="received",
-        disease=result["disease"],
-        message=(
-            f"Your clinical data for {result['disease_label']} has been received. "
-            "Risk assessment report generation will be available in a future update."
-        ),
-    )
-
-
-@app.post("/assess", response_model=AssessResponse)
-async def assess(req: AssessRequest):
-    result = query_patient_risk(req.values, req.disease)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"Unknown disease: {req.disease}")
-    return result
-
-
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
+    if is_feature_importance_query(req.message):
+        return ChatResponse(
+            reply=(
+                "Feature-importance and Top-10 risk-factor results are not "
+                "published in this research experience. I will not answer from "
+                "the superseded mock ranking."
+            ),
+            intent="data_query",
+        )
+
     mapping = match_icd_keywords(req.message)
     if is_icd_keyword_request(
         req.message,
@@ -442,7 +394,7 @@ async def chat(req: ChatRequest):
 
     if intent == "data_query":
         disease_from_msg = match_disease(req.message)
-        disease = disease_from_msg or req.assessed_disease
+        disease = disease_from_msg
 
         if is_pathway_query(req.message) and disease:
             pw = get_pathway_enrichment(disease)
@@ -471,9 +423,6 @@ async def chat(req: ChatRequest):
                 return ChatResponse(reply=reply, intent="data_query")
 
         results, disease_q, dataset_names = query_data(req.message)
-        if not disease_q and req.assessed_disease:
-            results, _, dataset_names = query_data(req.message + " " + req.assessed_disease)
-            disease_q = req.assessed_disease
         data_context = format_data_context(results, disease_q, dataset_names)
         system = DATA_QUERY_SYSTEM_PROMPT + "--- QUERY RESULTS ---\n" + data_context + "\n--- END QUERY RESULTS ---"
     else:
