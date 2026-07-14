@@ -158,16 +158,26 @@ reglDrilldownScatter = {
       syncControls();
     }
 
+    async function runTransition(action) {
+      if (isZooming) return;
+      isZooming = true;
+      try {
+        await action();
+      } finally {
+        isZooming = false;
+      }
+    }
+
     async function pushState(indices, label, grouped = false) {
       const unique = Array.from(new Set(indices));
       if (!unique.length || isZooming) return;
       const previous = current().indices;
       if (unique.length === previous.length && unique.every((d, i) => d === previous[i])) return;
-      isZooming = true;
-      stack.push({ indices: unique, label, grouped });
-      syncControls();
-      await applyCurrent();
-      isZooming = false;
+      await runTransition(async () => {
+        stack.push({ indices: unique, label, grouped });
+        syncControls();
+        await applyCurrent();
+      });
     }
 
     async function drillIndex(index) {
@@ -208,34 +218,33 @@ reglDrilldownScatter = {
 
     backBtn.addEventListener("click", async () => {
       if (stack.length <= 1 || isZooming) return;
-      isZooming = true;
-      stack.pop();
-      syncControls();
-      await applyCurrent();
-      isZooming = false;
+      await runTransition(async () => {
+        stack.pop();
+        syncControls();
+        await applyCurrent();
+      });
     });
 
     resetBtn.addEventListener("click", async () => {
-      if (isZooming) return;
-      isZooming = true;
-      stack = [{ indices: allIndices, label: "Overview", grouped: false }];
-      syncControls();
-      await applyCurrent();
-      isZooming = false;
+      await runTransition(async () => {
+        stack = [{ indices: allIndices, label: "Overview", grouped: false }];
+        syncControls();
+        await applyCurrent();
+      });
     });
 
     replayBtn.addEventListener("click", async () => {
       if (stack.length <= 1 || isZooming) return;
-      isZooming = true;
-      status.textContent = `Replaying ${current().label} walkthrough`;
-      await renderer.drawOverview();
-      await scatterplot.zoomToPoints(allIndices, {
-        padding: 0.08,
-        transition: true,
-        transitionDuration: 380,
+      await runTransition(async () => {
+        status.textContent = `Replaying ${current().label} walkthrough`;
+        await renderer.drawOverview();
+        await scatterplot.zoomToPoints(allIndices, {
+          padding: 0.08,
+          transition: true,
+          transitionDuration: 380,
+        });
+        await applyCurrent();
       });
-      await applyCurrent();
-      isZooming = false;
     });
 
     if (config.renderLegend) {

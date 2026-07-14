@@ -51,3 +51,9 @@ test("patient focus uses the exact selected points without inferred neighborhood
   assert.doesNotMatch(source, /Math\.sqrt\(baseIndices\.length\)/);
   assert.doesNotMatch(source, /state\.indices\.length > 100/);
 });
+
+
+test("embedding transitions always release their interaction lock", () => {
+  assert.match(source, /async function runTransition\(action\)/);
+  assert.match(source, /finally\s*{\s*isZooming = false;\s*}/s);
+});
