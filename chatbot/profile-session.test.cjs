@@ -29,10 +29,77 @@ const height = {
 };
 
 
+test("a Profile Draft cannot start before a Comparison Target is selected", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+
+  assert.equal(session.getState().phase, "inactive");
+  assert.throws(() => session.start());
+});
+
+
+test("selecting an unsupported Comparison Target is rejected", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+
+  assert.throws(() => session.selectTarget("not_a_real_target"));
+  assert.equal(session.getState().target, null);
+});
+
+
+test("the system never infers or substitutes a Comparison Target — only one of the seven is accepted", () => {
+  assert.deepEqual(profileSession.TARGETS, [
+    "CKD",
+    "Cardiac_Fibrosis",
+    "MASH",
+    "Pulmonary_fibrosis",
+    "SSc_Connective_Tissue",
+    "Crohns_Disease",
+    "Fibrosis_of_Skin",
+  ]);
+});
+
+
+test("selecting a target moves the session to target_selected and persists tab-scoped", () => {
+  const storage = memoryStorage();
+  profileSession.create(storage).selectTarget("MASH");
+
+  const reopened = profileSession.create(storage);
+  assert.equal(reopened.getState().phase, "target_selected");
+  assert.equal(reopened.getState().target, "MASH");
+});
+
+
+test("starting a Profile Draft after target selection carries the target through and defaults to manual source", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("CKD");
+
+  session.start();
+
+  assert.equal(session.getState().phase, "draft");
+  assert.equal(session.getState().target, "CKD");
+  assert.equal(session.getState().source, "manual");
+});
+
+
+test("loading a Synthetic Example Profile is tracked as example source, not manual", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("Crohns_Disease");
+
+  session.start("example");
+
+  assert.equal(session.getState().source, "example");
+  assert.equal(session.getState().target, "Crohns_Disease");
+});
+
+
 test("single-turn and multi-turn candidates stay in one tab-scoped draft", () => {
   const storage = memoryStorage();
   const session = profileSession.create(storage);
 
+  session.selectTarget("CKD");
   session.start();
   session.appendCandidates([height]);
   session.appendCandidates([
@@ -57,9 +124,10 @@ test("single-turn and multi-turn candidates stay in one tab-scoped draft", () =>
 });
 
 
-test("Draft becomes Confirmed only through the explicit confirm transition", () => {
+test("Draft becomes Confirmed only through the explicit confirm transition, and the target survives confirmation", () => {
   const storage = memoryStorage();
   const session = profileSession.create(storage);
+  session.selectTarget("MASH");
   session.start();
   session.appendCandidates([height]);
   session.applyDraft({ state: "draft", can_confirm: true, reported_features: {} });
@@ -73,25 +141,42 @@ test("Draft becomes Confirmed only through the explicit confirm transition", () 
   });
 
   assert.equal(session.getState().phase, "confirmed");
+  assert.equal(session.getState().target, "MASH");
   assert.equal(session.getState().confirmed.matching_started, false);
 });
 
 
-test("Start Over clears only profile state and keeps unrelated chatbot state", () => {
+test("Start Over clears the target too, so a new session must choose again", () => {
   const storage = memoryStorage();
   storage.setItem("aligatehr-chatbot-history", "unrelated conversation");
   const session = profileSession.create(storage);
+  session.selectTarget("CKD");
   session.start();
   session.appendCandidates([height]);
 
   session.reset();
 
   assert.equal(session.getState().phase, "inactive");
+  assert.equal(session.getState().target, null);
   assert.deepEqual(session.getState().candidates, []);
   assert.equal(
     storage.getItem("aligatehr-chatbot-history"),
     "unrelated conversation",
   );
+  assert.equal(storage.getItem(profileSession.STORAGE_KEY), null);
+});
+
+
+test("a corrupted or pre-target-first stored phase falls back to inactive", () => {
+  const storage = memoryStorage();
+  storage.setItem(
+    profileSession.STORAGE_KEY,
+    JSON.stringify({ phase: "legacy-unknown-phase", candidates: [] }),
+  );
+
+  const session = profileSession.create(storage);
+
+  assert.equal(session.getState().phase, "inactive");
   assert.equal(storage.getItem(profileSession.STORAGE_KEY), null);
 });
 

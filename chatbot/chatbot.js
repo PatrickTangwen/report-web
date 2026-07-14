@@ -367,7 +367,9 @@
     if (action === "clear-paper-conversation") clearPaperConversation();
     if (action === "fill-paper-question") fillPaperQuestion(button);
     if (action === "open-visualization-destination") openVisualizationDestination(button.getAttribute("data-destination"));
+    if (action === "select-profile-target") selectProfileTarget(button);
     if (action === "start-demo-profile") startDemoProfile();
+    if (action === "load-synthetic-example") loadSyntheticExample(button);
     if (action === "save-profile-edits") saveProfileEdits(button);
     if (action === "confirm-demo-profile") confirmDemoProfile(button);
     if (action === "compare-confirmed-profile") compareConfirmedProfile(button);
@@ -619,7 +621,7 @@
       '[data-chatbot-action="start-demo-profile"]',
     );
     if (startButton) {
-      startButton.disabled = phase !== "inactive";
+      startButton.disabled = phase !== "target_selected";
       startButton.textContent =
         phase === "draft"
           ? "Profile Draft active"
@@ -627,51 +629,142 @@
             ? "Profile confirmed"
             : "Build Demo Profile";
     }
+    var exampleButton = profileMessagesEl.querySelector(
+      '[data-chatbot-action="load-synthetic-example"]',
+    );
+    if (exampleButton) {
+      exampleButton.disabled = phase !== "target_selected";
+    }
     updateComposerVisibility();
   }
 
   function initProfileView() {
     if (profileMessagesEl.children.length) return;
-    renderProfileStarterCard();
+    renderTargetSelection();
   }
 
-  function renderProfileStarterCard() {
-    if (profileMessagesEl.querySelector('[data-chatbot-action="start-demo-profile"]')) return;
+  function renderTargetSelection() {
+    if (profileMessagesEl.querySelector('[data-chatbot-action="select-profile-target"]')) return;
+    var card = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-starter",
+    );
+    var noticeLabel = createEl("div", "chatbot-demo-label");
+    noticeLabel.textContent = "Research Use Notice";
+    var notice = createEl("p", "chatbot-demo-copy");
+    notice.textContent =
+      "Research demo only — not medical advice, diagnosis, or a personal outcome " +
+      "prediction. Use a synthetic or sufficiently de-identified profile. Do not " +
+      "enter names, exact birth dates, addresses, patient IDs, or real medical records.";
+    var targetLabelEl = createEl("div", "chatbot-demo-label");
+    targetLabelEl.textContent = "Choose a Research Cohort";
+    var targetCopy = createEl("p", "chatbot-demo-copy");
+    targetCopy.textContent =
+      "Select exactly one Comparison Target below — this is a research cohort " +
+      "choice, not a diagnosis or predicted disease. Nothing is inferred, " +
+      "recommended, or substituted for you.";
+    card.append(noticeLabel, notice, targetLabelEl, targetCopy);
+    COMPARISON_TARGETS.forEach(function (target) {
+      var button = createEl("button", "chatbot-task-card", {
+        type: "button",
+        "data-chatbot-action": "select-profile-target",
+        "data-target": target[0],
+      });
+      var buttonLabel = createEl("span", "chatbot-task-card-label");
+      buttonLabel.textContent = target[1];
+      button.appendChild(buttonLabel);
+      card.appendChild(button);
+    });
+    addRawElement(profileMessagesEl, card);
+  }
+
+  function selectProfileTarget(button) {
+    var state = profileSession.getState();
+    if (state.phase !== "inactive" && state.phase !== "target_selected") return;
+    var target = button.getAttribute("data-target");
+    profileSession.selectTarget(target);
+    renderTargetConfirmedCard(target);
+  }
+
+  function renderTargetConfirmedCard(target) {
     var card = createEl(
       "div",
       "chatbot-msg chatbot-msg-assistant chatbot-profile-starter",
     );
     var label = createEl("div", "chatbot-demo-label");
-    label.textContent = "Research Demo Profile";
+    label.textContent = "Comparison Target: " + targetLabel(target);
     var copy = createEl("p", "chatbot-demo-copy");
     copy.textContent =
-      "Build an editable synthetic or de-identified profile. Values are reviewed " +
-      "before confirmation and never start matching automatically.";
-    var button = createEl("button", "chatbot-demo-button", {
+      "This is a research cohort choice, not a diagnosis. Build a profile with " +
+      "your own values, or load the reviewed Synthetic Example Profile for this " +
+      "target — both remain editable and neither confirms or starts comparison " +
+      "automatically.";
+    var buildButton = createEl("button", "chatbot-demo-button", {
       type: "button",
       "data-chatbot-action": "start-demo-profile",
     });
-    button.textContent = "Build Demo Profile";
-    card.append(label, copy, button);
+    buildButton.textContent = "Build Demo Profile";
+    var exampleButton = createEl("button", "chatbot-profile-secondary", {
+      type: "button",
+      "data-chatbot-action": "load-synthetic-example",
+    });
+    exampleButton.textContent = "Load Synthetic Example Profile";
+    var status = createEl("div", "chatbot-demo-status", { "aria-live": "polite" });
+    card.append(label, copy, buildButton, exampleButton, status);
     addRawElement(profileMessagesEl, card);
   }
 
   function startDemoProfile() {
-    if (profileSession.getState().phase === "draft") {
+    var state = profileSession.getState();
+    if (state.phase === "draft") {
       input.focus();
       return;
     }
-    profileSession.start();
+    if (state.phase !== "target_selected") return;
+    profileSession.start("manual");
     addMessage(
       profileMessagesEl,
       "assistant",
-      "**Research demo only — not medical advice, diagnosis, or a personal outcome prediction.** " +
-        "Use a synthetic or sufficiently de-identified profile. Do not enter names, " +
-        "exact birth dates, addresses, patient IDs, or real medical records. You can " +
-        "provide details in one message or across several messages.",
+      "Describe your profile in your own words — you can provide details in one " +
+        "message or across several messages.",
     );
     updateProfileInputState();
     input.focus();
+  }
+
+  function loadSyntheticExample(button) {
+    var state = profileSession.getState();
+    if (state.phase !== "target_selected" || button.disabled) return;
+    var target = state.target;
+    var status = button.parentElement.querySelector(".chatbot-demo-status");
+    var buildButton = button.parentElement.querySelector(
+      '[data-chatbot-action="start-demo-profile"]',
+    );
+    button.disabled = true;
+    if (buildButton) buildButton.disabled = true;
+    status.textContent = "Loading the reviewed Synthetic Example Profile…";
+    DEMO.requestJson(
+      fetch,
+      API_URL + "/profile/synthetic-example/" + encodeURIComponent(target),
+      { cache: "no-store" },
+      30000,
+    )
+      .then(function (example) {
+        profileSession.start("example");
+        profileSession.appendCandidates(example.candidates || []);
+        return validateProfileCandidates();
+      })
+      .then(function () {
+        status.textContent =
+          "Loaded the Synthetic Example Profile for " + targetLabel(target) +
+          ". Review and edit any value before confirming.";
+        updateProfileInputState();
+      })
+      .catch(function (error) {
+        button.disabled = false;
+        if (buildButton) buildButton.disabled = false;
+        status.textContent = "Could not load the Synthetic Example Profile. " + error.message;
+      });
   }
 
   function validateProfileCandidates(statusEl) {
@@ -763,9 +856,18 @@
       "chatbot-msg chatbot-msg-assistant chatbot-profile-review",
       { "data-profile-current": "1" },
     );
+    var isExample = profileSession.getState().source === "example";
     var title = createEl("div", "chatbot-profile-title");
-    title.textContent = "Profile Draft — review required";
+    title.textContent = isExample
+      ? "Synthetic Example Profile — review required"
+      : "Profile Draft — review required";
     card.appendChild(title);
+
+    if (isExample) {
+      var exampleBadge = createEl("div", "chatbot-demo-label");
+      exampleBadge.textContent = "Reviewed example — editable, not a real patient";
+      card.appendChild(exampleBadge);
+    }
 
     var notice = createEl("p", "chatbot-profile-notice");
     notice.textContent =
@@ -985,29 +1087,16 @@
     var copy = createEl("p", "chatbot-profile-notice");
     copy.textContent =
       "Your reviewed Demo Profile is confirmed for this tab. Matching has not started. " +
-      "Choose one Comparison Target below; this remains a research cohort comparison, " +
-      "not medical advice, diagnosis, prognosis, or a personal outcome prediction.";
+      "This remains a research cohort comparison, not medical advice, diagnosis, " +
+      "prognosis, or a personal outcome prediction.";
+    var targetLine = createEl("div", "chatbot-profile-confirmed-count");
+    targetLine.textContent = "Comparison Target: " + targetLabel(profileSession.getState().target);
     var count = createEl("div", "chatbot-profile-confirmed-count");
     count.textContent =
       Object.keys(confirmed.reported_features || {}).length +
       " reported features; " +
       Object.keys(confirmed.derived_features || {}).length +
       " derived features.";
-    var targetLabelEl = createEl("label", "chatbot-profile-target-label");
-    targetLabelEl.textContent = "Comparison Target";
-    var targetSelect = createEl("select", "chatbot-profile-target", {
-      "aria-label": "Comparison Target",
-    });
-    var emptyTarget = createEl("option");
-    emptyTarget.value = "";
-    emptyTarget.textContent = "Choose one target…";
-    targetSelect.appendChild(emptyTarget);
-    COMPARISON_TARGETS.forEach(function (target) {
-      var option = createEl("option");
-      option.value = target[0];
-      option.textContent = target[1];
-      targetSelect.appendChild(option);
-    });
     var compare = createEl("button", "chatbot-profile-primary", {
       type: "button",
       "data-chatbot-action": "compare-confirmed-profile",
@@ -1024,9 +1113,8 @@
     card.append(
       title,
       copy,
+      targetLine,
       count,
-      targetLabelEl,
-      targetSelect,
       compare,
       matchStatus,
       startOver,
@@ -1170,17 +1258,10 @@
 
   function compareConfirmedProfile(button) {
     var state = profileSession.getState();
-    if (state.phase !== "confirmed" || !state.confirmed) return;
+    if (state.phase !== "confirmed" || !state.confirmed || !state.target) return;
     var card = button.closest(".chatbot-profile-confirmed");
-    var select = card.querySelector(".chatbot-profile-target");
     var status = card.querySelector(".chatbot-profile-action-status");
-    if (!select.value) {
-      status.textContent = "Choose one Comparison Target before starting the comparison.";
-      select.focus();
-      return;
-    }
     button.disabled = true;
-    select.disabled = true;
     status.textContent = "Checking calibrated Profile Coverage and reference distances…";
     var run = profileMatchController.start();
     var coldStartNotice = setTimeout(function () {
@@ -1196,7 +1277,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           confirmed_profile: state.confirmed,
-          target: select.value,
+          target: state.target,
         }),
         signal: run.signal,
       },
@@ -1212,7 +1293,6 @@
         clearTimeout(coldStartNotice);
         if (!profileMatchController.isCurrent(run.token)) return;
         button.disabled = false;
-        select.disabled = false;
         status.textContent = error.message && error.message.toLowerCase().includes("timed out")
           ? "The comparison timed out while the backend was waking. Retry when ready."
           : "The comparison backend is unavailable. Retry when ready.";
@@ -1253,7 +1333,7 @@
     profileMessagesEl.innerHTML = "";
     updateProfileInputState();
     addMessage(profileMessagesEl, "assistant", "The Demo Profile session was cleared.");
-    renderProfileStarterCard();
+    renderTargetSelection();
     saveState();
   }
 

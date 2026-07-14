@@ -6,10 +6,22 @@
   "use strict";
 
   var STORAGE_KEY = "aligatehr-demo-profile-session";
+  var TARGETS = [
+    "CKD",
+    "Cardiac_Fibrosis",
+    "MASH",
+    "Pulmonary_fibrosis",
+    "SSc_Connective_Tissue",
+    "Crohns_Disease",
+    "Fibrosis_of_Skin",
+  ];
+  var PHASES = ["inactive", "target_selected", "draft", "confirmed"];
 
   function initialState() {
     return {
       phase: "inactive",
+      target: null,
+      source: null,
       candidates: [],
       draft: null,
       confirmed: null,
@@ -23,7 +35,7 @@
       var parsed = JSON.parse(raw);
       if (
         !parsed ||
-        !["inactive", "draft", "confirmed"].includes(parsed.phase) ||
+        PHASES.indexOf(parsed.phase) === -1 ||
         !Array.isArray(parsed.candidates)
       ) {
         throw new Error("invalid profile session");
@@ -46,9 +58,29 @@
       getState: function () {
         return state;
       },
-      start: function () {
+      selectTarget: function (target) {
+        if (TARGETS.indexOf(target) === -1) {
+          throw new Error("Unsupported Comparison Target: " + target);
+        }
+        state = {
+          phase: "target_selected",
+          target: target,
+          source: null,
+          candidates: [],
+          draft: null,
+          confirmed: null,
+        };
+        save();
+        return state;
+      },
+      start: function (source) {
+        if (!state.target) {
+          throw new Error("A Comparison Target must be selected before a Profile Draft can start");
+        }
         state = {
           phase: "draft",
+          target: state.target,
+          source: source === "example" ? "example" : "manual",
           candidates: [],
           draft: null,
           confirmed: null,
@@ -128,6 +160,7 @@
 
   return {
     STORAGE_KEY: STORAGE_KEY,
+    TARGETS: TARGETS,
     create: create,
     createCorrections: createCorrections,
   };

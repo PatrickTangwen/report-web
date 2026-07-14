@@ -189,3 +189,69 @@ test("a slow paper answer shows friendly preparing copy instead of HTTP status t
   assert.match(source, /Preparing the research assistant/);
   assert.doesNotMatch(source, /502|503|Bad Gateway|Service Unavailable/);
 });
+
+
+test("Build a Demo Profile shows the full Research Use Notice before any target or field entry", () => {
+  const renderTargetSelection = extractFunctionSource("renderTargetSelection");
+  assert.match(renderTargetSelection, /Research Use Notice/);
+  assert.match(renderTargetSelection, /synthetic or sufficiently de-identified/);
+  assert.match(renderTargetSelection, /COMPARISON_TARGETS\.forEach/);
+});
+
+
+test("exactly the seven approved Comparison Targets are offered, and none is ever auto-selected", () => {
+  const comparisonTargetsBlock = source.match(/var COMPARISON_TARGETS = \[[\s\S]*?\n  \];/)[0];
+  const targetEntries = comparisonTargetsBlock.match(/^\s*\[".+?", ".+?"\],?$/gm) || [];
+  assert.equal(targetEntries.length, 7);
+
+  const selectTargetCalls = source.match(/\.selectTarget\(/g) || [];
+  assert.equal(selectTargetCalls.length, 1, "profileSession.selectTarget must have exactly one call site");
+  const selectProfileTarget = extractFunctionSource("selectProfileTarget");
+  assert.match(selectProfileTarget, /var target = button\.getAttribute\("data-target"\)/);
+  assert.match(selectProfileTarget, /profileSession\.selectTarget\(target\)/);
+});
+
+
+test("target selection is described as a research cohort choice, never a diagnosis", () => {
+  const renderTargetSelection = extractFunctionSource("renderTargetSelection");
+  assert.match(renderTargetSelection, /research cohort/);
+  const renderTargetConfirmedCard = extractFunctionSource("renderTargetConfirmedCard");
+  assert.match(renderTargetConfirmedCard, /research cohort choice, not a diagnosis/);
+});
+
+
+test("after target selection the visitor can build a profile or load the reviewed Synthetic Example Profile", () => {
+  assert.match(source, /"data-chatbot-action"\s*:\s*"load-synthetic-example"/);
+  assert.match(source, /if \(action === "load-synthetic-example"\) loadSyntheticExample\(button\)/);
+  const loadSyntheticExample = extractFunctionSource("loadSyntheticExample");
+  assert.match(loadSyntheticExample, /API_URL \+ "\/profile\/synthetic-example\/"/);
+  assert.match(loadSyntheticExample, /profileSession\.start\("example"\)/);
+});
+
+
+test("loading a Synthetic Example Profile never confirms the draft or starts comparison", () => {
+  const loadSyntheticExample = extractFunctionSource("loadSyntheticExample");
+  assert.doesNotMatch(loadSyntheticExample, /confirmDemoProfile|compareConfirmedProfile|\/profile\/confirm|\/profile\/match/);
+});
+
+
+test("a loaded Synthetic Example Profile is visibly labeled as reviewed and remains editable", () => {
+  const renderProfileDraft = extractFunctionSource("renderProfileDraft");
+  assert.match(renderProfileDraft, /Synthetic Example Profile — review required/);
+  assert.match(renderProfileDraft, /Reviewed example — editable, not a real patient/);
+});
+
+
+test("the confirmed profile compares against the pre-chosen target with no target picker at review", () => {
+  assert.doesNotMatch(source, /chatbot-profile-target"/);
+  const renderConfirmedProfile = extractFunctionSource("renderConfirmedProfile");
+  assert.match(renderConfirmedProfile, /targetLabel\(profileSession\.getState\(\)\.target\)/);
+  const compareConfirmedProfile = extractFunctionSource("compareConfirmedProfile");
+  assert.match(compareConfirmedProfile, /target: state\.target/);
+});
+
+
+test("Start Over returns all the way to target selection, not a target-less starter", () => {
+  const startOverDemoProfile = extractFunctionSource("startOverDemoProfile");
+  assert.match(startOverDemoProfile, /renderTargetSelection\(\)/);
+});

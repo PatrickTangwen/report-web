@@ -28,6 +28,8 @@ from demo_profile import (
 )
 from profile_matching import load_matching_release, match_confirmed_profile
 from icd_keyword import is_icd_keyword_request, match_icd_keywords
+from fibrotic_contract import TARGETS
+from synthetic_example_profiles import get_synthetic_example_profile
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -154,6 +156,13 @@ class ProfileMatchRequest(BaseModel):
         "Crohns_Disease",
         "Fibrosis_of_Skin",
     ]
+
+
+class SyntheticExampleProfileResponse(BaseModel):
+    target: str
+    version: str
+    review_status: str
+    candidates: list[FeatureCandidate]
 
 
 client: OpenAI | None = None
@@ -307,6 +316,19 @@ async def profile_match(
         release["calibration"],
         release["dataset_version"],
     )
+
+
+@app.get("/profile/synthetic-example/{target}", response_model=SyntheticExampleProfileResponse)
+async def synthetic_example_profile(target: str):
+    if target not in TARGETS:
+        raise HTTPException(status_code=404, detail="Unknown Comparison Target")
+    try:
+        return get_synthetic_example_profile(target)
+    except (FileNotFoundError, RuntimeError, ValueError) as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Synthetic Example Profile unavailable: {error}",
+        )
 
 
 @app.post("/paper/question", response_model=PaperQuestionResponse)
