@@ -249,9 +249,19 @@ figcaption {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 0.6rem 0 0;
+  margin: 0.6rem 0;
   font-family: "Source Sans Pro", sans-serif;
   font-size: 0.85rem;
+}
+
+.drilldown-shell.is-focused .drilldown-controls {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  margin: 0 0 0.6rem;
+  padding: 0.55rem 0;
+  background: #ffffff;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .drilldown-status {
@@ -294,6 +304,11 @@ figcaption {
 .quarto-dark .drilldown-shell.is-focused {
   background: #212529;
   border-color: #495057;
+}
+
+.quarto-dark .drilldown-shell.is-focused .drilldown-controls {
+  background: #212529;
+  border-bottom-color: #495057;
 }
 
 .quarto-dark .drilldown-status {

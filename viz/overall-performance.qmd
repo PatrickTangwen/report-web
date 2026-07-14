@@ -93,7 +93,6 @@ reglDrilldownScatter = {
     canvas.style.width = width + "px";
     canvas.style.height = height + "px";
     plotFrame.appendChild(canvas);
-    container.appendChild(plotFrame);
 
     const tooltip = document.createElement("div");
     tooltip.style.cssText = "display:none;position:absolute;pointer-events:none;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;padding:8px 12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;max-width:280px;z-index:10;box-shadow:0 2px 4px rgba(0,0,0,0.1);";
@@ -101,6 +100,7 @@ reglDrilldownScatter = {
 
     const controls = document.createElement("div");
     controls.className = "drilldown-controls";
+    controls.setAttribute("aria-label", "Zoom navigation");
     const status = document.createElement("span");
     status.className = "drilldown-status";
     const backBtn = document.createElement("button");
@@ -111,6 +111,7 @@ reglDrilldownScatter = {
     resetBtn.textContent = "Reset zoom";
     controls.append(status, backBtn, resetBtn);
     container.appendChild(controls);
+    container.appendChild(plotFrame);
 
     const legend = document.createElement("div");
     legend.className = "drilldown-legend";
