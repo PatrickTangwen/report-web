@@ -3,7 +3,7 @@ import re
 from contextlib import asynccontextmanager
 
 from openai import OpenAI, APIError
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -12,6 +12,7 @@ from data_query import query_data, format_data_context, match_disease, is_pathwa
 from clinical_form import get_available_diseases, get_form_fields
 from risk_assessment import query_patient_risk
 from followup import get_pathway_enrichment, describe_embedding_context
+from fibrotic_release import load_fibrotic_release
 
 INTENT_SYSTEM_PROMPT = (
     "You are an intent classifier. Given a user message, classify it into exactly one "
@@ -179,6 +180,30 @@ def classify_intent(user_message):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+def _release_headers(dataset_version):
+    return {
+        "Cache-Control": "public, max-age=300",
+        "ETag": f'"{dataset_version}"',
+    }
+
+
+@app.get("/embedding/fibrotic")
+async def fibrotic_embedding(request: Request, response: Response):
+    embedding, _ = load_fibrotic_release()
+    headers = _release_headers(embedding["dataset_version"])
+    if request.headers.get("if-none-match") == headers["ETag"]:
+        return Response(status_code=304, headers=headers)
+    response.headers.update(headers)
+    return embedding
+
+
+@app.get("/embedding/fibrotic/preset")
+async def fibrotic_preset(response: Response):
+    embedding, preset = load_fibrotic_release()
+    response.headers.update(_release_headers(embedding["dataset_version"]))
+    return preset
 
 
 @app.get("/form-fields", response_model=FormFieldsResponse)

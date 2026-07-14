@@ -18,6 +18,7 @@ ENV/
 
 # Data files (keep published viz assets tracked; ignore raw/private sources)
 embedding_data/
+chatbot-backend/data/private/
 viz/data/raw/**
 viz/data/processed/**
 viz/data/**/*.xlsx

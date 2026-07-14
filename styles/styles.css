@@ -300,6 +300,331 @@ figcaption {
   color: #d0d0d0;
 }
 
+/* Chatbot-driven fibrotic embedding walkthrough */
+.embedding-loader,
+.embedding-walkthrough {
+  width: 100%;
+  max-width: 1000px;
+}
+
+.embedding-load-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  min-height: 320px;
+  padding: 5rem 2rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  background: #f7f9fc;
+  color: #52606d;
+  text-align: center;
+}
+
+.embedding-load-error {
+  border-color: #e5b8b8;
+  background: #fff8f7;
+}
+
+.embedding-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #c7d5e7;
+  border-top-color: #2c5aa0;
+  border-radius: 50%;
+  animation: embedding-spin 0.9s linear infinite;
+}
+
+@keyframes embedding-spin {
+  to { transform: rotate(360deg); }
+}
+
+.embedding-walkthrough {
+  padding: 0.9rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(31, 55, 80, 0.08);
+}
+
+.embedding-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.embedding-heading strong,
+.embedding-heading span {
+  display: block;
+}
+
+.embedding-heading strong {
+  color: #243b53;
+  font-size: 1.05rem;
+}
+
+.embedding-heading span {
+  margin-top: 0.15rem;
+  color: #627d98;
+  font-size: 0.82rem;
+}
+
+.embedding-heading code {
+  padding: 0.25rem 0.42rem;
+  border-radius: 4px;
+  background: #edf2f7;
+  color: #486581;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.embedding-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.embedding-frame canvas {
+  display: block;
+  max-width: 100%;
+}
+
+.embedding-region {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.embedding-region.is-visible {
+  opacity: 1;
+}
+
+.embedding-region svg {
+  width: 100%;
+  height: 100%;
+}
+
+.embedding-region ellipse {
+  fill: rgba(255, 167, 38, 0.08);
+  stroke: #ef6c00;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+
+.embedding-region line {
+  stroke: #ef6c00;
+  stroke-width: 2;
+}
+
+.embedding-region circle {
+  fill: #e53935;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.embedding-tooltip {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  max-width: 220px;
+  padding: 0.4rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(26, 39, 52, 0.92);
+  color: #fff;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.embedding-tooltip.is-visible {
+  display: block;
+}
+
+.embedding-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.embedding-status {
+  flex: 1 1 100%;
+  color: #486581;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.embedding-button {
+  padding: 0.42rem 0.72rem;
+  border: 1px solid #bcccdc;
+  border-radius: 7px;
+  background: #fff;
+  color: #243b53;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.embedding-button-primary {
+  border-color: #2c5aa0;
+  background: #2c5aa0;
+  color: #fff;
+}
+
+.embedding-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.embedding-button:focus-visible {
+  outline: 3px solid rgba(44, 90, 160, 0.25);
+  outline-offset: 2px;
+}
+
+.embedding-summary {
+  margin-top: 0.8rem;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid #2c5aa0;
+  border-radius: 4px 10px 10px 4px;
+  background: #f4f8fd;
+}
+
+.embedding-summary-kicker {
+  color: #2c5aa0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.embedding-summary h3 {
+  margin: 0.18rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.embedding-summary p {
+  margin: 0.25rem 0;
+  font-size: 0.82rem;
+}
+
+.embedding-summary dl {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0.65rem 0 0;
+}
+
+.embedding-summary dl div {
+  display: grid;
+  gap: 0.05rem;
+}
+
+.embedding-summary dt {
+  color: #6c757d;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.embedding-summary dd {
+  margin: 0;
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+.embedding-summary-note {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.embedding-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  margin-top: 0.7rem;
+  color: #627d98;
+  font-size: 0.72rem;
+}
+
+.embedding-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.embedding-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.embedding-legend-color-0 { background: #4477aa; }
+.embedding-legend-color-1 { background: #ee7733; }
+.embedding-legend-color-2 { background: #228833; }
+.embedding-legend-color-3 { background: #cc3311; }
+.embedding-legend-color-4 { background: #aa3377; }
+.embedding-legend-color-5 { background: #66ccee; }
+.embedding-legend-color-6 { background: #bbbb44; }
+
+.quarto-dark .embedding-walkthrough,
+.quarto-dark .embedding-load-state {
+  border-color: #495057;
+  background: #212529;
+}
+
+.quarto-dark .embedding-frame {
+  background: #171a1d;
+}
+
+.quarto-dark .embedding-heading strong,
+.quarto-dark .embedding-button {
+  color: #e5edf5;
+}
+
+.quarto-dark .embedding-heading span,
+.quarto-dark .embedding-status,
+.quarto-dark .embedding-legend {
+  color: #a9bacb;
+}
+
+.quarto-dark .embedding-heading code,
+.quarto-dark .embedding-button {
+  border-color: #495057;
+  background: #2b3035;
+}
+
+.quarto-dark .embedding-button-primary {
+  border-color: #5a8fd4;
+  background: #5a8fd4;
+  color: #fff;
+}
+
+.quarto-dark .embedding-summary {
+  background: #223047;
+}
+
+.quarto-dark .embedding-summary h3,
+.quarto-dark .embedding-summary dd {
+  color: #e5edf5;
+}
+
+.quarto-dark .embedding-summary-kicker {
+  color: #8bb5ec;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embedding-spinner {
+    animation: none;
+  }
+
+  .embedding-region {
+    transition: none;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .hero-section .hero-title {
@@ -325,5 +650,14 @@ figcaption {
 
   .drilldown-status {
     width: 100%;
+  }
+
+  .embedding-heading {
+    display: block;
+  }
+
+  .embedding-heading code {
+    display: inline-block;
+    margin-top: 0.4rem;
   }
 }
