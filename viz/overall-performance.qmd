@@ -41,35 +41,22 @@ import { createEmbeddingRenderer, fitEmbeddingWidth } from "./embedding-renderer
 //| echo: false
 
 reglDrilldownScatter = {
-  function rectForIndices(points, indices) {
-    let xMin = Infinity;
-    let xMax = -Infinity;
-    let yMin = Infinity;
-    let yMax = -Infinity;
-    for (const i of indices) {
-      const p = points[i];
-      xMin = Math.min(xMin, p.x);
-      xMax = Math.max(xMax, p.x);
-      yMin = Math.min(yMin, p.y);
-      yMax = Math.max(yMax, p.y);
-    }
-    return { xMin, xMax, yMin, yMax, width: xMax - xMin, height: yMax - yMin };
-  }
-
-  function localRegion(points, baseIndices, clickedIndex, scale = 0.32) {
-    const rect = rectForIndices(points, baseIndices);
+  function localRegion(points, baseIndices, clickedIndex) {
     const center = points[clickedIndex];
-    const halfWidth = Math.max((rect.width * scale) / 2, 0.025);
-    const halfHeight = Math.max((rect.height * scale) / 2, 0.025);
-    const x0 = center.x - halfWidth;
-    const x1 = center.x + halfWidth;
-    const y0 = center.y - halfHeight;
-    const y1 = center.y + halfHeight;
-    const selected = baseIndices.filter(i => {
-      const p = points[i];
-      return p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
-    });
-    return selected.length ? selected : [clickedIndex];
+    const targetCount = Math.min(
+      baseIndices.length,
+      Math.max(80, Math.round(Math.sqrt(baseIndices.length))),
+    );
+    return baseIndices
+      .map(i => {
+        const p = points[i];
+        const x = p.x - center.x;
+        const y = p.y - center.y;
+        return { index: i, distance: x * x + y * y };
+      })
+      .sort((left, right) => left.distance - right.distance)
+      .slice(0, targetCount)
+      .map(item => item.index);
   }
 
   return async function(config) {
@@ -77,44 +64,52 @@ reglDrilldownScatter = {
     const width = fitEmbeddingWidth(config.width || 1000);
     const height = Math.round(width * (config.heightRatio || 0.6));
 
-    const container = document.createElement("div");
-    container.className = "drilldown-shell";
+    const container = document.createElement("section");
+    container.className = "embedding-walkthrough patient-embedding-explorer";
+    container.setAttribute("aria-label", `${config.title} interactive explorer`);
 
     const title = document.createElement("div");
-    title.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">${config.title}</strong><br><span style="font-size:0.9rem;color:#6c757d;">${config.subtitle}</span>`;
-    title.style.marginBottom = "8px";
+    title.className = "embedding-heading";
+    title.innerHTML = `<div><strong>${config.title}</strong><span>${config.subtitle}</span></div>`;
     container.appendChild(title);
 
     const plotFrame = document.createElement("div");
-    plotFrame.className = "drilldown-plot-frame";
+    plotFrame.className = "embedding-frame";
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     canvas.style.width = width + "px";
     canvas.style.height = height + "px";
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", `${data.length.toLocaleString()} patient embeddings`);
+    canvas.tabIndex = 0;
     plotFrame.appendChild(canvas);
 
     const tooltip = document.createElement("div");
-    tooltip.style.cssText = "display:none;position:absolute;pointer-events:none;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;padding:8px 12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;max-width:280px;z-index:10;box-shadow:0 2px 4px rgba(0,0,0,0.1);";
-    container.appendChild(tooltip);
+    tooltip.className = "embedding-tooltip";
+    plotFrame.appendChild(tooltip);
 
     const controls = document.createElement("div");
-    controls.className = "drilldown-controls";
-    controls.setAttribute("aria-label", "Zoom navigation");
+    controls.className = "embedding-controls";
+    controls.setAttribute("aria-label", "Embedding walkthrough controls");
     const status = document.createElement("span");
-    status.className = "drilldown-status";
+    status.className = "embedding-status";
+    status.setAttribute("aria-live", "polite");
     const backBtn = document.createElement("button");
-    backBtn.className = "drilldown-button";
+    backBtn.className = "embedding-button";
     backBtn.textContent = "Back";
+    const replayBtn = document.createElement("button");
+    replayBtn.className = "embedding-button";
+    replayBtn.textContent = "Replay";
     const resetBtn = document.createElement("button");
-    resetBtn.className = "drilldown-button";
-    resetBtn.textContent = "Reset zoom";
-    controls.append(status, backBtn, resetBtn);
+    resetBtn.className = "embedding-button";
+    resetBtn.textContent = "Reset view";
+    controls.append(status, backBtn, replayBtn, resetBtn);
     container.appendChild(controls);
     container.appendChild(plotFrame);
 
     const legend = document.createElement("div");
-    legend.className = "drilldown-legend";
+    legend.className = "embedding-legend patient-embedding-legend";
     container.appendChild(legend);
 
     const renderer = createEmbeddingRenderer({
@@ -151,31 +146,34 @@ reglDrilldownScatter = {
 
     function syncControls() {
       const labels = stack.map(d => d.label).join(" / ");
-      status.textContent = `${labels} - ${countLabel(current().indices)}`;
+      status.textContent = `${labels} · ${countLabel(current().indices)}`;
       backBtn.disabled = stack.length <= 1;
+      replayBtn.hidden = stack.length <= 1;
       resetBtn.disabled = stack.length <= 1;
-      container.classList.toggle("is-focused", stack.length > 1);
     }
 
     async function applyCurrent() {
       const state = current();
-      tooltip.style.display = "none";
+      tooltip.classList.remove("is-visible");
       if (state.indices.length === allIndices.length) {
-        scatterplot.unfilter({ preventEvent: true });
+        await renderer.drawOverview();
         await scatterplot.zoomToPoints(allIndices, {
           padding: 0.08,
           transition: true,
           transitionDuration: 520,
         });
       } else {
-        await scatterplot.zoomToPoints(state.indices, {
-          padding: 0.16,
-          transition: true,
-          transitionDuration: 520,
+        await renderer.drawHighlighted(state.indices, {
+          opacity: [0.1, 0.9],
+          pointSize: [2.25, state.indices.length > 100 ? 4 : 7],
         });
-        scatterplot.filter(state.indices, { preventEvent: true });
+        const focusIndices = state.grouped ? allIndices : state.indices;
+        await scatterplot.zoomToPoints(focusIndices, {
+          padding: state.grouped ? 0.08 : 0.25,
+          transition: true,
+          transitionDuration: 620,
+        });
       }
-      scatterplot.deselect({ preventEvent: true });
       syncControls();
     }
 
@@ -200,23 +198,23 @@ reglDrilldownScatter = {
         await pushState(groupIndices, config.groupLabel(groupValue), true);
         return;
       }
-      const region = localRegion(points, state.indices, index, config.regionScale);
-      await pushState(region, `Region ${stack.length}`, state.grouped);
+      const region = localRegion(points, state.indices, index);
+      await pushState(region, `Region ${stack.length}`);
     }
 
     scatterplot.subscribe("pointover", (idx) => {
       const d = data[idx];
       if (!d) return;
       tooltip.innerHTML = config.tooltip(d);
-      tooltip.style.display = "block";
+      tooltip.classList.add("is-visible");
     });
-    scatterplot.subscribe("pointout", () => { tooltip.style.display = "none"; });
+    scatterplot.subscribe("pointout", () => tooltip.classList.remove("is-visible"));
     scatterplot.subscribe("select", async ({ points: selected }) => {
       if (isZooming || !selected?.length) return;
       const currentSet = new Set(current().indices);
       const selectedInView = selected.filter(i => currentSet.has(i));
       if (selectedInView.length > 1) {
-        await pushState(selectedInView, `Selection ${stack.length}`, current().grouped);
+        await pushState(selectedInView, `Selection ${stack.length}`);
       } else if (selectedInView.length === 1) {
         await drillIndex(selectedInView[0]);
       }
@@ -232,7 +230,6 @@ reglDrilldownScatter = {
       if (stack.length <= 1 || isZooming) return;
       isZooming = true;
       stack.pop();
-      if (current().indices.length === allIndices.length) scatterplot.unfilter({ preventEvent: true });
       syncControls();
       await applyCurrent();
       isZooming = false;
@@ -242,8 +239,21 @@ reglDrilldownScatter = {
       if (isZooming) return;
       isZooming = true;
       stack = [{ indices: allIndices, label: "Overview", grouped: false }];
-      scatterplot.unfilter({ preventEvent: true });
       syncControls();
+      await applyCurrent();
+      isZooming = false;
+    });
+
+    replayBtn.addEventListener("click", async () => {
+      if (stack.length <= 1 || isZooming) return;
+      isZooming = true;
+      status.textContent = `Replaying ${current().label} walkthrough`;
+      await renderer.drawOverview();
+      await scatterplot.zoomToPoints(allIndices, {
+        padding: 0.08,
+        transition: true,
+        transitionDuration: 380,
+      });
       await applyCurrent();
       isZooming = false;
     });
@@ -285,15 +295,20 @@ umapSex = {
     renderLegend: (legend, { drillGroup }) => {
       legend.style.cssText = "display:flex;gap:20px;font-size:0.9rem;";
       const female = document.createElement("span");
-      female.className = "drilldown-legend-item";
+      female.className = "patient-embedding-legend-action";
       female.tabIndex = 0;
       female.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#e07b39;margin-right:4px;vertical-align:middle;"></span>Female (n=${femaleCount.toLocaleString()})`;
       const male = document.createElement("span");
-      male.className = "drilldown-legend-item";
+      male.className = "patient-embedding-legend-action";
       male.tabIndex = 0;
       male.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#4a90d9;margin-right:4px;vertical-align:middle;"></span>Male (n=${maleCount.toLocaleString()})`;
       female.addEventListener("click", () => drillGroup(0));
       male.addEventListener("click", () => drillGroup(1));
+      [female, male].forEach(item => item.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        item.click();
+      }));
       legend.append(female, male);
     },
   });
