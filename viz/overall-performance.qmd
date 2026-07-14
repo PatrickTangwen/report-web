@@ -604,7 +604,15 @@ umapAge = {
 }
 ```
 
-## ICD-10 Code Embedding UMAP
+## ICD-10 Code Embedding UMAP {#icd-embedding}
+
+Use the chatbot to request a reviewed ICD Keyword Match, or search the tracked code nodes directly below. Keyword actions are navigation-only and remain separate from Demo Profile comparison.
+
+```{ojs}
+//| echo: false
+
+import { createIcdKeywordScatter } from "./icd-keyword-scatter.js"
+```
 
 ```{ojs}
 //| echo: false
@@ -626,68 +634,42 @@ viewof icdSearch = Inputs.text({ label: "Search ICD code or description", placeh
 
 icdUmap = {
   const query = icdSearch.toLowerCase().trim();
-  const hasQuery = query.length > 0;
-
   const schemeCategory20 = [
     "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd",
     "#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf",
     "#aec7e8","#ffbb78","#98df8a","#ff9896","#c5b0d5",
     "#c49c94","#f7b6d2","#c7c7c7","#dbdb8d","#9edae5"
   ];
-  const chapters = [...new Set(icdData.map(d => d.chapter))];
-  const chapterColorMap = {};
-  chapters.forEach((ch, i) => { chapterColorMap[ch] = schemeCategory20[i % 20]; });
-  const chapterIndexMap = {};
-  chapters.forEach((ch, i) => { chapterIndexMap[ch] = i; });
-
-  const plotData = icdData.map(d => {
-    const match = !hasQuery || d.code.toLowerCase().includes(query) || d.chapter.toLowerCase().includes(query);
-    return { ...d, match };
+  let removeRequestListener = () => {};
+  let chart = null;
+  invalidation.then(() => {
+    removeRequestListener();
+    if (chart) chart.icdKeywordWalkthrough.destroy();
   });
 
-  return reglDrilldownScatter({
-    data: plotData,
-    xField: "umap_1",
-    yField: "umap_2",
-    title: "UMAP of ICD-10 Code Embeddings",
-    subtitle: `${icdData.length.toLocaleString()} codes, coloured by ICD-10 chapter`,
-    scatterSet: {
-      colorBy: "valueA",
-      pointColor: chapters.map(ch => chapterColorMap[ch]),
-      opacityBy: "valueB",
-      opacity: hasQuery ? [0.08, 0.9] : [0.8, 0.8],
-      sizeBy: "valueB",
-      pointSize: hasQuery ? [2.5, 5] : [3, 3],
-    },
-    drawOptions: {
-      zDataType: "categorical",
-      wDataType: "categorical",
-    },
-    zValues: plotData.map(d => chapterIndexMap[d.chapter]),
-    wValues: plotData.map(d => hasQuery ? (d.match ? 1 : 0) : 1),
-    groupAccessor: d => d.chapter,
-    groupLabel: value => value,
-    countNoun: "codes",
-    tooltip: d => `<strong>${d.code}</strong><br>Chapter: ${d.chapter}`,
-    renderLegend: (legend, { drillGroup }) => {
-      legend.style.cssText = "display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;font-size:0.8rem;";
-      for (const ch of chapters) {
-        const count = icdData.filter(d => d.chapter === ch).length;
-        const item = document.createElement("span");
-        item.className = "drilldown-legend-item";
-        item.tabIndex = 0;
-        item.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${chapterColorMap[ch]};margin-right:4px;vertical-align:middle;"></span>${ch} (${count})`;
-        item.addEventListener("click", () => drillGroup(ch));
-        item.addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            drillGroup(ch);
-          }
-        });
-        legend.appendChild(item);
-      }
-    },
+  let helper = window.ALIGATEHR_ICD_KEYWORD;
+  for (let attempt = 0; !helper && attempt < 20; attempt += 1) {
+    await new Promise(resolve => window.setTimeout(resolve, 50));
+    helper = window.ALIGATEHR_ICD_KEYWORD;
+  }
+  if (!helper) throw new Error("The ICD visualization request helper is unavailable.");
+
+  const consumed = helper.consumeRequest(sessionStorage);
+  chart = await createIcdKeywordScatter({
+    data: icdData,
+    createScatterplot,
+    colors: schemeCategory20,
+    searchQuery: query,
+    request: consumed.request,
+    autoplay: consumed.should_play,
   });
+  removeRequestListener = helper.connectRequestConsumer(
+    window,
+    sessionStorage,
+    request => chart.icdKeywordWalkthrough.focus(request),
+  );
+  window.__ALIGATEHR_ICD_READY__ = true;
+  return chart;
 }
 ```
 
