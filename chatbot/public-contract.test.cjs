@@ -33,3 +33,9 @@ test("the message input shows a scrollbar only after real vertical overflow", ()
     /this\.style\.overflowY = this\.scrollHeight > 80 \? "auto" : "hidden"/,
   );
 });
+
+
+test("the message input never displays preset placeholder copy", () => {
+  assert.doesNotMatch(source, /placeholder:\s*["']/);
+  assert.doesNotMatch(source, /input\.placeholder\s*=/);
+});

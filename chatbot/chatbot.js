@@ -90,7 +90,6 @@
   // Input row
   var inputRow = createEl("div", "chatbot-input-row");
   var input = createEl("textarea", "chatbot-input", {
-    placeholder: "Ask a question...",
     rows: "1",
   });
   var sendBtn = createEl("button", "chatbot-send", { "aria-label": "Send" });
@@ -451,10 +450,6 @@
             ? "Profile confirmed"
             : "Build Demo Profile";
     }
-    input.placeholder =
-      phase === "draft"
-        ? "Add synthetic profile details or a correction…"
-        : "Ask a question…";
   }
 
   function startDemoProfile() {
