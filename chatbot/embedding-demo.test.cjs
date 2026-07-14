@@ -129,7 +129,7 @@ test("API authority is resolved once for local preview and deployment", () => {
   );
   assert.equal(
     demo.resolveApiUrl({ hostname: "patricktangwen.github.io" }),
-    "https://patirckistc-report-web.hf.space",
+    "https://aligatehr-gen-backend.onrender.com",
   );
   assert.equal(
     demo.resolveApiUrl({ hostname: "localhost" }, "https://example.test"),

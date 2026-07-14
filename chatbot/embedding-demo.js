@@ -8,7 +8,7 @@
   var REQUEST_KEY = "aligatehr-embedding-visualization-request";
   var REQUEST_EVENT = "aligatehr:embedding-visualization-request";
   var LOCAL_API_URL = "http://127.0.0.1:7860";
-  var REMOTE_API_URL = "https://patirckistc-report-web.hf.space";
+  var REMOTE_API_URL = "https://aligatehr-gen-backend.onrender.com";
 
   function resolveApiUrl(locationLike, override) {
     if (override) return override;
