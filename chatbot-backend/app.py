@@ -222,6 +222,7 @@ def classify_intent(user_message):
 
 @app.get("/health")
 async def health():
+    get_profile_matching_release()
     return {"status": "ok"}
 
 

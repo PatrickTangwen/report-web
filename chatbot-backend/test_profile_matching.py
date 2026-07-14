@@ -11,7 +11,11 @@ from app import app, get_profile_matching_release
 from demo_profile import build_profile_draft, confirm_profile
 from calibrate_profile_matching import calibrate_matching
 from fibrotic_contract import MATCH_FIELDS, PUBLIC_FIELDS
-from profile_matching import match_confirmed_profile, read_matching_release
+from profile_matching import (
+    match_confirmed_profile,
+    read_matching_release,
+    resolve_private_matching_path,
+)
 
 
 def candidate(field, value, unit=None, source=None):
@@ -26,6 +30,66 @@ def candidate(field, value, unit=None, source=None):
 
 def confirmed_profile(*candidates):
     return confirm_profile(build_profile_draft(list(candidates)))
+
+
+def test_private_matching_path_uses_local_artifact_without_dataset_config(
+    tmp_path, monkeypatch
+):
+    monkeypatch.delenv("FIBROTIC_MATCH_DATASET_REPO", raising=False)
+
+    assert resolve_private_matching_path(tmp_path) == (
+        tmp_path / "private" / "fibrotic_match.csv"
+    )
+
+
+def test_private_matching_path_downloads_from_configured_private_dataset(
+    tmp_path, monkeypatch
+):
+    downloaded = tmp_path / "cache" / "fibrotic_match.csv"
+    calls = []
+    monkeypatch.setenv("FIBROTIC_MATCH_DATASET_REPO", "patirckistc/report-web-private")
+    monkeypatch.setenv("FIBROTIC_MATCH_DATASET_REVISION", "release-2026-07-13")
+    monkeypatch.setenv("HF_TOKEN", "test-secret-token")
+
+    def download_file(**kwargs):
+        calls.append(kwargs)
+        return str(downloaded)
+
+    result = resolve_private_matching_path(tmp_path, download_file=download_file)
+
+    assert result == downloaded
+    assert calls == [
+        {
+            "repo_id": "patirckistc/report-web-private",
+            "filename": "fibrotic_match.csv",
+            "repo_type": "dataset",
+            "revision": "release-2026-07-13",
+            "token": "test-secret-token",
+        }
+    ]
+
+
+def test_private_matching_path_requires_token_for_private_dataset(tmp_path, monkeypatch):
+    monkeypatch.setenv("FIBROTIC_MATCH_DATASET_REPO", "patirckistc/report-web-private")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+
+    with pytest.raises(RuntimeError, match="HF_TOKEN secret is required"):
+        resolve_private_matching_path(tmp_path, download_file=lambda **_: None)
+
+
+def test_private_matching_download_error_does_not_expose_token(tmp_path, monkeypatch):
+    secret = "test-secret-token"
+    monkeypatch.setenv("FIBROTIC_MATCH_DATASET_REPO", "patirckistc/report-web-private")
+    monkeypatch.setenv("HF_TOKEN", secret)
+
+    def fail_download(**_):
+        raise OSError(f"authentication failed for {secret}")
+
+    with pytest.raises(RuntimeError) as error:
+        resolve_private_matching_path(tmp_path, download_file=fail_download)
+
+    assert str(error.value) == "Private matching dataset could not be downloaded"
+    assert secret not in str(error.value)
 
 
 @pytest_asyncio.fixture

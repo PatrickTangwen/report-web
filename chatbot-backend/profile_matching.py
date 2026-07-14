@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import json
+import os
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -79,11 +80,42 @@ FEATURE_PRESENTATION = {
     "alcohol_frequency": ("Alcohol frequency", None),
     "affected_relative": ("Affected relative", None),
 }
+
+
+def resolve_private_matching_path(data_dir, download_file=None):
+    dataset_repo = os.environ.get("FIBROTIC_MATCH_DATASET_REPO")
+    if not dataset_repo:
+        return Path(data_dir) / "private" / "fibrotic_match.csv"
+
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        raise RuntimeError(
+            "HF_TOKEN secret is required for the configured private matching dataset"
+        )
+    if download_file is None:
+        from huggingface_hub import hf_hub_download
+
+        download_file = hf_hub_download
+    try:
+        path = download_file(
+            repo_id=dataset_repo,
+            filename="fibrotic_match.csv",
+            repo_type="dataset",
+            revision=os.environ.get("FIBROTIC_MATCH_DATASET_REVISION", "main"),
+            token=token,
+        )
+    except Exception as error:
+        raise RuntimeError(
+            "Private matching dataset could not be downloaded"
+        ) from error
+    return Path(path)
+
+
 @lru_cache(maxsize=1)
 def load_matching_release():
     data_dir = Path(__file__).parent / "data"
     return read_matching_release(
-        data_dir / "private" / "fibrotic_match.csv",
+        resolve_private_matching_path(data_dir),
         data_dir / "fibrotic_release" / "fibrotic_embedding.csv",
         data_dir / "fibrotic_release" / "fibrotic_manifest.json",
         data_dir / "fibrotic_matching_calibration.json",

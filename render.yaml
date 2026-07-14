@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: aligatehr-gen-backend
+    runtime: python
+    plan: free
+    rootDir: chatbot-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.13
+      - key: FIBROTIC_MATCH_DATASET_REPO
+        value: patirckistc/report-web-private
+      - key: FIBROTIC_MATCH_DATASET_REVISION
+        value: fibrotic-2026-07-13
+      - key: HF_TOKEN
+        sync: false
+      - key: LLM_Key_Deepseek
+        sync: false
