@@ -1,3 +1,9 @@
+import {
+  createEmbeddingRenderer,
+  fitEmbeddingWidth,
+} from "./embedding-renderer.js";
+
+
 function normalizeCode(value) {
   return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
@@ -77,65 +83,24 @@ export function createIcdInteraction(config) {
 }
 
 
-export function createIcdRequestQueue(interruptActiveMotion = () => {}) {
+export function createIcdRequestQueue() {
   let generation = 0;
   let tail = Promise.resolve();
-  let hasWork = false;
-
-  function interrupt() {
-    try {
-      return Promise.resolve(interruptActiveMotion()).catch(() => {});
-    } catch (_error) {
-      return Promise.resolve();
-    }
-  }
 
   return {
     enqueue(task) {
       generation += 1;
       const token = generation;
-      const interruption = hasWork ? interrupt() : Promise.resolve();
-      hasWork = true;
       const isCurrent = () => token === generation;
-      const run = Promise.all([tail.catch(() => {}), interruption])
-        .then(() => task(isCurrent));
-      tail = run.catch(() => {}).finally(() => {
-        if (isCurrent()) hasWork = false;
-      });
+      const run = tail.catch(() => {}).then(() => task(isCurrent));
+      tail = run.catch(() => {});
       return run;
     },
     cancel() {
       generation += 1;
-      const interruption = hasWork ? interrupt() : Promise.resolve();
-      hasWork = false;
-      return interruption;
+      return tail.catch(() => {});
     },
   };
-}
-
-
-function normalizePoints(data) {
-  const xs = data.map((point) => Number(point.umap_1));
-  const ys = data.map((point) => Number(point.umap_2));
-  const xMin = Math.min(...xs);
-  const xMax = Math.max(...xs);
-  const yMin = Math.min(...ys);
-  const yMax = Math.max(...ys);
-  const xMid = (xMin + xMax) / 2;
-  const yMid = (yMin + yMax) / 2;
-  const span = Math.max(xMax - xMin, yMax - yMin) || 1;
-  return data.map((point) => ({
-    x: ((Number(point.umap_1) - xMid) / span) * 1.9,
-    y: ((Number(point.umap_2) - yMid) / span) * 1.9,
-  }));
-}
-
-
-function fitWidth(maxWidth) {
-  const main = document.querySelector("main.content") || document.querySelector("main");
-  const mainWidth = main?.clientWidth || maxWidth;
-  const viewportWidth = document.documentElement.clientWidth - 32;
-  return Math.floor(Math.min(maxWidth, Math.max(320, Math.min(mainWidth, viewportWidth))));
 }
 
 
@@ -149,12 +114,11 @@ function element(tag, className, text) {
 
 export async function createIcdKeywordScatter(config) {
   const data = config.data;
-  const normalized = normalizePoints(data);
   const allIndices = data.map((_, index) => index);
   const chapters = [...new Set(data.map((point) => point.chapter))];
   const chapterIndex = new Map(chapters.map((chapter, index) => [chapter, index]));
   const colors = config.colors;
-  const width = fitWidth(config.width || 1000);
+  const width = fitEmbeddingWidth(config.width || 1000);
   const height = Math.max(380, Math.round(width * 0.62));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -214,53 +178,31 @@ export async function createIcdKeywordScatter(config) {
   });
   shell.appendChild(legend);
 
-  const scatterplot = config.createScatterplot({
+  const renderer = createEmbeddingRenderer({
+    data,
+    xField: "umap_1",
+    yField: "umap_2",
+    zValues: data.map((point) => chapterIndex.get(point.chapter)),
     canvas,
     width,
     height,
     pointSize: 3,
     opacity: 0.78,
-    lassoOnLongPress: false,
+    pointColor: colors,
+    createScatterplot: config.createScatterplot,
   });
-  const columns = {
-    x: normalized.map((point) => point.x),
-    y: normalized.map((point) => point.y),
-  };
+  const scatterplot = renderer.scatterplot;
 
   async function drawOverview() {
-    scatterplot.set({
-      colorBy: "valueA",
-      opacityBy: null,
-      sizeBy: null,
-      pointColor: colors,
-      opacity: 0.78,
-      pointSize: 3,
-    });
-    await scatterplot.draw({
-      ...columns,
-      z: data.map((point) => chapterIndex.get(point.chapter)),
-    });
-    scatterplot.deselect({ preventEvent: true });
+    await renderer.drawOverview();
   }
 
   async function drawHighlighted(indices) {
-    const selected = new Set(indices);
-    scatterplot.set({
-      colorBy: "valueA",
-      opacityBy: "valueA",
-      sizeBy: "valueA",
+    await renderer.drawHighlighted(indices, {
       pointColor: ["#aeb7c2", "#2c5aa0"],
       opacity: [0.1, 1],
       pointSize: [2.3, 8],
     });
-    await scatterplot.draw(
-      {
-        ...columns,
-        z: data.map((_, index) => (selected.has(index) ? 1 : 0)),
-      },
-      { preventFilterReset: true },
-    );
-    scatterplot.select(indices, { preventEvent: true });
   }
 
   const interaction = createIcdInteraction({
@@ -269,16 +211,10 @@ export async function createIcdKeywordScatter(config) {
     renderer: {
       drawOverview,
       drawHighlighted,
-      zoomToPoints: (indices, options) => scatterplot.zoomToPoints(indices, options),
+      zoomToPoints: renderer.zoomToPoints,
     },
   });
-  const requestQueue = createIcdRequestQueue(() => {
-    return scatterplot.zoomToPoints(allIndices, {
-      padding: 0.08,
-      transition: true,
-      transitionDuration: 0,
-    });
-  });
+  const requestQueue = createIcdRequestQueue();
   let activeRequest = config.request || null;
   let motionActive = false;
 

@@ -14,7 +14,6 @@ def _load():
     files = {
         "evaluation_metrics": "evaluation_metrics.csv",
         "ablation_results": "ablation_results.csv",
-        "feature_importance": "feature_importance.csv",
         "pathway_enrichment": "pathway_enrichment.csv",
     }
     for key, fname in files.items():
@@ -119,7 +118,6 @@ def match_datasets(query):
     for keywords, name in [
         (_EVAL_KEYWORDS, "evaluation_metrics"),
         (_ABLATION_KEYWORDS, "ablation_results"),
-        (_FEATURE_KEYWORDS, "feature_importance"),
         (_PATHWAY_KEYWORDS, "pathway_enrichment"),
     ]:
         if any(kw in q for kw in keywords):
@@ -132,6 +130,25 @@ def match_datasets(query):
 def is_pathway_query(query):
     q = _normalize(query)
     return any(kw in q for kw in _PATHWAY_KEYWORDS)
+
+
+def is_feature_importance_query(query):
+    q = _normalize(query)
+    has_ranking_intent = any(
+        term in q
+        for term in ("top", "rank", "important", "importance", "contribut")
+    )
+    asks_about_paper = any(
+        term in q for term in ("paper", "article", "manuscript", "study")
+    )
+    if asks_about_paper:
+        return False
+    if "risk factor" in q:
+        return True
+    has_feature_subject = any(
+        term in q for term in ("feature", "variable", "predictor")
+    )
+    return has_feature_subject and has_ranking_intent
 
 
 def is_embedding_query(query):
@@ -164,8 +181,9 @@ def query_data(user_message):
 def format_data_context(results, disease, dataset_names):
     _load()
     parts = []
-    parts.append("Available datasets: evaluation_metrics, ablation_results, "
-                 "feature_importance, pathway_enrichment.")
+    parts.append(
+        "Available datasets: evaluation_metrics, ablation_results, pathway_enrichment."
+    )
     if disease:
         parts.append(f"Detected disease filter: {disease}")
     parts.append(f"Queried datasets: {', '.join(dataset_names)}")

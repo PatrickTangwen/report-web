@@ -1,5 +1,10 @@
 # Visualization Data
 
+> **Current contract (2026-07-13):** this earlier inventory is retained for
+> audit history. The fibrotic patient copy and mock feature-importance file were
+> removed by issue #29. The backend Dataset Release is the sole fibrotic data
+> authority; see `docs/complete-experience-shipped-contract-2026-07-13.md`.
+
 CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embedding files contain **real data**; four remaining files are **mock data**.
 
 ## Files

@@ -34,30 +34,13 @@ createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).defa
 ```{ojs}
 //| echo: false
 
+import { createEmbeddingRenderer, fitEmbeddingWidth } from "./embedding-renderer.js"
+```
+
+```{ojs}
+//| echo: false
+
 reglDrilldownScatter = {
-  function fitWidth(maxWidth = 1000) {
-    const main = document.querySelector("main.content") || document.querySelector("main");
-    const mainWidth = main?.clientWidth || maxWidth;
-    const viewportWidth = document.documentElement.clientWidth - 32;
-    return Math.floor(Math.min(maxWidth, Math.max(320, Math.min(mainWidth, viewportWidth))));
-  }
-
-  function normalizePoints(data, xField, yField) {
-    const xs = data.map(d => +d[xField]);
-    const ys = data.map(d => +d[yField]);
-    const xMin = d3.min(xs);
-    const xMax = d3.max(xs);
-    const yMin = d3.min(ys);
-    const yMax = d3.max(ys);
-    const xMid = (xMin + xMax) / 2;
-    const yMid = (yMin + yMax) / 2;
-    const span = Math.max(xMax - xMin, yMax - yMin) || 1;
-    return data.map(d => ({
-      x: ((+d[xField] - xMid) / span) * 1.9,
-      y: ((+d[yField] - yMid) / span) * 1.9,
-    }));
-  }
-
   function rectForIndices(points, indices) {
     let xMin = Infinity;
     let xMax = -Infinity;
@@ -91,9 +74,7 @@ reglDrilldownScatter = {
 
   return async function(config) {
     const data = config.data;
-    const points = normalizePoints(data, config.xField, config.yField);
-    const allIndices = d3.range(data.length);
-    const width = fitWidth(config.width || 1000);
+    const width = fitEmbeddingWidth(config.width || 1000);
     const height = Math.round(width * (config.heightRatio || 0.6));
 
     const container = document.createElement("div");
@@ -135,23 +116,25 @@ reglDrilldownScatter = {
     legend.className = "drilldown-legend";
     container.appendChild(legend);
 
-    const scatterplot = createScatterplot({
+    const renderer = createEmbeddingRenderer({
+      data,
+      xField: config.xField,
+      yField: config.yField,
+      zValues: config.zValues,
       canvas,
       width,
       height,
       pointSize: config.pointSize || 3,
       opacity: config.opacity || 0.6,
       lassoOnLongPress: true,
+      pointColor: config.scatterSet.pointColor,
+      createScatterplot,
     });
-
-    scatterplot.set(config.scatterSet);
-    await scatterplot.draw({
-      x: points.map(d => d.x),
-      y: points.map(d => d.y),
-      z: config.zValues,
-      w: config.wValues,
-    }, config.drawOptions || {});
-    await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
+    const scatterplot = renderer.scatterplot;
+    const points = renderer.points;
+    const allIndices = renderer.allIndices;
+    await renderer.drawOverview();
+    await renderer.zoomToPoints(allIndices, { padding: 0.08 });
 
     let stack = [{ indices: allIndices, label: "Overview", grouped: false }];
     let isZooming = false;
@@ -279,257 +262,6 @@ reglDrilldownScatter = {
 }
 ```
 
-```{ojs}
-//| echo: false
-
-observableDrilldownPlot = {
-  function fitWidth(maxWidth = 1000) {
-    const main = document.querySelector("main.content") || document.querySelector("main");
-    const mainWidth = main?.clientWidth || maxWidth;
-    const viewportWidth = document.documentElement.clientWidth - 32;
-    return Math.floor(Math.min(maxWidth, Math.max(320, Math.min(mainWidth, viewportWidth))));
-  }
-
-  function extentFor(data, xField, yField, pad = 0.08) {
-    const xExtent = d3.extent(data, d => +d[xField]);
-    const yExtent = d3.extent(data, d => +d[yField]);
-    const xSpan = (xExtent[1] - xExtent[0]) || 1;
-    const ySpan = (yExtent[1] - yExtent[0]) || 1;
-    return {
-      x: [xExtent[0] - xSpan * pad, xExtent[1] + xSpan * pad],
-      y: [yExtent[0] - ySpan * pad, yExtent[1] + ySpan * pad],
-    };
-  }
-
-  function localRegion(data, point, domain, xField, yField, scale = 0.46) {
-    const xSpan = (domain.x[1] - domain.x[0]) * scale;
-    const ySpan = (domain.y[1] - domain.y[0]) * scale;
-    const x0 = +point[xField] - xSpan / 2;
-    const x1 = +point[xField] + xSpan / 2;
-    const y0 = +point[yField] - ySpan / 2;
-    const y1 = +point[yField] + ySpan / 2;
-    const selected = data.filter(d => +d[xField] >= x0 && +d[xField] <= x1 && +d[yField] >= y0 && +d[yField] <= y1);
-    return selected.length ? selected : [point];
-  }
-
-  return function(config) {
-    const width = fitWidth(config.width || 1000);
-    const height = config.height || 650;
-    const marginLeft = config.marginLeft || 40;
-    const marginRight = config.marginRight || 20;
-    const marginTop = config.marginTop || 20;
-    const marginBottom = config.marginBottom || 40;
-
-    const container = document.createElement("div");
-    container.className = "drilldown-shell";
-
-    const titleDiv = document.createElement("div");
-    titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">${config.title}</strong><br><span style="font-size:0.9rem;color:#6c757d;">${config.subtitle}</span>`;
-    titleDiv.style.marginBottom = "8px";
-    container.appendChild(titleDiv);
-
-    const plotFrame = document.createElement("div");
-    plotFrame.className = "drilldown-plot-frame";
-    container.appendChild(plotFrame);
-
-    const controls = document.createElement("div");
-    controls.className = "drilldown-controls";
-    const status = document.createElement("span");
-    status.className = "drilldown-status";
-    const backBtn = document.createElement("button");
-    backBtn.className = "drilldown-button";
-    backBtn.textContent = "Back";
-    const resetBtn = document.createElement("button");
-    resetBtn.className = "drilldown-button";
-    resetBtn.textContent = "Reset zoom";
-    controls.append(status, backBtn, resetBtn);
-    container.appendChild(controls);
-
-    const legendDiv = document.createElement("div");
-    legendDiv.className = "drilldown-legend";
-    container.appendChild(legendDiv);
-
-    let stack = [{
-      data: config.data,
-      label: "Overview",
-      filters: {},
-      domain: extentFor(config.data, config.xField, config.yField),
-    }];
-
-    function current() {
-      return stack[stack.length - 1];
-    }
-
-    function makeState(data, label, filters) {
-      return { data, label, filters, domain: extentFor(data, config.xField, config.yField) };
-    }
-
-    function syncControls() {
-      const labels = stack.map(d => d.label).join(" / ");
-      status.textContent = `${labels} - ${current().data.length.toLocaleString()} ${config.countNoun || "points"}`;
-      backBtn.disabled = stack.length <= 1;
-      resetBtn.disabled = stack.length <= 1;
-      container.classList.toggle("is-focused", stack.length > 1);
-    }
-
-    function drillGroup(value) {
-      if (!config.groupField) return;
-      const data = config.data.filter(d => d[config.groupField] === value);
-      stack.push(makeState(data, config.groupLabel(value), { group: value }));
-      render();
-    }
-
-    function drillDatum(d) {
-      const state = current();
-      if (config.groupField && !state.filters.group && d[config.groupField] != null) {
-        drillGroup(d[config.groupField]);
-        return;
-      }
-      if (config.subgroupField && !state.filters.subgroup && d[config.subgroupField] != null) {
-        const value = d[config.subgroupField];
-        const data = state.data.filter(row => row[config.subgroupField] === value);
-        stack.push(makeState(data, config.subgroupLabel(value), { ...state.filters, subgroup: value }));
-        render();
-        return;
-      }
-      const data = localRegion(state.data, d, state.domain, config.xField, config.yField, config.regionScale);
-      stack.push(makeState(data, `Region ${stack.length}`, { ...state.filters, region: stack.length }));
-      render();
-    }
-
-    function pointFromEvent(event, domain) {
-      let px;
-      let py;
-      if (event.currentTarget.createSVGPoint) {
-        const point = event.currentTarget.createSVGPoint();
-        point.x = event.clientX;
-        point.y = event.clientY;
-        const svgPoint = point.matrixTransform(event.currentTarget.getScreenCTM().inverse());
-        px = svgPoint.x;
-        py = svgPoint.y;
-      } else {
-        const rect = event.currentTarget.getBoundingClientRect();
-        px = (event.clientX - rect.left) * (width / rect.width);
-        py = (event.clientY - rect.top) * (height / rect.height);
-      }
-      if (px < marginLeft || px > width - marginRight || py < marginTop || py > height - marginBottom) return null;
-      const innerWidth = width - marginLeft - marginRight;
-      const innerHeight = height - marginTop - marginBottom;
-      return {
-        [config.xField]: domain.x[0] + ((px - marginLeft) / innerWidth) * (domain.x[1] - domain.x[0]),
-        [config.yField]: domain.y[1] - ((py - marginTop) / innerHeight) * (domain.y[1] - domain.y[0]),
-        __px: px,
-        __py: py,
-      };
-    }
-
-    function nearestDatum(data, point, domain) {
-      const innerWidth = width - marginLeft - marginRight;
-      const innerHeight = height - marginTop - marginBottom;
-      let best = null;
-      let bestDistance = Infinity;
-      for (const d of data) {
-        const px = marginLeft + ((+d[config.xField] - domain.x[0]) / (domain.x[1] - domain.x[0])) * innerWidth;
-        const py = marginTop + (1 - ((+d[config.yField] - domain.y[0]) / (domain.y[1] - domain.y[0]))) * innerHeight;
-        const distance = (px - point.__px) ** 2 + (py - point.__py) ** 2;
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          best = d;
-        }
-      }
-      return best;
-    }
-
-    function renderLegend(state) {
-      legendDiv.innerHTML = "";
-      if (!config.legendValues?.length) return;
-      legendDiv.style.cssText = config.legendStyle || "display:flex;flex-wrap:wrap;gap:12px;";
-      for (const value of config.legendValues) {
-        const count = state.data.filter(d => d[config.groupField] === value).length;
-        if (!count) continue;
-        const item = document.createElement("span");
-        item.className = "drilldown-legend-item";
-        item.tabIndex = 0;
-        item.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${config.legendColor(value)};margin-right:4px;vertical-align:middle;"></span>${config.legendLabel(value, count)}`;
-        item.addEventListener("click", () => drillGroup(value));
-        item.addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            drillGroup(value);
-          }
-        });
-        legendDiv.appendChild(item);
-      }
-    }
-
-    function render() {
-      const state = current();
-      const chart = Plot.plot({
-        width,
-        height,
-        marginLeft,
-        marginRight,
-        marginTop,
-        marginBottom,
-        x: { label: config.xLabel, domain: state.domain.x },
-        y: { label: config.yLabel, domain: state.domain.y },
-        marks: [
-          Plot.dot(state.data, {
-            x: config.xField,
-            y: config.yField,
-            fill: d => config.color(d),
-            fillOpacity: d => config.opacity ? config.opacity(d) : 0.75,
-            r: d => config.radius ? config.radius(d) : 3,
-            stroke: d => config.stroke ? config.stroke(d) : "none",
-            strokeWidth: config.strokeWidth || 0.5,
-            tip: true,
-            title: d => config.tooltip(d),
-          }),
-        ],
-      });
-      plotFrame.replaceChildren(chart);
-      plotFrame.animate([{ opacity: 0.45 }, { opacity: 1 }], { duration: 180, easing: "ease-out" });
-      chart.querySelectorAll("circle").forEach((node, index) => {
-        const datum = state.data[index];
-        if (!datum) return;
-        node.style.cursor = "zoom-in";
-        node.tabIndex = 0;
-        node.addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            drillDatum(datum);
-          }
-        });
-      });
-      chart.addEventListener("click", event => {
-        const point = pointFromEvent(event, state.domain);
-        if (!point) return;
-        drillDatum(nearestDatum(state.data, point, state.domain) || point);
-      });
-      renderLegend(state);
-      syncControls();
-    }
-
-    backBtn.addEventListener("click", () => {
-      if (stack.length <= 1) return;
-      stack.pop();
-      render();
-    });
-    resetBtn.addEventListener("click", () => {
-      stack = [{
-        data: config.data,
-        label: "Overview",
-        filters: {},
-        domain: extentFor(config.data, config.xField, config.yField),
-      }];
-      render();
-    });
-
-    render();
-    return container;
-  };
-}
-```
 
 ```{ojs}
 //| echo: false

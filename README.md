@@ -1,5 +1,11 @@
 # ALIGATEHR-Gen Research Website
 
+> **Current contract (2026-07-13):** the structure and feature inventory below
+> preserves the project's earlier state. Issue #29 removes the legacy clinical
+> risk flow, mock Top-10 ranking, and duplicate fibrotic CSV. Use
+> `docs/complete-experience-shipped-contract-2026-07-13.md` for the current
+> shipped boundary and deployment status.
+
 A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction in the UK Biobank. Features interactive data visualization dashboards and an AI-powered research chatbot.
 
 ## Tech Stack
