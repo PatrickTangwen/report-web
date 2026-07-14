@@ -6,6 +6,7 @@
   var API_URL = DEMO.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
   var STORAGE_PREFIX = "aligatehr-chatbot-";
   var profileSession = PROFILE.create(sessionStorage);
+  var profileMatchController = DEMO.createRequestController();
   var PROFILE_CHOICES = {
     sex: [
       ["female", "Female"],
@@ -328,13 +329,18 @@
     button.disabled = true;
     button.textContent = "Preparing demo…";
     status.textContent = "Loading the current dataset release.";
+    var coldStartNotice = setTimeout(function () {
+      status.textContent = "The backend is still waking from a cold start. You remain in control and can retry if it times out.";
+    }, 4000);
 
-    fetch(API_URL + "/embedding/fibrotic/preset", { cache: "no-store" })
-      .then(function (response) {
-        if (!response.ok) throw new Error("API returned " + response.status);
-        return response.json();
-      })
+    DEMO.requestJson(
+      fetch,
+      API_URL + "/embedding/fibrotic/preset",
+      { cache: "no-store" },
+      30000,
+    )
       .then(function (preset) {
+        clearTimeout(coldStartNotice);
         var request = DEMO.createPresetRequest(preset);
         DEMO.saveRequest(sessionStorage, request);
         DEMO.notifyRequest(window, request);
@@ -354,6 +360,7 @@
         }
       })
       .catch(function (error) {
+        clearTimeout(coldStartNotice);
         button.disabled = false;
         button.textContent = "Try animated demo";
         status.textContent = "The demo backend is unavailable. Please try again.";
@@ -808,6 +815,7 @@
 
   function renderCohortComparison(result) {
     var comparison = result.cohort_comparison_result;
+    var coverage = comparison.profile_coverage || {};
     var card = createEl(
       "div",
       "chatbot-msg chatbot-msg-assistant chatbot-match-result",
@@ -817,31 +825,64 @@
     title.textContent = "Cohort Comparison Result";
     var target = createEl("p", "chatbot-match-target");
     target.textContent = "Target: " + targetLabel(comparison.target);
-    card.append(title, target);
+    var presentation = {
+      insufficient_profile_coverage: ["Coverage needed", "is-coverage-needed"],
+      no_stable_neighborhood: ["No stable neighborhood", "is-no-result"],
+      matched_reference_neighborhood: ["Matched neighborhood", "is-matched"],
+    }[comparison.status] || ["Comparison status", "is-no-result"];
+    card.classList.add(presentation[1]);
+    var resultStatus = createEl("div", "chatbot-result-status");
+    resultStatus.textContent = presentation[0];
+    var coverageDetails = createEl("p", "chatbot-match-coverage");
+    var availableDomains = coverage.available_domains || [];
+    var unavailableDomains = coverage.unavailable_domains || [];
+    coverageDetails.textContent =
+      "Profile Coverage — available domains: " +
+      (availableDomains.length ? availableDomains.map(formatDomain).join(", ") : "none") +
+      "; unavailable domains: " +
+      (unavailableDomains.length ? unavailableDomains.map(formatDomain).join(", ") : "none") +
+      ". Missing domains were not imputed or treated as matches.";
+    var outsideSupport = coverage.outside_reference_support_domains || [];
+    if (outsideSupport.length) {
+      coverageDetails.textContent +=
+        " Values in these domains were outside this cohort's reference support and were preserved without clamping: " +
+        outsideSupport.map(formatDomain).join(", ") + ".";
+    }
+    card.append(title, target, resultStatus, coverageDetails);
 
     if (comparison.status === "insufficient_profile_coverage") {
-      var missing = comparison.profile_coverage.recommended_missing_domain;
+      var recommendation = coverage.coverage_recommendation;
       var coverageCopy = createEl("p", "chatbot-profile-notice");
-      coverageCopy.textContent = missing
-        ? "The confirmed profile does not match a calibrated coverage pattern for this target. Add the " +
-          formatDomain(missing) + " domain, then confirm again."
+      var recommendationCopy = recommendation
+        ? recommendation.missing_domains.map(function (domain) {
+            var measurements = recommendation.measurements_by_domain[domain] || [];
+            return formatDomain(domain) +
+              (measurements.length ? " (for example, " + measurements.join(" or ") + ")" : "");
+          }).join("; ")
+        : "";
+      coverageCopy.textContent = recommendation
+        ? "The confirmed profile does not match a calibrated coverage pattern for this target. " +
+          "To reach the nearest complete calibrated pattern, add: " + recommendationCopy +
+          ". Missing fields were not treated as matches."
         : "The confirmed profile does not match a calibrated coverage pattern for this target.";
       card.appendChild(coverageCopy);
     } else if (comparison.status === "no_stable_neighborhood") {
       var emptyCopy = createEl("p", "chatbot-profile-notice");
       emptyCopy.textContent =
         "No Stable Neighborhood: fewer than five references satisfied the validated threshold. " +
-        "The system did not force nearest neighbors into the result.";
+        "The system did not force nearest neighbors into the result. This does not mean " +
+        "comparable people do not exist outside this research cohort." +
+        (outsideSupport.length
+          ? " Confirmed values in the " + outsideSupport.map(formatDomain).join(", ") +
+            " domain were outside this cohort's reference support and were preserved without clamping."
+          : "");
       card.appendChild(emptyCopy);
     } else {
       var matchedCopy = createEl("p", "chatbot-profile-notice");
       matchedCopy.textContent =
         comparison.neighborhood_size +
         " threshold-qualified reference patients were selected from the confirmed target cohort.";
-      var coverage = createEl("p", "chatbot-match-coverage");
-      coverage.textContent =
-        "Matching domains: " + comparison.matching_domains.map(formatDomain).join(", ") + ".";
-      card.append(matchedCopy, coverage);
+      card.appendChild(matchedCopy);
       renderAggregateDomains(card, result.aggregate_callout_data);
       var limitations = createEl("p", "chatbot-match-limitations");
       limitations.textContent = comparison.limitations.join(" ");
@@ -879,26 +920,40 @@
     button.disabled = true;
     select.disabled = true;
     status.textContent = "Checking calibrated Profile Coverage and reference distances…";
-    fetch(API_URL + "/profile/match", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        confirmed_profile: state.confirmed,
-        target: select.value,
-      }),
-    })
-      .then(function (response) {
-        if (!response.ok) throw new Error("API returned " + response.status);
-        return response.json();
-      })
+    var run = profileMatchController.start();
+    var coldStartNotice = setTimeout(function () {
+      if (profileMatchController.isCurrent(run.token)) {
+        status.textContent = "The backend is still waking from a cold start. This request will time out with a Retry option rather than using stale results.";
+      }
+    }, 4000);
+    DEMO.requestJson(
+      fetch,
+      API_URL + "/profile/match",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          confirmed_profile: state.confirmed,
+          target: select.value,
+        }),
+        signal: run.signal,
+      },
+      30000,
+    )
       .then(function (result) {
+        clearTimeout(coldStartNotice);
+        if (!profileMatchController.isCurrent(run.token)) return;
         status.textContent = "Comparison complete.";
         renderCohortComparison(result);
       })
       .catch(function (error) {
+        clearTimeout(coldStartNotice);
+        if (!profileMatchController.isCurrent(run.token)) return;
         button.disabled = false;
         select.disabled = false;
-        status.textContent = "The comparison backend is unavailable. Please try again.";
+        status.textContent = error.message && error.message.toLowerCase().includes("timed out")
+          ? "The comparison timed out while the backend was waking. Retry when ready."
+          : "The comparison backend is unavailable. Retry when ready.";
         console.error("Profile matching error:", error);
       });
   }
@@ -931,6 +986,7 @@
   }
 
   function startOverDemoProfile() {
+    profileMatchController.cancel();
     profileSession.reset();
     history = history.filter(function (item) { return item.scope !== "profile"; });
     messagesEl.querySelectorAll("[data-profile-scope]").forEach(function (element) {

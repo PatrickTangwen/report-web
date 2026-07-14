@@ -1,3 +1,6 @@
+let embeddingInstanceCounter = 0;
+
+
 export function normalizePoints(data) {
   const xs = data.map((point) => Number(point.tsne_x));
   const ys = data.map((point) => Number(point.tsne_y));
@@ -24,6 +27,144 @@ export function resolveReferenceIndices(data, visualReferenceIds) {
     throw new Error("Visualization request points are outside the active dataset release");
   }
   return visualReferenceIds.map((id) => indexById.get(id));
+}
+
+
+function squaredDistance(points, left, right) {
+  const x = points[left].x - points[right].x;
+  const y = points[left].y - points[right].y;
+  return x * x + y * y;
+}
+
+
+export function classifyDisplayRegions(data, visualReferenceIds, minimumRegionSize) {
+  const selectedIndices = resolveReferenceIndices(data, visualReferenceIds);
+  if (!Number.isInteger(minimumRegionSize) || minimumRegionSize < 1) {
+    throw new Error("Display-region classification requires a positive release minimum");
+  }
+  if (!selectedIndices.length) {
+    return { mode: "overview", regions: [], selected_indices: selectedIndices };
+  }
+  const target = data[selectedIndices[0]].disease;
+  if (selectedIndices.some((index) => data[index].disease !== target)) {
+    throw new Error("A matched visualization request must stay inside one target cohort");
+  }
+
+  const normalized = normalizePoints(data);
+  const targetIndices = data
+    .map((point, index) => (point.disease === target ? index : null))
+    .filter((index) => index !== null);
+  if (targetIndices.length <= minimumRegionSize) {
+    return { mode: "overview", regions: [], selected_indices: selectedIndices };
+  }
+
+  const localRadius = new Map();
+  selectedIndices.forEach((selectedIndex) => {
+    const distances = targetIndices
+      .filter((index) => index !== selectedIndex)
+      .map((index) => squaredDistance(normalized, selectedIndex, index))
+      .sort((left, right) => left - right);
+    localRadius.set(selectedIndex, distances[minimumRegionSize - 1]);
+  });
+
+  const neighbors = new Map(selectedIndices.map((index) => [index, []]));
+  selectedIndices.forEach((left, leftPosition) => {
+    selectedIndices.slice(leftPosition + 1).forEach((right) => {
+      const threshold = Math.min(localRadius.get(left), localRadius.get(right));
+      if (squaredDistance(normalized, left, right) <= threshold) {
+        neighbors.get(left).push(right);
+        neighbors.get(right).push(left);
+      }
+    });
+  });
+
+  const unseen = new Set(selectedIndices);
+  const components = [];
+  selectedIndices.forEach((start) => {
+    if (!unseen.has(start)) return;
+    const component = [];
+    const queue = [start];
+    unseen.delete(start);
+    while (queue.length) {
+      const current = queue.shift();
+      component.push(current);
+      neighbors.get(current).forEach((neighbor) => {
+        if (!unseen.has(neighbor)) return;
+        unseen.delete(neighbor);
+        queue.push(neighbor);
+      });
+    }
+    components.push(component);
+  });
+
+  const isLocallyCentered = (component) => {
+    const center = component.reduce(
+      (total, index) => ({
+        x: total.x + normalized[index].x / component.length,
+        y: total.y + normalized[index].y / component.length,
+      }),
+      { x: 0, y: 0 },
+    );
+    return component.every((index) => {
+      const x = normalized[index].x - center.x;
+      const y = normalized[index].y - center.y;
+      return x * x + y * y <= localRadius.get(index);
+    });
+  };
+  const safeComponents = components.every((component) =>
+    component.length >= minimumRegionSize && isLocallyCentered(component),
+  );
+
+  if (components.length === 1 && safeComponents) {
+    return { mode: "compact", regions: components, selected_indices: selectedIndices };
+  }
+  if (components.length > 1 && safeComponents) {
+    return { mode: "multi_region", regions: components, selected_indices: selectedIndices };
+  }
+  return { mode: "overview", regions: [], selected_indices: selectedIndices };
+}
+
+
+export function createRegionNavigator(regions) {
+  let index = 0;
+  return {
+    back() {
+      index = Math.max(0, index - 1);
+      return this.state();
+    },
+    next() {
+      index = Math.min(regions.length - 1, index + 1);
+      return this.state();
+    },
+    state() {
+      return {
+        index,
+        count: regions.length,
+        region: regions[index],
+        canBack: index > 0,
+        canNext: index < regions.length - 1,
+      };
+    },
+  };
+}
+
+
+export function regionOutlinePercentages(points, regions) {
+  return regions.map((region, index) => {
+    const xs = region.map((pointIndex) => points[pointIndex].x);
+    const ys = region.map((pointIndex) => points[pointIndex].y);
+    const centerX = ((Math.min(...xs) + Math.max(...xs)) / 2 + 1) * 50;
+    const centerY = (1 - (Math.min(...ys) + Math.max(...ys)) / 2) * 50;
+    const width = Math.max(6, (Math.max(...xs) - Math.min(...xs)) * 50 + 4);
+    const height = Math.max(8, (Math.max(...ys) - Math.min(...ys)) * 50 + 6);
+    return {
+      label: String(index + 1),
+      left: Math.max(0, Math.min(100 - width, centerX - width / 2)),
+      top: Math.max(0, Math.min(100 - height, centerY - height / 2)),
+      width,
+      height,
+    };
+  });
 }
 
 
@@ -69,6 +210,52 @@ export function createRunController() {
       return token === currentToken;
     },
   };
+}
+
+
+export function createRendererQueue() {
+  let tail = Promise.resolve();
+  return {
+    run(operation) {
+      tail = tail.catch(() => {}).then(operation);
+      return tail;
+    },
+  };
+}
+
+
+export function layoutForRequest(data, request, indices) {
+  if (request?.type === "matched_reference_neighborhood") {
+    if (!Number.isInteger(request.minimum_region_size) || request.minimum_region_size < 1) {
+      throw new Error("Matched visualization request is missing its geometry contract");
+    }
+    return classifyDisplayRegions(
+      data,
+      request.visual_reference_ids,
+      request.minimum_region_size,
+    );
+  }
+  if (request?.display_mode === "compact") {
+    return { mode: "compact", regions: [indices], selected_indices: indices };
+  }
+  if (request?.display_mode === "overview") {
+    return { mode: "overview", regions: [], selected_indices: indices };
+  }
+  if (request?.display_mode === "multi_region") {
+    if (!Number.isInteger(request.minimum_region_size) || request.minimum_region_size < 1) {
+      throw new Error("Multi-region preset is missing its geometry contract");
+    }
+    const layout = classifyDisplayRegions(
+      data,
+      request.visual_reference_ids,
+      request.minimum_region_size,
+    );
+    if (layout.mode !== "multi_region") {
+      throw new Error("Multi-region preset does not match its release geometry");
+    }
+    return layout;
+  }
+  throw new Error("Visualization request has an unsupported display mode");
 }
 
 
@@ -119,6 +306,8 @@ export async function createEmbeddingScatter(config) {
   const width = fitWidth(config.width || 1000);
   const height = Math.max(380, Math.round(width * 0.62));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  embeddingInstanceCounter += 1;
+  const instanceId = `fibrotic-walkthrough-${embeddingInstanceCounter}`;
 
   const shell = document.createElement("section");
   shell.className = "embedding-walkthrough";
@@ -139,7 +328,10 @@ export async function createEmbeddingScatter(config) {
   canvas.height = height;
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
+  canvas.setAttribute("role", "img");
   canvas.setAttribute("aria-label", `${data.length.toLocaleString()} reference points`);
+  canvas.setAttribute("aria-describedby", `${instanceId}-summary`);
+  canvas.tabIndex = 0;
   frame.appendChild(canvas);
 
   const region = document.createElement("div");
@@ -153,6 +345,11 @@ export async function createEmbeddingScatter(config) {
     "</svg>";
   frame.appendChild(region);
 
+  const multiRegionOverview = document.createElement("div");
+  multiRegionOverview.className = "embedding-multi-region-overview";
+  multiRegionOverview.setAttribute("aria-hidden", "true");
+  frame.appendChild(multiRegionOverview);
+
   const tooltip = document.createElement("div");
   tooltip.className = "embedding-tooltip";
   frame.appendChild(tooltip);
@@ -165,14 +362,35 @@ export async function createEmbeddingScatter(config) {
   status.setAttribute("aria-live", "polite");
   status.textContent = "Overview · waiting for a walkthrough request";
   const playButton = button("Play walkthrough", "embedding-button embedding-button-primary");
+  const backButton = button("Back region");
+  backButton.setAttribute("aria-label", "Show previous display region");
+  const regionStatus = document.createElement("span");
+  regionStatus.className = "embedding-region-status";
+  regionStatus.setAttribute("aria-live", "polite");
+  const nextButton = button("Next region");
+  nextButton.setAttribute("aria-label", "Show next display region");
   const replayButton = button("Replay");
   const resetButton = button("Reset view");
+  backButton.hidden = true;
+  regionStatus.hidden = true;
+  nextButton.hidden = true;
   replayButton.hidden = true;
-  controls.append(status, playButton, replayButton, resetButton);
+  controls.append(
+    status,
+    playButton,
+    backButton,
+    regionStatus,
+    nextButton,
+    replayButton,
+    resetButton,
+  );
   shell.appendChild(controls);
 
   const summary = document.createElement("aside");
   summary.className = "embedding-summary";
+  summary.id = `${instanceId}-summary`;
+  summary.setAttribute("role", "region");
+  summary.setAttribute("aria-label", "Matched reference neighborhood summary");
   summary.tabIndex = -1;
   summary.hidden = true;
   shell.appendChild(summary);
@@ -201,9 +419,14 @@ export async function createEmbeddingScatter(config) {
     y: normalized.map((point) => point.y),
   };
   let activeRequest = config.request || config.preset;
+  let activeLayout = null;
+  let regionNavigator = null;
+  let regionTransitionActive = false;
   const runController = createRunController();
+  const regionController = createRunController();
+  const rendererQueue = createRendererQueue();
 
-  async function drawOverview() {
+  async function renderOverview() {
     scatterplot.set({
       colorBy: "valueA",
       opacityBy: null,
@@ -219,38 +442,122 @@ export async function createEmbeddingScatter(config) {
     scatterplot.deselect({ preventEvent: true });
   }
 
-  async function drawDimmed() {
-    scatterplot.set({
-      colorBy: "valueA",
-      opacityBy: null,
-      sizeBy: null,
-      pointColor: ["#aeb7c2"],
-      opacity: 0.2,
-      pointSize: 2.5,
-    });
-    await scatterplot.draw({ ...columns, z: data.map(() => 0) });
+  function drawOverview() {
+    return rendererQueue.run(renderOverview);
   }
 
-  async function drawHighlighted(indices) {
-    const selected = new Set(indices);
-    scatterplot.set({
-      colorBy: "valueA",
-      opacityBy: "valueA",
-      sizeBy: "valueA",
-      pointColor: ["#aeb7c2", "#1565c0"],
-      opacity: [0.14, 1],
-      pointSize: [2.5, 8],
+  function drawDimmed() {
+    return rendererQueue.run(async () => {
+      scatterplot.set({
+        colorBy: "valueA",
+        opacityBy: null,
+        sizeBy: null,
+        pointColor: ["#aeb7c2"],
+        opacity: 0.2,
+        pointSize: 2.5,
+      });
+      await scatterplot.draw({ ...columns, z: data.map(() => 0) });
     });
-    await scatterplot.draw(
-      { ...columns, z: data.map((_, index) => (selected.has(index) ? 1 : 0)) },
-      { preventFilterReset: true },
-    );
-    scatterplot.select(indices, { preventEvent: true });
   }
 
-  function showCallout(request) {
+  function drawHighlighted(indices) {
+    return rendererQueue.run(async () => {
+      const selected = new Set(indices);
+      scatterplot.set({
+        colorBy: "valueA",
+        opacityBy: "valueA",
+        sizeBy: "valueA",
+        pointColor: ["#aeb7c2", "#1565c0"],
+        opacity: [0.14, 1],
+        pointSize: [2.5, 8],
+      });
+      await scatterplot.draw(
+        { ...columns, z: data.map((_, index) => (selected.has(index) ? 1 : 0)) },
+        { preventFilterReset: true },
+      );
+      scatterplot.select(indices, { preventEvent: true });
+    });
+  }
+
+  function zoomToPoints(indices, options) {
+    return rendererQueue.run(() => scatterplot.zoomToPoints(indices, options));
+  }
+
+  function restoreOverview() {
+    return rendererQueue.run(async () => {
+      await renderOverview();
+      await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
+    });
+  }
+
+  function hideRegionNavigation() {
+    backButton.hidden = true;
+    regionStatus.hidden = true;
+    nextButton.hidden = true;
+  }
+
+  function hideMultiRegionOverview() {
+    multiRegionOverview.classList.remove("is-visible");
+    multiRegionOverview.replaceChildren();
+  }
+
+  function showMultiRegionOverview(layout) {
+    multiRegionOverview.replaceChildren();
+    regionOutlinePercentages(normalized, layout.regions).forEach((outline) => {
+      const marker = document.createElement("div");
+      marker.className = "embedding-region-outline";
+      marker.style.left = `${outline.left}%`;
+      marker.style.top = `${outline.top}%`;
+      marker.style.width = `${outline.width}%`;
+      marker.style.height = `${outline.height}%`;
+      const label = document.createElement("span");
+      label.textContent = outline.label;
+      marker.appendChild(label);
+      multiRegionOverview.appendChild(marker);
+    });
+    multiRegionOverview.classList.add("is-visible");
+  }
+
+  function updateRegionNavigation() {
+    if (!regionNavigator || activeLayout?.mode !== "multi_region") {
+      hideRegionNavigation();
+      return;
+    }
+    const navigation = regionNavigator.state();
+    backButton.hidden = false;
+    regionStatus.hidden = false;
+    nextButton.hidden = false;
+    backButton.disabled = !navigation.canBack;
+    nextButton.disabled = !navigation.canNext;
+    regionStatus.textContent = `Display region ${navigation.index + 1} of ${navigation.count}`;
+  }
+
+  async function focusCurrentRegion(animate) {
+    const token = regionController.start();
+    regionTransitionActive = true;
+    const navigation = regionNavigator.state();
+    backButton.disabled = true;
+    nextButton.disabled = true;
+    status.textContent =
+      `Display region ${navigation.index + 1} of ${navigation.count} · ` +
+      `${navigation.region.length} highlighted reference points`;
+    region.classList.add("is-visible");
+    try {
+      await zoomToPoints(navigation.region, {
+        padding: 0.25,
+        transition: animate,
+        transitionDuration: animate ? 620 : 0,
+      });
+    } finally {
+      if (regionController.isCurrent(token)) regionTransitionActive = false;
+    }
+    if (!regionController.isCurrent(token)) return;
+    updateRegionNavigation();
+  }
+
+  function showCallout(request, layout) {
     const copy = walkthroughCopy(request);
-    region.classList.toggle("is-visible", request.display_mode === "compact");
+    region.classList.toggle("is-visible", layout.mode !== "overview");
     summary.hidden = false;
     summary.replaceChildren();
     const kicker = document.createElement("div");
@@ -264,6 +571,14 @@ export async function createEmbeddingScatter(config) {
     [
       ["Reference points", request.summary.reference_count],
       ["Target", config.displayName(request.target)],
+      [
+        "Display layout",
+        layout.mode === "compact"
+          ? "One compact display region"
+          : layout.mode === "multi_region"
+            ? `${layout.regions.length} separated display regions`
+            : "Dispersed overview",
+      ],
     ].forEach(([term, value]) => {
       const pair = document.createElement("div");
       const key = document.createElement("dt");
@@ -278,6 +593,15 @@ export async function createEmbeddingScatter(config) {
     note.textContent =
       "Display preset only; no query patient is embedded and no clinical similarity or personal outcome is inferred.";
     summary.append(kicker, title, description, details, note);
+    const layoutNote = document.createElement("p");
+    layoutNote.className = "embedding-layout-note";
+    layoutNote.textContent =
+      layout.mode === "compact"
+        ? "The highlighted references occupy one local display region. This region is an annotation aid, not a clinical cluster."
+        : layout.mode === "multi_region"
+          ? "The highlighted references occupy separated display regions. Use Back and Next to inspect them; the regions are annotation aids, not clinical subtypes."
+          : "The highlighted references are broadly dispersed, so the full embedding overview is preserved instead of drawing a misleading region.";
+    summary.insertBefore(layoutNote, note);
     if (Array.isArray(request.summary.domains)) {
       request.summary.domains.forEach((domain) => {
         const domainSection = document.createElement("section");
@@ -307,14 +631,33 @@ export async function createEmbeddingScatter(config) {
     status.textContent = `Walkthrough complete · ${request.summary.reference_count} reference points highlighted`;
     replayButton.hidden = false;
     playButton.hidden = true;
+    updateRegionNavigation();
   }
 
   async function play(request, animate = !reducedMotion) {
     activeRequest = request;
     const token = runController.start();
-    const indices = resolveReferenceIndices(data, request.visual_reference_ids);
+    regionController.cancel();
+    regionTransitionActive = false;
+    let indices;
+    let layout;
+    try {
+      indices = resolveReferenceIndices(data, request.visual_reference_ids);
+      layout = layoutForRequest(data, request, indices);
+    } catch (error) {
+      cancelRun(
+        "The visualization request does not match the active Dataset Release. Start the comparison again.",
+      );
+      return;
+    }
+    activeLayout = layout;
+    regionNavigator = layout.regions.length
+      ? createRegionNavigator(layout.regions)
+      : null;
     region.classList.remove("is-visible");
     summary.hidden = true;
+    hideRegionNavigation();
+    hideMultiRegionOverview();
     playButton.disabled = true;
     replayButton.disabled = true;
     resetButton.disabled = true;
@@ -323,7 +666,7 @@ export async function createEmbeddingScatter(config) {
       if (stage === "overview") {
         status.textContent = "Overview · preparing reference cohort";
         await drawOverview();
-        await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
+        await zoomToPoints(allIndices, { padding: 0.08 });
         await delay(380);
       } else if (stage === "dim") {
         status.textContent = "Dimming unrelated reference points";
@@ -334,23 +677,28 @@ export async function createEmbeddingScatter(config) {
         await drawHighlighted(indices);
         if (animate) await delay(420);
       } else if (stage === "zoom") {
-        const focusIndices = walkthroughFocusIndices(
-          request.display_mode,
-          allIndices,
-          indices,
-        );
-        status.textContent = request.display_mode === "overview"
-          ? "Keeping the dispersed selection in the full embedding overview"
-          : request.display_mode === "matched_selection"
-            ? "Fitting the exact matched reference selection"
-            : "Zooming to the display region";
-        await scatterplot.zoomToPoints(focusIndices, {
-          padding: request.display_mode === "overview" ? 0.08 : 0.25,
-          transition: animate,
-          transitionDuration: animate ? 760 : 0,
-        });
+        if (layout.mode === "multi_region") {
+          if (animate) {
+            status.textContent = `Showing ${layout.regions.length} separated display regions`;
+            showMultiRegionOverview(layout);
+            await delay(900);
+            if (!runController.isCurrent(token)) return;
+            hideMultiRegionOverview();
+          }
+          await focusCurrentRegion(animate);
+        } else {
+          const focusIndices = layout.mode === "overview" ? allIndices : indices;
+          status.textContent = layout.mode === "overview"
+            ? "Keeping broadly dispersed matches in the full embedding overview"
+            : "Zooming to the compact display region";
+          await zoomToPoints(focusIndices, {
+            padding: layout.mode === "overview" ? 0.08 : 0.25,
+            transition: animate,
+            transitionDuration: animate ? 760 : 0,
+          });
+        }
       } else if (stage === "callout") {
-        showCallout(request);
+        showCallout(request, layout);
       }
       if (!runController.isCurrent(token)) return;
     }
@@ -362,24 +710,36 @@ export async function createEmbeddingScatter(config) {
 
   async function reset() {
     runController.cancel();
+    regionController.cancel();
     region.classList.remove("is-visible");
     summary.hidden = true;
+    activeLayout = null;
+    regionNavigator = null;
+    regionTransitionActive = false;
+    hideRegionNavigation();
+    hideMultiRegionOverview();
     replayButton.hidden = true;
     playButton.hidden = false;
     playButton.disabled = false;
     replayButton.disabled = false;
     resetButton.disabled = false;
     status.textContent = "Overview · walkthrough ready";
-    await drawOverview();
-    await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
+    await restoreOverview();
   }
 
   function cancelRun(message) {
     runController.cancel();
+    regionController.cancel();
+    regionTransitionActive = false;
     playButton.disabled = false;
     replayButton.disabled = false;
     resetButton.disabled = false;
     status.textContent = message;
+    region.classList.remove("is-visible");
+    summary.hidden = true;
+    hideRegionNavigation();
+    hideMultiRegionOverview();
+    restoreOverview();
   }
 
   bindWalkthroughControls({
@@ -390,15 +750,34 @@ export async function createEmbeddingScatter(config) {
     play,
     reset,
   });
+  backButton.addEventListener("click", () => {
+    regionNavigator.back();
+    focusCurrentRegion(!reducedMotion);
+  });
+  nextButton.addEventListener("click", () => {
+    regionNavigator.next();
+    focusCurrentRegion(!reducedMotion);
+  });
   canvas.addEventListener("pointerdown", () => {
-    if (playButton.disabled) {
+    if (playButton.disabled || regionTransitionActive) {
       cancelRun("Walkthrough paused by visitor interaction");
     }
   });
+  canvas.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelRun("Walkthrough cancelled and reset to the overview");
+    }
+  });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden && playButton.disabled) {
+    if (document.hidden && (playButton.disabled || regionTransitionActive)) {
       cancelRun("Walkthrough paused while this tab is hidden");
     }
+  });
+  window.addEventListener("pagehide", () => {
+    runController.cancel();
+    regionController.cancel();
+    regionTransitionActive = false;
   });
   scatterplot.subscribe("pointover", (index) => {
     const point = data[index];
@@ -413,8 +792,7 @@ export async function createEmbeddingScatter(config) {
     tooltip.style.top = `${event.clientY - rect.top + 12}px`;
   });
 
-  await drawOverview();
-  await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
+  await restoreOverview();
   if (config.autoplay && config.request) {
     window.setTimeout(() => play(config.request), 80);
   } else if (config.request) {

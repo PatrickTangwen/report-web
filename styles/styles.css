@@ -391,6 +391,11 @@ figcaption {
   max-width: 100%;
 }
 
+.embedding-frame canvas:focus-visible {
+  outline: 3px solid rgba(44, 90, 160, 0.45);
+  outline-offset: 2px;
+}
+
 .embedding-region {
   position: absolute;
   inset: 0;
@@ -401,6 +406,41 @@ figcaption {
 
 .embedding-region.is-visible {
   opacity: 1;
+}
+
+.embedding-multi-region-overview {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.embedding-multi-region-overview.is-visible {
+  opacity: 1;
+}
+
+.embedding-region-outline {
+  position: absolute;
+  border: 3px dashed #ef6c00;
+  border-radius: 999px;
+  background: rgba(255, 167, 38, 0.08);
+}
+
+.embedding-region-outline span {
+  position: absolute;
+  top: -0.75rem;
+  left: -0.75rem;
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #d84315;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
 }
 
 .embedding-region svg {
@@ -456,6 +496,14 @@ figcaption {
   color: #486581;
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+.embedding-region-status {
+  min-width: 9.5rem;
+  color: #334e68;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .embedding-button {
@@ -514,6 +562,7 @@ figcaption {
 
 .embedding-summary dl {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   margin: 0.65rem 0 0;
 }
@@ -558,6 +607,13 @@ figcaption {
 .embedding-summary-note {
   color: #6c757d;
   font-style: italic;
+}
+
+.embedding-layout-note {
+  padding: 0.65rem 0.75rem;
+  border-left: 3px solid #d9822b;
+  background: #fff8ed;
+  color: #7c4a03;
 }
 
 .embedding-legend {
@@ -606,6 +662,7 @@ figcaption {
 
 .quarto-dark .embedding-heading span,
 .quarto-dark .embedding-status,
+.quarto-dark .embedding-region-status,
 .quarto-dark .embedding-legend {
   color: #a9bacb;
 }
@@ -644,12 +701,22 @@ figcaption {
   color: #8bb5ec;
 }
 
+.quarto-dark .embedding-layout-note {
+  border-left-color: #f0a35e;
+  background: #392d21;
+  color: #f5d0a9;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .embedding-spinner {
     animation: none;
   }
 
   .embedding-region {
+    transition: none;
+  }
+
+  .embedding-multi-region-overview {
     transition: none;
   }
 }

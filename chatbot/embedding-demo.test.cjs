@@ -54,6 +54,21 @@ test("preset request stores only the visualization contract", () => {
 });
 
 
+test("multi-region preset requires and preserves its release geometry contract", () => {
+  const multiRegion = { ...preset, display_mode: "multi_region" };
+  assert.throws(
+    () => demo.createPresetRequest(multiRegion),
+    /missing the visualization contract/,
+  );
+
+  const request = demo.createPresetRequest({
+    ...multiRegion,
+    minimum_region_size: 5,
+  });
+  assert.equal(request.minimum_region_size, 5);
+});
+
+
 test("request plays once and remains available as a final replayable state", () => {
   const storage = memoryStorage();
   const request = demo.createPresetRequest(preset, "2026-07-13T12:00:00.000Z");
@@ -130,6 +145,7 @@ test("matched result request stores exact references and aggregate context witho
       status: "matched_reference_neighborhood",
       target: "MASH",
       neighborhood_size: 2,
+      minimum_display_region_size: 5,
     },
     visual_reference_ids: ["vr_match_one", "vr_match_two"],
     aggregate_callout_data: {
@@ -157,6 +173,7 @@ test("matched result request stores exact references and aggregate context witho
     "created_at",
     "dataset_version",
     "display_mode",
+    "minimum_region_size",
     "summary",
     "target",
     "type",
@@ -164,8 +181,36 @@ test("matched result request stores exact references and aggregate context witho
   ]);
   assert.equal(request.type, "matched_reference_neighborhood");
   assert.equal(request.display_mode, "matched_selection");
+  assert.equal(request.minimum_region_size, 5);
   assert.deepEqual(request.visual_reference_ids, ["vr_match_one", "vr_match_two"]);
   assert.equal(request.summary.domains[0].metrics[0].median, 55);
   assert.equal(JSON.stringify(request).includes("confirmed_profile"), false);
   assert.equal(JSON.stringify(request).includes("reported_features"), false);
+});
+
+
+test("new backend request cancels the stale request token", () => {
+  const controller = demo.createRequestController();
+  const first = controller.start();
+  const second = controller.start();
+
+  assert.equal(first.signal.aborted, true);
+  assert.equal(controller.isCurrent(first.token), false);
+  assert.equal(controller.isCurrent(second.token), true);
+});
+
+
+test("JSON request exposes timeout as a retryable failure", async () => {
+  const neverCompletes = function (_url, options) {
+    return new Promise(function (_resolve, reject) {
+      options.signal.addEventListener("abort", function () {
+        reject(options.signal.reason);
+      });
+    });
+  };
+
+  await assert.rejects(
+    demo.requestJson(neverCompletes, "https://example.test/data", {}, 1),
+    /timed out/i,
+  );
 });

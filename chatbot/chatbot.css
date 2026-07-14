@@ -293,6 +293,47 @@
   background: #f8fafc;
 }
 
+.chatbot-match-result.is-coverage-needed {
+  border-color: #c4871d;
+  background: #fff9ed;
+}
+
+.chatbot-match-result.is-no-result {
+  border-color: #a64b4b;
+  background: #fff5f5;
+}
+
+.chatbot-match-result.is-matched {
+  border-color: #438866;
+  background: #f3faf6;
+}
+
+.chatbot-result-status {
+  display: inline-block;
+  margin: 0.15rem 0 0.25rem;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  background: #e7edf5;
+  color: #273444;
+  font-size: 0.67rem;
+  font-weight: 750;
+}
+
+.is-coverage-needed .chatbot-result-status {
+  background: #f8e5b9;
+  color: #6d4600;
+}
+
+.is-no-result .chatbot-result-status {
+  background: #f5d5d5;
+  color: #772b2b;
+}
+
+.is-matched .chatbot-result-status {
+  background: #d7eee0;
+  color: #245b3d;
+}
+
 .chatbot-profile-target-label {
   display: block;
   margin-top: 0.7rem;
@@ -909,6 +950,41 @@
 .quarto-dark .chatbot-match-result {
   border-color: #3d5f8d;
   background: #26323f;
+}
+
+.quarto-dark .chatbot-match-result.is-coverage-needed {
+  border-color: #b88733;
+  background: #3b3223;
+}
+
+.quarto-dark .chatbot-match-result.is-no-result {
+  border-color: #b26161;
+  background: #3b292c;
+}
+
+.quarto-dark .chatbot-match-result.is-matched {
+  border-color: #4f9270;
+  background: #24372e;
+}
+
+.quarto-dark .chatbot-result-status {
+  background: #394657;
+  color: #e5edf5;
+}
+
+.quarto-dark .is-coverage-needed .chatbot-result-status {
+  background: #5a4726;
+  color: #f8dba0;
+}
+
+.quarto-dark .is-no-result .chatbot-result-status {
+  background: #5a3035;
+  color: #f5c3c8;
+}
+
+.quarto-dark .is-matched .chatbot-result-status {
+  background: #2d5741;
+  color: #c7efd7;
 }
 
 .quarto-dark .chatbot-profile-target {

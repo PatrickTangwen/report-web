@@ -42,6 +42,11 @@ def load_fibrotic_release():
         raise RuntimeError("Fibrotic preset and display release versions differ")
     if preset.get("display_mode") not in {"compact", "multi_region", "overview"}:
         raise RuntimeError("Fibrotic preset has an unsupported display mode")
+    if preset["display_mode"] == "multi_region" and not (
+        isinstance(preset.get("minimum_region_size"), int)
+        and preset["minimum_region_size"] >= 1
+    ):
+        raise RuntimeError("Multi-region preset is missing its geometry contract")
     if not set(preset["visual_reference_ids"]) <= point_ids:
         raise RuntimeError("Fibrotic preset references points outside the release")
 
