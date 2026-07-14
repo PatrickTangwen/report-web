@@ -10,10 +10,15 @@ const styles = fs.readFileSync(path.join(__dirname, "chatbot.css"), "utf8");
 
 test("every public chatbot API request uses the bounded JSON request helper", () => {
   assert.equal(source.includes("fetch(API_URL"), false);
-  assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/chat"/);
+  assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/paper\/question"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/extract"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/validate"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/confirm"/);
+});
+
+
+test("Understand the Research uses the explicit paper-only backend contract, not generic /chat", () => {
+  assert.doesNotMatch(source, /API_URL \+ "\/chat"/);
 });
 
 
@@ -152,4 +157,35 @@ test("the Assistant no longer exposes ICD prompt actions or a Preset Walkthrough
   assert.doesNotMatch(source, /function renderIcdKeywordMatches/);
   assert.doesNotMatch(source, /function startPresetDemo/);
   assert.doesNotMatch(source, /function renderPresetDemoCard/);
+});
+
+
+test("Understand the Research shows visible scope copy that answers come from the paper", () => {
+  assert.match(source, /Paper Question/);
+  assert.match(source, /chatbot-scope-copy/);
+  assert.match(source, /Answers are limited to the ALIGATEHR-Gen paper\./);
+});
+
+
+test("reviewed example questions fill the composer but never submit automatically", () => {
+  assert.match(source, /var PAPER_EXAMPLE_QUESTIONS = \[/);
+  assert.match(source, /"data-chatbot-action"\s*:\s*"fill-paper-question"/);
+  assert.match(source, /if \(action === "fill-paper-question"\) fillPaperQuestion\(button\)/);
+  const fillPaperQuestion = extractFunctionSource("fillPaperQuestion");
+  assert.match(fillPaperQuestion, /input\.value = button\.getAttribute\("data-question"\)/);
+  assert.doesNotMatch(fillPaperQuestion, /send\(\)/);
+});
+
+
+test("a paper answer offers reviewed related-question suggestions from the same bank", () => {
+  const send = extractFunctionSource("send");
+  assert.match(send, /renderQuestionChips\(paperMessagesEl, "Related Questions", pickRelatedQuestions\(justAsked\)\)/);
+  const pickRelatedQuestions = extractFunctionSource("pickRelatedQuestions");
+  assert.match(pickRelatedQuestions, /PAPER_EXAMPLE_QUESTIONS/);
+});
+
+
+test("a slow paper answer shows friendly preparing copy instead of HTTP status text", () => {
+  assert.match(source, /Preparing the research assistant/);
+  assert.doesNotMatch(source, /502|503|Bad Gateway|Service Unavailable/);
 });

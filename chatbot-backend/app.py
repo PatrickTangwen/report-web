@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from paper_context import PAPER_TEXT
+from paper_context import PAPER_TEXT, PAPER_QA_SYSTEM_PROMPT
 from data_query import (
     format_data_context,
     is_embedding_query,
@@ -47,19 +47,6 @@ INTENT_SYSTEM_PROMPT = (
     "If the user asks for a specific number, score, comparison, or ranking, "
     "classify as data_query.\n\n"
     "Respond with ONLY the category name, nothing else."
-)
-
-PAPER_QA_SYSTEM_PROMPT = (
-    "You are a research assistant for the ALIGATEHR-Gen project. "
-    "Answer questions using ONLY the paper content provided below. "
-    "If the answer is not in the paper, say so explicitly — do not guess or hallucinate.\n\n"
-    "Keep answers concise, scientifically accurate, and well-structured. "
-    "Use specific numbers and facts from the paper when relevant.\n\n"
-    "Important: This is a research prototype for demonstration purposes only. "
-    "Any clinical information discussed should not be used for medical decision-making.\n\n"
-    "--- PAPER CONTENT ---\n"
-    f"{PAPER_TEXT}\n"
-    "--- END PAPER CONTENT ---"
 )
 
 CLINICAL_PROMPT = (
@@ -116,6 +103,15 @@ class ChatResponse(BaseModel):
     reply: str
     intent: str = "paper_qa"
     ui: dict | None = None
+
+
+class PaperQuestionRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+    history: list[Message] = []
+
+
+class PaperQuestionResponse(BaseModel):
+    reply: str
 
 
 class FeatureCandidate(BaseModel):
@@ -311,6 +307,34 @@ async def profile_match(
         release["calibration"],
         release["dataset_version"],
     )
+
+
+@app.post("/paper/question", response_model=PaperQuestionResponse)
+async def paper_question(req: PaperQuestionRequest):
+    """Explicit paper-only contract for Paper Question Mode.
+
+    Unlike /chat, this bypasses intent classification, ICD keyword
+    matching, and data-query routing entirely: every request is
+    answered from PAPER_QA_SYSTEM_PROMPT alone.
+    """
+    if client is None:
+        raise HTTPException(status_code=503, detail="LLM API key not configured")
+
+    messages = [{"role": "system", "content": PAPER_QA_SYSTEM_PROMPT}]
+    messages.extend({"role": m.role, "content": m.content} for m in req.history)
+    messages.append({"role": "user", "content": req.message})
+
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            max_tokens=1024,
+            messages=messages,
+        )
+        reply = response.choices[0].message.content
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
+
+    return PaperQuestionResponse(reply=reply)
 
 
 @app.post("/chat", response_model=ChatResponse)

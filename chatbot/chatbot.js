@@ -85,6 +85,15 @@
     },
   ];
 
+  // Reviewed Research Questions for Paper Question Mode — shown as example
+  // questions on entry and drawn from again as related-question suggestions.
+  var PAPER_EXAMPLE_QUESTIONS = [
+    "What does ALIGATEHR-Gen stand for?",
+    "How does the model use genetically inferred family relationships?",
+    "How many diseases were evaluated, and what was the average AUC improvement?",
+    "What are the main limitations of this study?",
+  ];
+
   var ICON_EXPAND = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
   var ICON_COLLAPSE = '<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
   var ICON_BACK = '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>';
@@ -160,12 +169,14 @@
   var paperView = createEl("div", "chatbot-task-view");
   var paperMessagesEl = createEl("div", "chatbot-messages");
   var paperToolbar = createEl("div", "chatbot-view-toolbar");
+  var paperScopeCopy = createEl("span", "chatbot-scope-copy");
+  paperScopeCopy.textContent = "Answers are limited to the ALIGATEHR-Gen paper.";
   var clearPaperBtn = createEl("button", "chatbot-clear-btn", {
     type: "button",
     "data-chatbot-action": "clear-paper-conversation",
   });
   clearPaperBtn.textContent = "Clear conversation";
-  paperToolbar.appendChild(clearPaperBtn);
+  paperToolbar.append(paperScopeCopy, clearPaperBtn);
   paperView.append(paperMessagesEl, paperToolbar);
 
   var visualizationsView = createEl("div", "chatbot-messages chatbot-visualizations-view");
@@ -354,6 +365,7 @@
     if (action === "select-task") selectTask(button.getAttribute("data-task"));
     if (action === "back-to-tasks") backToTasks();
     if (action === "clear-paper-conversation") clearPaperConversation();
+    if (action === "fill-paper-question") fillPaperQuestion(button);
     if (action === "open-visualization-destination") openVisualizationDestination(button.getAttribute("data-destination"));
     if (action === "start-demo-profile") startDemoProfile();
     if (action === "save-profile-edits") saveProfileEdits(button);
@@ -392,14 +404,48 @@
     saveState();
   }
 
-  // ── Understand the Research (paper/general questions) ──
+  // ── Understand the Research (Paper Question Mode) ──
+
+  function renderQuestionChips(container, heading, questions) {
+    if (!questions.length) return;
+    var wrap = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-question-chips");
+    var label = createEl("div", "chatbot-demo-label");
+    label.textContent = heading;
+    wrap.appendChild(label);
+    questions.forEach(function (question) {
+      var chip = createEl("button", "chatbot-question-chip", {
+        type: "button",
+        "data-chatbot-action": "fill-paper-question",
+        "data-question": question,
+      });
+      chip.textContent = question;
+      wrap.appendChild(chip);
+    });
+    addRawElement(container, wrap);
+  }
+
+  function fillPaperQuestion(button) {
+    input.value = button.getAttribute("data-question") || "";
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 80) + "px";
+    input.focus();
+  }
+
+  function pickRelatedQuestions(justAskedText) {
+    return PAPER_EXAMPLE_QUESTIONS.filter(function (question) {
+      return question !== justAskedText;
+    }).slice(0, 3);
+  }
 
   function renderPaperWelcome() {
     addMessage(
       paperMessagesEl,
       "assistant",
-      "Hello! I'm the ALIGATEHR-Gen Guided Research Assistant. Ask me about the paper's methodology, results, and clinical implications.",
+      "Hello! I'm the ALIGATEHR-Gen Guided Research Assistant. This is Paper Question " +
+        "Mode: every answer is limited to the ALIGATEHR-Gen paper's methodology, " +
+        "results, and conclusions.",
     );
+    renderQuestionChips(paperMessagesEl, "Example Questions", PAPER_EXAMPLE_QUESTIONS);
   }
 
   function initPaperView() {
@@ -462,34 +508,36 @@
     sendBtn.disabled = true;
 
     var typing = showTyping(paperMessagesEl);
+    var coldStartNotice = setTimeout(function () {
+      showColdStartNotice(paperMessagesEl, typing);
+    }, 4000);
 
-    var chatBody = {
-      message: text,
-      history: paperHistory
-        .slice(0, -1)
-        .map(function (item) { return { role: item.role, content: item.content }; }),
-    };
+    var justAsked = text;
     DEMO.requestJson(
       fetch,
-      API_URL + "/chat",
+      API_URL + "/paper/question",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(chatBody),
+        body: JSON.stringify({
+          message: text,
+          history: paperHistory
+            .slice(0, -1)
+            .map(function (item) { return { role: item.role, content: item.content }; }),
+        }),
       },
       30000,
     )
       .then(function (data) {
+        clearTimeout(coldStartNotice);
         typing.remove();
         var reply = data.reply || "Sorry, I could not generate a response.";
         addMessage(paperMessagesEl, "assistant", reply);
         paperHistory.push({ role: "assistant", content: reply });
-
-        if (data.ui && data.ui.type === "pathway_enrichment") {
-          renderPathwayEnrichment(data.ui);
-        }
+        renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
       })
       .catch(function (err) {
+        clearTimeout(coldStartNotice);
         typing.remove();
         if (
           paperHistory.length &&
@@ -499,50 +547,13 @@
           paperHistory.pop();
         }
         renderChatRetry(text, err);
-        console.error("Chatbot error:", err);
+        console.error("Paper Question Mode error:", err);
       })
       .finally(function () {
         busy = false;
         sendBtn.disabled = false;
         saveState();
       });
-  }
-
-  // ── Pathway enrichment card ──
-
-  function renderPathwayEnrichment(data) {
-    var card = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-pathway-card");
-
-    var title = createEl("div", "chatbot-report-title");
-    title.textContent = "Pathway Enrichment: " + data.disease_label;
-    card.appendChild(title);
-
-    var table = createEl("table", "chatbot-pathway-table");
-    var thead = createEl("thead");
-    var headerRow = createEl("tr");
-    ["Pathway", "Source", "Genes", "Enrichment", "p-adj"].forEach(function (h) {
-      var th = createEl("th");
-      th.textContent = h;
-      headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    var tbody = createEl("tbody");
-    data.pathways.forEach(function (p) {
-      var tr = createEl("tr");
-      var vals = [p.pathway, p.source, p.gene_count, p.enrichment_ratio + "×", p.p_adjusted];
-      vals.forEach(function (v) {
-        var td = createEl("td");
-        td.textContent = v;
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    card.appendChild(table);
-
-    addRawElement(paperMessagesEl, card);
   }
 
   // ── Explore Visualizations (Visualization Destination navigation) ──
@@ -1254,6 +1265,14 @@
     container.appendChild(el);
     container.scrollTop = container.scrollHeight;
     return el;
+  }
+
+  function showColdStartNotice(container, typingEl) {
+    if (!typingEl.isConnected) return;
+    var notice = createEl("span", "chatbot-typing-note");
+    notice.textContent = "Preparing the research assistant — this can take up to a minute after inactivity.";
+    typingEl.appendChild(notice);
+    container.scrollTop = container.scrollHeight;
   }
 
   // Minimal markdown: **bold**, `code`, newlines → <br>, paragraphs
