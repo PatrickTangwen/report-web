@@ -68,7 +68,7 @@ umapSex = {
     yField: "umap_2",
     title: "Patient Embeddings — Coloured by Sex",
     subtitle: "Pre-trained EHR Encoder · UMAP view",
-    datasetLabel: `UKB ${patientData.length.toLocaleString()} patients`,
+    datasetLabel: `${patientData.length.toLocaleString()} patients`,
     kicker: "Sex group spotlight",
     createScatterplot,
     groups: [
@@ -122,7 +122,7 @@ umapAge = {
     yField: "umap_2",
     title: "Patient Embeddings — Coloured by Age",
     subtitle: "Pre-trained EHR Encoder · UMAP view",
-    datasetLabel: `UKB ${patientData.length.toLocaleString()} patients`,
+    datasetLabel: `${patientData.length.toLocaleString()} patients`,
     kicker: "Age band spotlight",
     createScatterplot,
     groups,
