@@ -72,3 +72,17 @@ quarto render
 ```
 
 - Treat a failing `scripts/check_ojs_assets.py` run as a deployment blocker. Do not assume GitHub Pages can recover from missing or untracked `FileAttachment(...)` assets.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (via `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. See `docs/agents/domain.md`.
