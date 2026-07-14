@@ -41,24 +41,6 @@ import { createEmbeddingRenderer, fitEmbeddingWidth } from "./embedding-renderer
 //| echo: false
 
 reglDrilldownScatter = {
-  function localRegion(points, baseIndices, clickedIndex) {
-    const center = points[clickedIndex];
-    const targetCount = Math.min(
-      baseIndices.length,
-      Math.max(80, Math.round(Math.sqrt(baseIndices.length))),
-    );
-    return baseIndices
-      .map(i => {
-        const p = points[i];
-        const x = p.x - center.x;
-        const y = p.y - center.y;
-        return { index: i, distance: x * x + y * y };
-      })
-      .sort((left, right) => left.distance - right.distance)
-      .slice(0, targetCount)
-      .map(item => item.index);
-  }
-
   return async function(config) {
     const data = config.data;
     const width = fitEmbeddingWidth(config.width || 1000);
@@ -127,7 +109,6 @@ reglDrilldownScatter = {
       createScatterplot,
     });
     const scatterplot = renderer.scatterplot;
-    const points = renderer.points;
     const allIndices = renderer.allIndices;
     await renderer.drawOverview();
     await renderer.zoomToPoints(allIndices, { padding: 0.08 });
@@ -165,7 +146,7 @@ reglDrilldownScatter = {
       } else {
         await renderer.drawHighlighted(state.indices, {
           opacity: [0.1, 0.9],
-          pointSize: [2.25, state.indices.length > 100 ? 4 : 7],
+          pointSize: [2.25, 7],
         });
         const focusIndices = state.grouped ? allIndices : state.indices;
         await scatterplot.zoomToPoints(focusIndices, {
@@ -198,8 +179,7 @@ reglDrilldownScatter = {
         await pushState(groupIndices, config.groupLabel(groupValue), true);
         return;
       }
-      const region = localRegion(points, state.indices, index);
-      await pushState(region, `Region ${stack.length}`);
+      await pushState([index], `Point ${stack.length}`);
     }
 
     scatterplot.subscribe("pointover", (idx) => {

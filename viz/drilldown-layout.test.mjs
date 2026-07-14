@@ -45,8 +45,9 @@ test("patient embedding focus dims unrelated points before inline zoom", () => {
 });
 
 
-test("large patient cohorts use safe overview and bounded local neighborhoods", () => {
-  assert.match(source, /Math\.round\(Math\.sqrt\(baseIndices\.length\)\)/);
+test("patient focus uses the exact selected points without inferred neighborhoods", () => {
+  assert.match(source, /await pushState\(\[index\], `Point \$\{stack\.length\}`\)/);
   assert.match(source, /const focusIndices = state\.grouped \? allIndices : state\.indices/);
-  assert.match(source, /state\.indices\.length > 100 \? 4 : 7/);
+  assert.doesNotMatch(source, /Math\.sqrt\(baseIndices\.length\)/);
+  assert.doesNotMatch(source, /state\.indices\.length > 100/);
 });
