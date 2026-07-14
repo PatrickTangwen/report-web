@@ -143,10 +143,8 @@ def is_feature_importance_query(query):
     )
     if asks_about_paper:
         return False
-    if "risk factor" in q:
-        return True
     has_feature_subject = any(
-        term in q for term in ("feature", "variable", "predictor")
+        term in q for term in ("feature", "variable", "predictor", "risk factor")
     )
     return has_feature_subject and has_ranking_intent
 

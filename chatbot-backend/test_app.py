@@ -353,6 +353,24 @@ async def test_paper_risk_factor_question_keeps_paper_routing(client):
 
 
 @pytest.mark.asyncio
+async def test_unranked_project_risk_factor_question_keeps_research_routing(client):
+    with patch("app.client") as mock_client:
+        mock_client.chat.completions.create.side_effect = [
+            _mock_response("paper_qa"),
+            _mock_response("Research answer."),
+        ]
+        response = await client.post(
+            "/chat",
+            json={"message": "What risk factors does ALIGATEHR-Gen discuss?"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["intent"] == "paper_qa"
+    assert response.json()["reply"] == "Research answer."
+    assert mock_client.chat.completions.create.call_count == 2
+
+
+@pytest.mark.asyncio
 async def test_ranked_paper_risk_factor_question_keeps_paper_routing(client):
     with patch("app.client") as mock_client:
         mock_client.chat.completions.create.side_effect = [
