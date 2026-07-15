@@ -12,7 +12,9 @@ test("every public chatbot API request uses the bounded JSON request helper", ()
   assert.equal(source.includes("fetch(API_URL"), false);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/paper\/question"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/validate"/);
+  assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/coverage"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/confirm"/);
+  assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/match"/);
 });
 
 
@@ -255,17 +257,18 @@ test("loading a Synthetic Example Profile never confirms the draft or starts com
 
 test("a loaded Synthetic Example Profile is visibly labeled as reviewed and remains editable", () => {
   const renderProfileDraft = extractFunctionSource("renderProfileDraft");
-  assert.match(renderProfileDraft, /Synthetic Example Profile — review required/);
   assert.match(renderProfileDraft, /Reviewed example — editable, not a real patient/);
+  const renderProfileWizard = extractFunctionSource("renderProfileWizard");
+  assert.match(renderProfileWizard, /Synthetic Example Profile loaded — reviewed, editable/);
 });
 
 
-test("the confirmed profile compares against the pre-chosen target with no target picker at review", () => {
+test("comparison uses the pre-chosen target with no target picker at review", () => {
   assert.doesNotMatch(source, /chatbot-profile-target"/);
-  const renderConfirmedProfile = extractFunctionSource("renderConfirmedProfile");
-  assert.match(renderConfirmedProfile, /targetLabel\(profileSession\.getState\(\)\.target\)/);
-  const compareConfirmedProfile = extractFunctionSource("compareConfirmedProfile");
-  assert.match(compareConfirmedProfile, /target: state\.target/);
+  const renderProfileDraft = extractFunctionSource("renderProfileDraft");
+  assert.match(renderProfileDraft, /targetLabel\(profileSession\.getState\(\)\.target\)/);
+  const runComparison = extractFunctionSource("runComparison");
+  assert.match(runComparison, /target: state\.target/);
 });
 
 
@@ -336,4 +339,72 @@ test("review rows expose actionable edit and removal controls for entered fields
 test("validation copy never labels values normal, abnormal, healthy, or unhealthy", () => {
   assert.doesNotMatch(source, /\b(abnormal|unhealthy)\b/i);
   assert.doesNotMatch(source, /\b(normal|healthy)\b(?! neighborhood)/i);
+});
+
+
+test("the Review stage checks target-aware coverage alongside deterministic validation", () => {
+  const runReviewValidation = extractFunctionSource("runReviewValidation");
+  assert.match(runReviewValidation, /API_URL \+ "\/profile\/validate"/);
+  assert.match(runReviewValidation, /API_URL \+ "\/profile\/coverage"/);
+  assert.match(runReviewValidation, /Promise\.all\(/);
+  assert.match(runReviewValidation, /renderProfileDraft\(draft, results\[1\]\.profile_coverage, holder\)/);
+});
+
+
+test("Coverage Guidance is domain-based and never shows a percentage, confidence, or accuracy", () => {
+  const renderCoverageGuidance = extractFunctionSource("renderCoverageGuidance");
+  assert.match(renderCoverageGuidance, /WIZARD\.COVERAGE_DOMAINS\.forEach/);
+  assert.match(renderCoverageGuidance, /Profile Coverage/);
+  assert.doesNotMatch(renderCoverageGuidance, /percent|%|confidence|accuracy|score/i);
+});
+
+
+test("Add this information actions navigate to the domain's wizard stage", () => {
+  const renderCoverageGuidance = extractFunctionSource("renderCoverageGuidance");
+  assert.match(renderCoverageGuidance, /Add this information/);
+  assert.match(renderCoverageGuidance, /"data-chatbot-action":\s*"wizard-goto-stage"/);
+  assert.match(renderCoverageGuidance, /"data-stage":\s*domain\.stage/);
+});
+
+
+test("comparison is gated on both no blocking values and target-specific eligibility", () => {
+  const renderProfileDraft = extractFunctionSource("renderProfileDraft");
+  assert.match(renderProfileDraft, /var eligible = !!\(coverage && coverage\.eligible\)/);
+  assert.match(renderProfileDraft, /confirmButton\.disabled = !\(canConfirm && eligible\)/);
+});
+
+
+test("Confirm and compare with reference cohort is the only confirmation action and has no checkbox", () => {
+  assert.match(source, /Confirm and compare with reference cohort/);
+  assert.doesNotMatch(source, /"data-chatbot-action":\s*"confirm-demo-profile"/);
+  assert.doesNotMatch(source, /"data-chatbot-action":\s*"compare-confirmed-profile"/);
+  assert.doesNotMatch(source, /type:\s*"checkbox"/);
+  const confirmActions = source.match(/"data-chatbot-action":\s*"confirm-and-compare"/g) || [];
+  assert.ok(confirmActions.length >= 1);
+});
+
+
+test("the single action confirms then compares, and reaching eligibility never auto-starts it", () => {
+  const confirmAndCompareProfile = extractFunctionSource("confirmAndCompareProfile");
+  assert.match(confirmAndCompareProfile, /API_URL \+ "\/profile\/confirm"/);
+  assert.match(confirmAndCompareProfile, /runComparison\(\)/);
+  // Comparison only starts from the explicit action, never from render paths.
+  const renderProfileDraft = extractFunctionSource("renderProfileDraft");
+  assert.doesNotMatch(renderProfileDraft, /runComparison\(\)/);
+});
+
+
+test("a recoverable comparison failure offers Retry, Continue editing, and Back to tasks", () => {
+  const renderComparisonFailure = extractFunctionSource("renderComparisonFailure");
+  assert.match(renderComparisonFailure, /"data-chatbot-action":\s*"confirm-and-compare"/);
+  assert.match(renderComparisonFailure, /"data-chatbot-action":\s*"wizard-reopen-editing"/);
+  assert.match(renderComparisonFailure, /"data-chatbot-action":\s*"back-to-tasks"/);
+});
+
+
+test("returning from Review to edit preserves valid wizard state", () => {
+  const reopenWizardForEditing = extractFunctionSource("reopenWizardForEditing");
+  assert.match(reopenWizardForEditing, /profileSession\.reopenForEditing\(\)/);
+  assert.match(reopenWizardForEditing, /renderProfileWizard\(\)/);
+  assert.doesNotMatch(reopenWizardForEditing, /entries = \{\}|reset\(\)/);
 });

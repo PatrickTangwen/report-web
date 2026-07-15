@@ -188,6 +188,24 @@
     Fibrosis_of_Skin: ["age", "sex", "hba1c", "height", "weight", "affected_relative", "smoking_status"],
   };
 
+  // Feature domains, in the backend's DOMAIN_FEATURES order, mapped to the
+  // wizard stage that collects them. Coverage Guidance is organized by these
+  // domains and its "Add this information" actions navigate to `stage`.
+  var COVERAGE_DOMAINS = [
+    { id: "demographics", label: "Demographics", stage: "basic_information" },
+    { id: "body_composition", label: "Body composition", stage: "body_measurements" },
+    { id: "blood_pressure", label: "Blood pressure", stage: "blood_pressure_labs" },
+    { id: "lifestyle", label: "Lifestyle", stage: "lifestyle_family" },
+    { id: "family_history", label: "Family history", stage: "lifestyle_family" },
+    { id: "optional_laboratory", label: "Laboratory", stage: "blood_pressure_labs" },
+  ];
+
+  function coverageDomain(domainId) {
+    return COVERAGE_DOMAINS.filter(function (domain) {
+      return domain.id === domainId;
+    })[0] || { id: domainId, label: domainId.replace(/_/g, " "), stage: STAGES[0].id };
+  }
+
   var STATUS_LABELS = {
     neutral: "",
     valid: "Valid",
@@ -635,6 +653,8 @@
     FIELDS: FIELDS,
     FIELD_ORDER: FIELD_ORDER,
     DERIVED_TRIGGER_FIELDS: DERIVED_TRIGGER_FIELDS,
+    COVERAGE_DOMAINS: COVERAGE_DOMAINS,
+    coverageDomain: coverageDomain,
     TARGET_RECOMMENDED_FIELDS: TARGET_RECOMMENDED_FIELDS,
     BLOCKING_STATUSES: BLOCKING_STATUSES,
     newEntry: newEntry,

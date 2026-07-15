@@ -356,8 +356,8 @@
     if (action === "wizard-clear-field") wizardClearField(button.getAttribute("data-field"));
     if (action === "wizard-remove-review-field") wizardRemoveReviewField(button.getAttribute("data-field"));
     if (action === "wizard-retry-validate") runReviewValidation();
-    if (action === "confirm-demo-profile") confirmDemoProfile(button);
-    if (action === "compare-confirmed-profile") compareConfirmedProfile(button);
+    if (action === "confirm-and-compare") confirmAndCompareProfile(button);
+    if (action === "wizard-reopen-editing") reopenWizardForEditing();
     if (action === "view-matched-references") viewMatchedReferences(button);
     if (action === "start-over-demo-profile") startOverDemoProfile();
     if (action === "retry-chat") retryChat(button);
@@ -1195,7 +1195,9 @@
   }
 
   // The Review stage submits the wizard entries through the deterministic
-  // /profile/validate contract; the backend remains the validation authority.
+  // /profile/validate contract and, in parallel, the target-aware
+  // /profile/coverage contract. The backend remains the authority for both
+  // field validation and target-specific Profile Coverage.
   function runReviewValidation() {
     var wizard = wizardState();
     var holder = profileMessagesEl.querySelector("[data-wizard-review]");
@@ -1212,35 +1214,49 @@
       return;
     }
     profileSession.setCandidates(candidates);
+    var target = profileSession.getState().target;
     var pending = createEl("p", "chatbot-profile-notice");
-    pending.textContent = "Validating fields and units…";
+    pending.textContent = "Validating fields and checking target coverage…";
     holder.appendChild(pending);
     var coldStartNotice = setTimeout(function () {
       pending.textContent =
         "Preparing the research assistant — this can take up to a minute after inactivity.";
     }, 4000);
-    DEMO.requestJson(
-      fetch,
-      API_URL + "/profile/validate",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidates: candidates }),
-      },
-      30000,
-    )
-      .then(function (draft) {
+    Promise.all([
+      DEMO.requestJson(
+        fetch,
+        API_URL + "/profile/validate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidates: candidates }),
+        },
+        30000,
+      ),
+      DEMO.requestJson(
+        fetch,
+        API_URL + "/profile/coverage",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidates: candidates, target: target }),
+        },
+        30000,
+      ),
+    ])
+      .then(function (results) {
         clearTimeout(coldStartNotice);
+        var draft = results[0];
         profileSession.applyDraft(draft);
         holder.innerHTML = "";
-        renderProfileDraft(draft, holder);
+        renderProfileDraft(draft, results[1].profile_coverage, holder);
       })
       .catch(function (error) {
         clearTimeout(coldStartNotice);
         holder.innerHTML = "";
         var copy = createEl("p", "chatbot-profile-notice");
         copy.textContent =
-          "The review validation is unavailable right now. Your entered values are unchanged.";
+          "The review is unavailable right now. Your entered values are unchanged.";
         var retry = createEl("button", "chatbot-demo-button", {
           type: "button",
           "data-chatbot-action": "wizard-retry-validate",
@@ -1253,24 +1269,21 @@
         });
         editButton.textContent = "Continue editing";
         holder.append(copy, retry, editButton);
-        console.error("Profile validation error:", error);
+        console.error("Profile review error:", error);
       })
       .finally(function () {
         saveState();
       });
   }
 
-  function renderProfileDraft(draft, holder) {
+  function renderProfileDraft(draft, coverage, holder) {
     var review = createEl("div", "chatbot-profile-review", {
       "data-profile-current": "1",
     });
-    var isExample = profileSession.getState().source === "example";
     var title = createEl("div", "chatbot-profile-title");
-    title.textContent = isExample
-      ? "Synthetic Example Profile — review required"
-      : "Profile Draft — review required";
+    title.textContent = "Review — " + targetLabel(profileSession.getState().target);
     review.appendChild(title);
-    if (isExample) {
+    if (profileSession.getState().source === "example") {
       var exampleBadge = createEl("div", "chatbot-demo-label");
       exampleBadge.textContent = "Reviewed example — editable, not a real patient";
       review.appendChild(exampleBadge);
@@ -1378,34 +1391,129 @@
       });
     }
 
+    renderCoverageGuidance(review, coverage);
+
+    var eligible = !!(coverage && coverage.eligible);
+    var canConfirm = !!draft.can_confirm;
     var actions = createEl("div", "chatbot-profile-actions");
     var confirmButton = createEl("button", "chatbot-profile-primary", {
       type: "button",
-      "data-chatbot-action": "confirm-demo-profile",
+      "data-chatbot-action": "confirm-and-compare",
     });
-    confirmButton.textContent = "Confirm Demo Profile";
-    confirmButton.disabled = !draft.can_confirm;
+    confirmButton.textContent = "Confirm and compare with reference cohort";
+    confirmButton.disabled = !(canConfirm && eligible);
     actions.append(confirmButton);
     review.appendChild(actions);
 
     var status = createEl("div", "chatbot-profile-action-status", {
       "aria-live": "polite",
     });
-    if (!draft.can_confirm) {
+    if (!canConfirm) {
       status.textContent =
-        "Resolve the fields marked Add a unit, Check this value, or Conflict before confirming.";
+        "Resolve the fields marked Add a unit, Check this value, or Conflict before comparing.";
+    } else if (!eligible) {
+      status.textContent =
+        "Add the information highlighted under Profile Coverage to reach an eligible " +
+        "target-specific pattern. Reaching eligibility never starts the comparison on its own.";
     }
     review.appendChild(status);
     holder.appendChild(review);
   }
 
-  function confirmDemoProfile(button) {
+  // Domain-based Coverage Guidance. It is actionable and never shows a
+  // completion percentage, confidence, match accuracy, or a required field.
+  function renderCoverageGuidance(review, coverage) {
+    if (!coverage) return;
+    var target = targetLabel(profileSession.getState().target);
+    var section = createEl("div", "chatbot-coverage");
+    var title = createEl("div", "chatbot-profile-subtitle");
+    title.textContent = "Profile Coverage";
+    section.appendChild(title);
+    var intro = createEl("p", "chatbot-profile-notice");
+    intro.textContent = coverage.eligible
+      ? "This profile represents enough feature domains to satisfy a reviewed coverage " +
+        "pattern for " + target + ". Missing domains are never imputed or treated as matches."
+      : "Coverage is measured by feature domain, not by a single number. Add an optional " +
+        "domain below to reach a reviewed pattern for " + target + " — no single field is required.";
+    section.appendChild(intro);
+
+    var available = coverage.available_domains || [];
+    var list = createEl("ul", "chatbot-coverage-list");
+    WIZARD.COVERAGE_DOMAINS.forEach(function (domain) {
+      var represented = available.indexOf(domain.id) !== -1;
+      var item = createEl(
+        "li",
+        "chatbot-coverage-item " + (represented ? "is-represented" : "is-missing"),
+      );
+      var mark = createEl("span", "chatbot-coverage-mark");
+      mark.textContent = represented ? "✓" : "+";
+      var label = createEl("span", "chatbot-coverage-domain");
+      label.textContent =
+        domain.label + (represented ? " — represented" : " — not yet represented");
+      item.append(mark, label);
+      list.appendChild(item);
+    });
+    section.appendChild(list);
+
+    var recommendation = coverage.coverage_recommendation;
+    if (!coverage.eligible && recommendation && recommendation.missing_domains.length) {
+      var recTitle = createEl("div", "chatbot-coverage-rec-title");
+      recTitle.textContent = "To reach an eligible pattern, add any of:";
+      section.appendChild(recTitle);
+      recommendation.missing_domains.forEach(function (domainId) {
+        var domain = WIZARD.coverageDomain(domainId);
+        var measurements =
+          (recommendation.measurements_by_domain &&
+            recommendation.measurements_by_domain[domainId]) || [];
+        var recItem = createEl("div", "chatbot-coverage-rec");
+        var copy = createEl("span", "chatbot-coverage-rec-copy");
+        copy.textContent =
+          domain.label +
+          (measurements.length ? " — for example, " + measurements.join(" or ") : "");
+        var add = createEl("button", "chatbot-profile-secondary chatbot-coverage-add", {
+          type: "button",
+          "data-chatbot-action": "wizard-goto-stage",
+          "data-stage": domain.stage,
+        });
+        add.textContent = "Add this information";
+        recItem.append(copy, add);
+        section.appendChild(recItem);
+      });
+    } else if (!coverage.eligible) {
+      var noRec = createEl("p", "chatbot-profile-notice");
+      noRec.textContent =
+        "Add measurements from more than one feature domain to reach a reviewed pattern.";
+      section.appendChild(noRec);
+    }
+
+    var outside = coverage.outside_reference_support_domains || [];
+    if (outside.length) {
+      var outsideCopy = createEl("p", "chatbot-profile-notice");
+      outsideCopy.textContent =
+        "Values in these domains are outside this cohort's reference support and are " +
+        "preserved without clamping: " +
+        outside.map(function (id) { return WIZARD.coverageDomain(id).label; }).join(", ") + ".";
+      section.appendChild(outsideCopy);
+    }
+    review.appendChild(section);
+  }
+
+  // The sole explicit confirmation action: confirm the reviewed Profile Draft
+  // and immediately compare with the reference cohort. Phase-aware so that a
+  // recoverable matching failure can retry the comparison alone without a
+  // second confirmation.
+  function confirmAndCompareProfile(button) {
     var state = profileSession.getState();
+    var card = button.closest(".chatbot-profile-review, .chatbot-profile-recover");
+    var status = card ? card.querySelector(".chatbot-profile-action-status") : null;
+    if (state.phase === "confirmed" && state.confirmed) {
+      button.disabled = true;
+      runComparison();
+      return;
+    }
     if (state.phase !== "draft" || !state.draft || !state.draft.can_confirm) return;
-    var card = button.closest(".chatbot-profile-review");
-    var status = card.querySelector(".chatbot-profile-action-status");
     button.disabled = true;
-    status.textContent = "Confirming the reviewed Profile Draft…";
+    if (status) status.textContent = "Confirming the reviewed Profile Draft…";
     DEMO.requestJson(
       fetch,
       API_URL + "/profile/confirm",
@@ -1418,59 +1526,117 @@
     )
       .then(function (confirmed) {
         profileSession.confirm(confirmed);
-        profileMessagesEl.innerHTML = "";
-        renderConfirmedProfile(confirmed);
-        updateProfileInputState();
+        runComparison();
       })
       .catch(function (error) {
         button.disabled = false;
-        status.textContent = "Could not confirm the profile. " + error.message;
+        if (status) {
+          status.textContent =
+            "Could not confirm the profile — the backend is unavailable. Your entered values are unchanged.";
+        }
+        console.error("Profile confirm error:", error);
       });
   }
 
-  function renderConfirmedProfile(confirmed) {
+  function runComparison() {
+    var state = profileSession.getState();
+    if (state.phase !== "confirmed" || !state.confirmed || !state.target) return;
+    profileMessagesEl.innerHTML = "";
+    var progress = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-progress",
+    );
+    var progressCopy = createEl("p", "chatbot-profile-notice");
+    progressCopy.textContent =
+      "Profile confirmed. Comparing with the reference cohort…";
+    progress.appendChild(progressCopy);
+    addRawElement(profileMessagesEl, progress);
+    updateProfileInputState();
+    var run = profileMatchController.start();
+    var coldStartNotice = setTimeout(function () {
+      if (profileMatchController.isCurrent(run.token)) {
+        progressCopy.textContent =
+          "Preparing the research assistant — this can take up to a minute after inactivity.";
+      }
+    }, 4000);
+    DEMO.requestJson(
+      fetch,
+      API_URL + "/profile/match",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          confirmed_profile: state.confirmed,
+          target: state.target,
+        }),
+        signal: run.signal,
+      },
+      30000,
+    )
+      .then(function (result) {
+        clearTimeout(coldStartNotice);
+        if (!profileMatchController.isCurrent(run.token)) return;
+        profileMessagesEl.innerHTML = "";
+        renderCohortComparison(result);
+      })
+      .catch(function (error) {
+        clearTimeout(coldStartNotice);
+        if (!profileMatchController.isCurrent(run.token)) return;
+        profileMessagesEl.innerHTML = "";
+        renderComparisonFailure(error);
+        console.error("Profile matching error:", error);
+      });
+  }
+
+  // Recoverable comparison failure keeps the confirmed profile and offers the
+  // three agreed next steps: Retry, Continue editing, and Back to tasks.
+  function renderComparisonFailure(error) {
     var card = createEl(
       "div",
-      "chatbot-msg chatbot-msg-assistant chatbot-profile-confirmed",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-recover",
     );
     var title = createEl("div", "chatbot-profile-title");
-    title.textContent = "Confirmed Profile";
+    title.textContent = "Comparison unavailable";
     var copy = createEl("p", "chatbot-profile-notice");
     copy.textContent =
-      "Your reviewed Demo Profile is confirmed for this tab. Matching has not started. " +
-      "This remains a research cohort comparison, not medical advice, diagnosis, " +
-      "prognosis, or a personal outcome prediction.";
-    var targetLine = createEl("div", "chatbot-profile-confirmed-count");
-    targetLine.textContent = "Comparison Target: " + targetLabel(profileSession.getState().target);
-    var count = createEl("div", "chatbot-profile-confirmed-count");
-    count.textContent =
-      Object.keys(confirmed.reported_features || {}).length +
-      " reported features; " +
-      Object.keys(confirmed.derived_features || {}).length +
-      " derived features.";
-    var compare = createEl("button", "chatbot-profile-primary", {
-      type: "button",
-      "data-chatbot-action": "compare-confirmed-profile",
-    });
-    compare.textContent = "Compare with reference cohort";
-    var matchStatus = createEl("div", "chatbot-profile-action-status", {
+      error && /timed out/i.test(error.message || "")
+        ? "The comparison timed out while the backend was waking. Your confirmed profile is unchanged."
+        : "The comparison backend is unavailable right now. Your confirmed profile is unchanged.";
+    var status = createEl("div", "chatbot-profile-action-status", {
       "aria-live": "polite",
     });
-    var startOver = createEl("button", "chatbot-profile-link", {
+    var actions = createEl("div", "chatbot-profile-actions");
+    var retry = createEl("button", "chatbot-profile-primary", {
       type: "button",
-      "data-chatbot-action": "start-over-demo-profile",
+      "data-chatbot-action": "confirm-and-compare",
     });
-    startOver.textContent = "Start Over";
-    card.append(
-      title,
-      copy,
-      targetLine,
-      count,
-      compare,
-      matchStatus,
-      startOver,
-    );
+    retry.textContent = "Retry comparison";
+    var edit = createEl("button", "chatbot-profile-secondary", {
+      type: "button",
+      "data-chatbot-action": "wizard-reopen-editing",
+    });
+    edit.textContent = "Continue editing";
+    var backTasks = createEl("button", "chatbot-profile-link", {
+      type: "button",
+      "data-chatbot-action": "back-to-tasks",
+    });
+    backTasks.textContent = "Back to tasks";
+    actions.append(retry, edit, backTasks);
+    card.append(title, copy, actions, status);
     addRawElement(profileMessagesEl, card);
+  }
+
+  // Reopen a confirmed-but-uncompared profile for editing: the wizard entries
+  // are retained, so returning to Review preserves valid state.
+  function reopenWizardForEditing() {
+    if (profileSession.getState().phase === "confirmed") {
+      profileSession.reopenForEditing();
+    }
+    var wizard = wizardState();
+    if (!wizard) return;
+    wizard.stage = WIZARD.STAGES[0].id;
+    profileSession.updateWizard(wizard);
+    renderProfileWizard();
   }
 
   function targetLabel(target) {
@@ -1605,50 +1771,6 @@
     startOver.textContent = "Start Over";
     card.appendChild(startOver);
     addRawElement(profileMessagesEl, card);
-  }
-
-  function compareConfirmedProfile(button) {
-    var state = profileSession.getState();
-    if (state.phase !== "confirmed" || !state.confirmed || !state.target) return;
-    var card = button.closest(".chatbot-profile-confirmed");
-    var status = card.querySelector(".chatbot-profile-action-status");
-    button.disabled = true;
-    status.textContent = "Checking calibrated Profile Coverage and reference distances…";
-    var run = profileMatchController.start();
-    var coldStartNotice = setTimeout(function () {
-      if (profileMatchController.isCurrent(run.token)) {
-        status.textContent = "The backend is still waking from a cold start. This request will time out with a Retry option rather than using stale results.";
-      }
-    }, 4000);
-    DEMO.requestJson(
-      fetch,
-      API_URL + "/profile/match",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          confirmed_profile: state.confirmed,
-          target: state.target,
-        }),
-        signal: run.signal,
-      },
-      30000,
-    )
-      .then(function (result) {
-        clearTimeout(coldStartNotice);
-        if (!profileMatchController.isCurrent(run.token)) return;
-        status.textContent = "Comparison complete.";
-        renderCohortComparison(result);
-      })
-      .catch(function (error) {
-        clearTimeout(coldStartNotice);
-        if (!profileMatchController.isCurrent(run.token)) return;
-        button.disabled = false;
-        status.textContent = error.message && error.message.toLowerCase().includes("timed out")
-          ? "The comparison timed out while the backend was waking. Retry when ready."
-          : "The comparison backend is unavailable. Retry when ready.";
-        console.error("Profile matching error:", error);
-      });
   }
 
   function viewMatchedReferences(button) {

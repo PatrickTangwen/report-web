@@ -152,6 +152,22 @@
         save();
         return state;
       },
+      reopenForEditing: function () {
+        if (state.phase !== "confirmed") {
+          throw new Error("Only a confirmed profile can be reopened for editing");
+        }
+        state = {
+          phase: "draft",
+          target: state.target,
+          source: state.source,
+          candidates: [],
+          wizard: state.wizard,
+          draft: null,
+          confirmed: null,
+        };
+        save();
+        return state;
+      },
       reset: function () {
         state = initialState();
         storage.removeItem(STORAGE_KEY);

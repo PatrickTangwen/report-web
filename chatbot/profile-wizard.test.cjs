@@ -336,6 +336,49 @@ test("entered fields use only the five reviewed user-facing states", () => {
 });
 
 
+test("coverage domains cover every backend feature domain and map to real wizard stages", () => {
+  assert.deepEqual(
+    wizard.COVERAGE_DOMAINS.map((domain) => domain.id),
+    [
+      "demographics",
+      "body_composition",
+      "blood_pressure",
+      "lifestyle",
+      "family_history",
+      "optional_laboratory",
+    ],
+  );
+  const stageIds = wizard.STAGES.map((stage) => stage.id);
+  wizard.COVERAGE_DOMAINS.forEach((domain) => {
+    assert.ok(stageIds.includes(domain.stage), `${domain.id} → unknown stage ${domain.stage}`);
+    assert.notEqual(domain.stage, "review");
+  });
+});
+
+
+test("each coverage domain's stage actually collects a field in that domain's backend family", () => {
+  // demographics→basic, body_composition→body, blood_pressure/lab→bp_labs, lifestyle/family→lifestyle
+  const domainStageExpectations = {
+    demographics: "basic_information",
+    body_composition: "body_measurements",
+    blood_pressure: "blood_pressure_labs",
+    lifestyle: "lifestyle_family",
+    family_history: "lifestyle_family",
+    optional_laboratory: "blood_pressure_labs",
+  };
+  Object.entries(domainStageExpectations).forEach(([domainId, stage]) => {
+    assert.equal(wizard.coverageDomain(domainId).stage, stage);
+  });
+});
+
+
+test("coverageDomain falls back safely for an unknown domain id", () => {
+  const domain = wizard.coverageDomain("mystery");
+  assert.equal(domain.label, "mystery");
+  assert.equal(domain.stage, wizard.STAGES[0].id);
+});
+
+
 test("backend draft statuses map onto the same five user-facing states", () => {
   assert.equal(wizard.backendStatusLabel("valid"), "Valid");
   assert.equal(

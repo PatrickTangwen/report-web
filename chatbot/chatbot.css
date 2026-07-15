@@ -834,6 +834,80 @@
   margin-top: 0.8rem;
 }
 
+/* ── Profile Coverage guidance ── */
+
+.chatbot-coverage {
+  margin-top: 0.7rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.chatbot-coverage-list {
+  margin: 0.35rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.chatbot-coverage-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+}
+
+.chatbot-coverage-mark {
+  flex: 0 0 auto;
+  width: 1rem;
+  text-align: center;
+  font-weight: 800;
+}
+
+.chatbot-coverage-item.is-represented .chatbot-coverage-mark {
+  color: #17633a;
+}
+
+.chatbot-coverage-item.is-missing .chatbot-coverage-mark {
+  color: #765300;
+}
+
+.chatbot-coverage-item.is-missing .chatbot-coverage-domain {
+  color: #5f6b78;
+}
+
+.chatbot-coverage-rec-title {
+  margin-top: 0.4rem;
+  color: #273444;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.chatbot-coverage-rec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid #d9a300;
+  background: #fff8e6;
+  border-radius: 4px;
+}
+
+.chatbot-coverage-rec-copy {
+  flex: 1 1 60%;
+  min-width: 0;
+  color: #4a4133;
+  font-size: 0.72rem;
+}
+
+.chatbot-coverage-add {
+  flex: 0 0 auto;
+}
+
 .chatbot-demo-label {
   color: #2c5aa0;
   font-size: 0.74rem;
@@ -1121,6 +1195,35 @@
 
 .quarto-dark .chatbot-profile-field-message.is-preserved {
   color: #e8c56a;
+}
+
+.quarto-dark .chatbot-coverage {
+  border-top-color: #44505d;
+}
+
+.quarto-dark .chatbot-coverage-item.is-represented .chatbot-coverage-mark {
+  color: #7fd6a4;
+}
+
+.quarto-dark .chatbot-coverage-item.is-missing .chatbot-coverage-mark {
+  color: #e8c56a;
+}
+
+.quarto-dark .chatbot-coverage-item.is-missing .chatbot-coverage-domain {
+  color: #9aa6b2;
+}
+
+.quarto-dark .chatbot-coverage-rec-title {
+  color: #e2e8f0;
+}
+
+.quarto-dark .chatbot-coverage-rec {
+  background: #3a3320;
+  border-left-color: #e8c56a;
+}
+
+.quarto-dark .chatbot-coverage-rec-copy {
+  color: #e4dcc9;
 }
 
 .quarto-dark .chatbot-profile-secondary {

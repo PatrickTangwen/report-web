@@ -187,6 +187,37 @@ test("wizard state persists tab-scoped through the draft and is cleared by Start
 });
 
 
+test("a confirmed profile can be reopened for editing, keeping wizard entries and target", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("CKD");
+  session.start("manual", {
+    stage: "review",
+    entries: { age: { raw: "60", unit: "years", original: { raw: "60", unit: "years" } } },
+  });
+  session.applyDraft({ state: "draft", can_confirm: true, reported_features: {} });
+  session.confirm({ state: "confirmed", matching_started: false, reported_features: {} });
+
+  session.reopenForEditing();
+
+  assert.equal(session.getState().phase, "draft");
+  assert.equal(session.getState().target, "CKD");
+  assert.equal(session.getState().source, "manual");
+  assert.equal(session.getState().wizard.entries.age.raw, "60");
+  assert.equal(session.getState().confirmed, null);
+});
+
+
+test("reopening for editing requires a confirmed profile", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("CKD");
+  session.start("manual", { stage: "basic_information", entries: {} });
+
+  assert.throws(() => session.reopenForEditing());
+});
+
+
 test("wizard state requires an active Profile Draft", () => {
   const storage = memoryStorage();
   const session = profileSession.create(storage);
