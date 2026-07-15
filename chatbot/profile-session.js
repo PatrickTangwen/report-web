@@ -23,6 +23,7 @@
       target: null,
       source: null,
       candidates: [],
+      wizard: null,
       draft: null,
       confirmed: null,
     };
@@ -39,6 +40,20 @@
         !Array.isArray(parsed.candidates)
       ) {
         throw new Error("invalid profile session");
+      }
+      // Version boundary: drafts predating the staged Demo Profile Wizard
+      // carry no wizard state and cannot be resumed as free-text drafts.
+      // The selected Comparison Target survives; the draft starts over.
+      if (parsed.phase === "draft" && !parsed.wizard) {
+        return {
+          phase: "target_selected",
+          target: parsed.target,
+          source: null,
+          candidates: [],
+          wizard: null,
+          draft: null,
+          confirmed: null,
+        };
       }
       return parsed;
     } catch (error) {
@@ -67,13 +82,14 @@
           target: target,
           source: null,
           candidates: [],
+          wizard: null,
           draft: null,
           confirmed: null,
         };
         save();
         return state;
       },
-      start: function (source) {
+      start: function (source, wizard) {
         if (!state.target) {
           throw new Error("A Comparison Target must be selected before a Profile Draft can start");
         }
@@ -82,9 +98,18 @@
           target: state.target,
           source: source === "example" ? "example" : "manual",
           candidates: [],
+          wizard: wizard || null,
           draft: null,
           confirmed: null,
         };
+        save();
+        return state;
+      },
+      updateWizard: function (wizard) {
+        if (state.phase !== "draft") {
+          throw new Error("Wizard state requires an active Profile Draft");
+        }
+        state.wizard = wizard;
         save();
         return state;
       },
@@ -93,6 +118,14 @@
           throw new Error("Feature Candidates require an active Profile Draft");
         }
         state.candidates = state.candidates.concat(candidates);
+        save();
+        return state;
+      },
+      setCandidates: function (candidates) {
+        if (state.phase !== "draft") {
+          throw new Error("Feature Candidates require an active Profile Draft");
+        }
+        state.candidates = candidates.slice();
         save();
         return state;
       },

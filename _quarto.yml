@@ -6,6 +6,7 @@ project:
     - chatbot/embedding-demo.js
     - chatbot/icd-keyword.js
     - chatbot/profile-session.js
+    - chatbot/profile-wizard.js
     - chatbot/assistant-shell.js
     - chatbot/chatbot.js
   preview:

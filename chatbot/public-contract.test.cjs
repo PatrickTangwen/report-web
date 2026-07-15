@@ -11,9 +11,14 @@ const styles = fs.readFileSync(path.join(__dirname, "chatbot.css"), "utf8");
 test("every public chatbot API request uses the bounded JSON request helper", () => {
   assert.equal(source.includes("fetch(API_URL"), false);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/paper\/question"/);
-  assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/extract"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/validate"/);
   assert.match(source, /DEMO\.requestJson\([\s\S]*API_URL \+ "\/profile\/confirm"/);
+});
+
+
+test("the public UI never calls free-text Feature Candidate extraction — the wizard replaced it", () => {
+  assert.doesNotMatch(source, /profile\/extract/);
+  assert.doesNotMatch(source, /function sendProfileMessage/);
 });
 
 
@@ -118,14 +123,20 @@ test("the Assistant Shell storage prefix is version-boundaried from the pre-shel
 });
 
 
-test("the composer is not part of the Research Task Menu and is gated by the active task", () => {
+test("the composer exists only in Paper Question Mode; Build a Demo Profile never shows one", () => {
   const showTask = extractFunctionSource("showTask");
   assert.match(showTask, /menuEl\.hidden = task !== null/);
   assert.match(showTask, /updateComposerVisibility\(\)/);
   const updateComposerVisibility = extractFunctionSource("updateComposerVisibility");
+  assert.match(updateComposerVisibility, /inputRow\.hidden = activeTask !== "paper"/);
+});
+
+
+test("an active Profile Draft widens the Assistant Shell into the wizard layout", () => {
+  const updateComposerVisibility = extractFunctionSource("updateComposerVisibility");
   assert.match(
     updateComposerVisibility,
-    /activeTask === "paper" ||\s*\n\s*\(activeTask === "profile" && profileSession\.getState\(\)\.phase === "draft"\)/,
+    /"is-wizard",\s*\n\s*activeTask === "profile" && profileSession\.getState\(\)\.phase === "draft"/,
   );
 });
 
@@ -225,7 +236,14 @@ test("after target selection the visitor can build a profile or load the reviewe
   assert.match(source, /if \(action === "load-synthetic-example"\) loadSyntheticExample\(button\)/);
   const loadSyntheticExample = extractFunctionSource("loadSyntheticExample");
   assert.match(loadSyntheticExample, /API_URL \+ "\/profile\/synthetic-example\/"/);
-  assert.match(loadSyntheticExample, /profileSession\.start\("example"\)/);
+  assert.match(loadSyntheticExample, /profileSession\.start\("example"/);
+});
+
+
+test("a Synthetic Example Profile populates the same wizard state manual entry uses", () => {
+  const loadSyntheticExample = extractFunctionSource("loadSyntheticExample");
+  assert.match(loadSyntheticExample, /WIZARD\.entriesFromCandidates\(example\.candidates/);
+  assert.match(loadSyntheticExample, /renderProfileWizard\(\)/);
 });
 
 
@@ -254,4 +272,68 @@ test("the confirmed profile compares against the pre-chosen target with no targe
 test("Start Over returns all the way to target selection, not a target-less starter", () => {
   const startOverDemoProfile = extractFunctionSource("startOverDemoProfile");
   assert.match(startOverDemoProfile, /renderTargetSelection\(\)/);
+});
+
+
+test("Build Demo Profile opens the staged wizard, never a free-text prompt", () => {
+  const startDemoProfile = extractFunctionSource("startDemoProfile");
+  assert.match(startDemoProfile, /profileSession\.start\("manual"/);
+  assert.match(startDemoProfile, /renderProfileWizard\(\)/);
+  assert.doesNotMatch(startDemoProfile, /input\.focus/);
+  assert.doesNotMatch(source, /Describe your profile in your own words/);
+});
+
+
+test("the wizard renders the reviewed stages from the shared wizard module", () => {
+  const renderProfileWizard = extractFunctionSource("renderProfileWizard");
+  assert.match(renderProfileWizard, /WIZARD\.STAGES\.forEach/);
+  assert.match(renderProfileWizard, /"data-chatbot-action":\s*"wizard-back"/);
+  assert.match(renderProfileWizard, /"data-chatbot-action":\s*"wizard-continue"/);
+});
+
+
+test("an active Profile Draft is restored into a live wizard, not stale persisted markup", () => {
+  const initProfileView = extractFunctionSource("initProfileView");
+  assert.match(initProfileView, /phase === "draft"/);
+  assert.match(initProfileView, /renderProfileWizard\(\)/);
+});
+
+
+test("validation runs on field exit and on step continuation", () => {
+  assert.match(
+    source,
+    /addEventListener\("focusout",[\s\S]*?refreshWizardFieldRow\(field, row\)/,
+  );
+  const wizardContinue = extractFunctionSource("wizardContinue");
+  assert.match(wizardContinue, /WIZARD\.validateStage\(/);
+  assert.match(wizardContinue, /validation\.blocked/);
+});
+
+
+test("changing a unit converts through the shared module, preserving the original for review", () => {
+  assert.match(source, /WIZARD\.convertEntry\(/);
+  assert.match(source, /Original value preserved for review: /);
+});
+
+
+test("the Review stage validates through the deterministic backend contract", () => {
+  const runReviewValidation = extractFunctionSource("runReviewValidation");
+  assert.match(runReviewValidation, /WIZARD\.buildCandidates\(wizard\.entries\)/);
+  assert.match(runReviewValidation, /API_URL \+ "\/profile\/validate"/);
+  assert.match(runReviewValidation, /"data-chatbot-action":\s*"wizard-retry-validate"/);
+});
+
+
+test("review rows expose actionable edit and removal controls for entered fields", () => {
+  const renderProfileDraft = extractFunctionSource("renderProfileDraft");
+  assert.match(renderProfileDraft, /"data-chatbot-action":\s*"wizard-goto-stage"/);
+  assert.match(renderProfileDraft, /"data-chatbot-action":\s*"wizard-remove-review-field"/);
+  assert.match(renderProfileDraft, /Reported Features/);
+  assert.match(renderProfileDraft, /Derived Match Features/);
+});
+
+
+test("validation copy never labels values normal, abnormal, healthy, or unhealthy", () => {
+  assert.doesNotMatch(source, /\b(abnormal|unhealthy)\b/i);
+  assert.doesNotMatch(source, /\b(normal|healthy)\b(?! neighborhood)/i);
 });

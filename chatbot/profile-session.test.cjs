@@ -100,7 +100,7 @@ test("single-turn and multi-turn candidates stay in one tab-scoped draft", () =>
   const session = profileSession.create(storage);
 
   session.selectTarget("CKD");
-  session.start();
+  session.start("manual", { stage: "basic_information", entries: {} });
   session.appendCandidates([height]);
   session.appendCandidates([
     {
@@ -164,6 +164,81 @@ test("Start Over clears the target too, so a new session must choose again", () 
     "unrelated conversation",
   );
   assert.equal(storage.getItem(profileSession.STORAGE_KEY), null);
+});
+
+
+test("wizard state persists tab-scoped through the draft and is cleared by Start Over", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("CKD");
+  session.start("manual", { stage: "basic_information", entries: {} });
+
+  session.updateWizard({
+    stage: "body_measurements",
+    entries: { height: { raw: "170", unit: "cm", original: { raw: "170", unit: "cm" } } },
+  });
+
+  const reopened = profileSession.create(storage);
+  assert.equal(reopened.getState().wizard.stage, "body_measurements");
+  assert.equal(reopened.getState().wizard.entries.height.raw, "170");
+
+  session.reset();
+  assert.equal(session.getState().wizard, null);
+});
+
+
+test("wizard state requires an active Profile Draft", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("CKD");
+
+  assert.throws(() => session.updateWizard({ stage: "basic_information", entries: {} }));
+});
+
+
+test("setCandidates replaces the draft candidates instead of accumulating them", () => {
+  const storage = memoryStorage();
+  const session = profileSession.create(storage);
+  session.selectTarget("CKD");
+  session.start("manual", { stage: "basic_information", entries: {} });
+  session.setCandidates([height]);
+  session.setCandidates([
+    {
+      field: "weight",
+      raw_value: 81,
+      raw_unit: "kg",
+      source_text: "weight 81 kg",
+      operation: "set",
+    },
+  ]);
+
+  assert.deepEqual(
+    session.getState().candidates.map((candidate) => candidate.field),
+    ["weight"],
+  );
+});
+
+
+test("a pre-wizard free-text draft is version-boundaried back to target selection, keeping the target", () => {
+  const storage = memoryStorage();
+  storage.setItem(
+    profileSession.STORAGE_KEY,
+    JSON.stringify({
+      phase: "draft",
+      target: "MASH",
+      source: "manual",
+      candidates: [height],
+      draft: null,
+      confirmed: null,
+    }),
+  );
+
+  const session = profileSession.create(storage);
+
+  assert.equal(session.getState().phase, "target_selected");
+  assert.equal(session.getState().target, "MASH");
+  assert.deepEqual(session.getState().candidates, []);
+  assert.equal(session.getState().wizard, null);
 });
 
 

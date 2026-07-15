@@ -4,34 +4,12 @@
   var DEMO = window.ALIGATEHR_EMBEDDING_DEMO;
   var PROFILE = window.ALIGATEHR_PROFILE_SESSION;
   var SHELL = window.ALIGATEHR_ASSISTANT_SHELL;
+  var WIZARD = window.ALIGATEHR_PROFILE_WIZARD;
   var API_URL = DEMO.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
   var STORAGE_PREFIX = "aligatehr-chatbot-shell-v1-";
   var profileSession = PROFILE.create(sessionStorage);
   var shellSession = SHELL.create(sessionStorage);
   var profileMatchController = DEMO.createRequestController();
-  var PROFILE_CHOICES = {
-    sex: [
-      ["female", "Female"],
-      ["male", "Male"],
-    ],
-    smoking_status: [
-      ["never", "Never"],
-      ["former", "Former"],
-      ["current", "Current"],
-    ],
-    alcohol_frequency: [
-      ["never", "Never"],
-      ["special_occasions", "Special occasions only"],
-      ["one_to_three_per_month", "1–3 times a month"],
-      ["one_to_two_per_week", "1–2 times a week"],
-      ["three_to_four_per_week", "3–4 times a week"],
-      ["daily_or_almost_daily", "Daily or almost daily"],
-    ],
-    affected_relative: [
-      ["true", "Yes"],
-      ["false", "No"],
-    ],
-  };
   var COMPARISON_TARGETS = [
     ["CKD", "Chronic Kidney Disease"],
     ["Cardiac_Fibrosis", "Cardiac Fibrosis"],
@@ -100,7 +78,6 @@
 
   var paperHistory = [];
   var busy = false;
-  var profileCardCounter = 0;
 
   // ── Build DOM ──
 
@@ -217,10 +194,14 @@
 
   function updateComposerVisibility() {
     var activeTask = shellSession.getState().activeTask;
-    var showComposer =
-      activeTask === "paper" ||
-      (activeTask === "profile" && profileSession.getState().phase === "draft");
-    inputRow.hidden = !showComposer;
+    // Free-form input exists only for Paper Question Mode. Build a Demo
+    // Profile is a staged wizard with reviewed controls, never a composer,
+    // and while a Profile Draft is active the shell widens into the wizard.
+    inputRow.hidden = activeTask !== "paper";
+    panel.classList.toggle(
+      "is-wizard",
+      activeTask === "profile" && profileSession.getState().phase === "draft",
+    );
   }
 
   function showTask(task) {
@@ -313,7 +294,6 @@
   if (activeTaskOnLoad === "paper") initPaperView();
   if (activeTaskOnLoad === "visualizations") initVisualizationsView();
   if (activeTaskOnLoad === "profile") initProfileView();
-  profileCardCounter = profileMessagesEl.querySelectorAll(".chatbot-profile-review").length;
   updateProfileInputState();
 
   // ── Events ──
@@ -370,7 +350,12 @@
     if (action === "select-profile-target") selectProfileTarget(button);
     if (action === "start-demo-profile") startDemoProfile();
     if (action === "load-synthetic-example") loadSyntheticExample(button);
-    if (action === "save-profile-edits") saveProfileEdits(button);
+    if (action === "wizard-back") wizardBack();
+    if (action === "wizard-continue") wizardContinue();
+    if (action === "wizard-goto-stage") wizardGotoStage(button.getAttribute("data-stage"));
+    if (action === "wizard-clear-field") wizardClearField(button.getAttribute("data-field"));
+    if (action === "wizard-remove-review-field") wizardRemoveReviewField(button.getAttribute("data-field"));
+    if (action === "wizard-retry-validate") runReviewValidation();
     if (action === "confirm-demo-profile") confirmDemoProfile(button);
     if (action === "compare-confirmed-profile") compareConfirmedProfile(button);
     if (action === "view-matched-references") viewMatchedReferences(button);
@@ -495,11 +480,6 @@
   function send() {
     var text = input.value.trim();
     if (!text || busy) return;
-
-    if (shellSession.getState().activeTask === "profile" && profileSession.getState().phase === "draft") {
-      sendProfileMessage(text);
-      return;
-    }
 
     addMessage(paperMessagesEl, "user", text);
     paperHistory.push({ role: "user", content: text });
@@ -639,6 +619,12 @@
   }
 
   function initProfileView() {
+    // An active Profile Draft is always re-rendered from the tab-scoped
+    // wizard state, never resumed from persisted markup.
+    if (profileSession.getState().phase === "draft") {
+      renderProfileWizard();
+      return;
+    }
     if (profileMessagesEl.children.length) return;
     renderTargetSelection();
   }
@@ -717,19 +703,15 @@
   function startDemoProfile() {
     var state = profileSession.getState();
     if (state.phase === "draft") {
-      input.focus();
+      renderProfileWizard();
       return;
     }
     if (state.phase !== "target_selected") return;
-    profileSession.start("manual");
-    addMessage(
-      profileMessagesEl,
-      "assistant",
-      "Describe your profile in your own words — you can provide details in one " +
-        "message or across several messages.",
-    );
-    updateProfileInputState();
-    input.focus();
+    profileSession.start("manual", {
+      stage: WIZARD.STAGES[0].id,
+      entries: {},
+    });
+    renderProfileWizard();
   }
 
   function loadSyntheticExample(button) {
@@ -750,15 +732,13 @@
       30000,
     )
       .then(function (example) {
-        profileSession.start("example");
-        profileSession.appendCandidates(example.candidates || []);
-        return validateProfileCandidates();
-      })
-      .then(function () {
-        status.textContent =
-          "Loaded the Synthetic Example Profile for " + targetLabel(target) +
-          ". Review and edit any value before confirming.";
-        updateProfileInputState();
+        // The reviewed example populates the same staged wizard state that
+        // manual entry uses, so both paths converge on one Review stage.
+        profileSession.start("example", {
+          stage: WIZARD.STAGES[0].id,
+          entries: WIZARD.entriesFromCandidates(example.candidates || []),
+        });
+        renderProfileWizard();
       })
       .catch(function (error) {
         button.disabled = false;
@@ -767,10 +747,479 @@
       });
   }
 
-  function validateProfileCandidates(statusEl) {
-    var candidates = profileSession.getState().candidates;
-    if (statusEl) statusEl.textContent = "Validating fields and units…";
-    return DEMO.requestJson(
+  // ── Demo Profile Wizard (staged form inside the Assistant Shell) ──
+
+  function wizardState() {
+    var state = profileSession.getState();
+    return state.phase === "draft" ? state.wizard : null;
+  }
+
+  function stageIndex(stageId) {
+    for (var i = 0; i < WIZARD.STAGES.length; i++) {
+      if (WIZARD.STAGES[i].id === stageId) return i;
+    }
+    return 0;
+  }
+
+  function renderProfileWizard() {
+    var state = profileSession.getState();
+    if (state.phase !== "draft" || !state.wizard) return;
+    var wizard = state.wizard;
+    profileMessagesEl.innerHTML = "";
+
+    var card = createEl("div", "chatbot-msg chatbot-msg-assistant chatbot-profile-wizard");
+    var title = createEl("div", "chatbot-profile-title");
+    title.textContent = "Demo Profile Wizard — " + targetLabel(state.target);
+    card.appendChild(title);
+    if (state.source === "example") {
+      var exampleBadge = createEl("div", "chatbot-demo-label");
+      exampleBadge.textContent =
+        "Synthetic Example Profile loaded — reviewed, editable, not a real patient";
+      card.appendChild(exampleBadge);
+    }
+    var notice = createEl("p", "chatbot-profile-notice");
+    notice.textContent =
+      "Every field is optional and values are preserved exactly as entered. " +
+      "Use a synthetic or sufficiently de-identified profile. Nothing is " +
+      "compared until you explicitly confirm on the Review stage.";
+    card.appendChild(notice);
+
+    var steps = createEl("ol", "chatbot-wizard-steps");
+    var currentIndex = stageIndex(wizard.stage);
+    WIZARD.STAGES.forEach(function (stage, index) {
+      var step = createEl("li", "chatbot-wizard-step");
+      if (index === currentIndex) step.classList.add("is-current");
+      if (index < currentIndex) step.classList.add("is-done");
+      step.textContent = stage.label;
+      steps.appendChild(step);
+    });
+    card.appendChild(steps);
+
+    var stageEl = createEl("div", "chatbot-wizard-stage");
+    if (wizard.stage === "review") {
+      stageEl.setAttribute("data-wizard-review", "1");
+    } else {
+      renderWizardStageFields(stageEl, wizard);
+    }
+    card.appendChild(stageEl);
+
+    var nav = createEl("div", "chatbot-profile-actions chatbot-wizard-nav");
+    var backButton = createEl("button", "chatbot-profile-secondary", {
+      type: "button",
+      "data-chatbot-action": "wizard-back",
+    });
+    backButton.textContent = "Back";
+    backButton.disabled = currentIndex === 0;
+    nav.appendChild(backButton);
+    if (wizard.stage !== "review") {
+      var continueButton = createEl("button", "chatbot-profile-primary", {
+        type: "button",
+        "data-chatbot-action": "wizard-continue",
+      });
+      continueButton.textContent =
+        currentIndex === WIZARD.STAGES.length - 2 ? "Continue to Review" : "Continue";
+      nav.appendChild(continueButton);
+    }
+    var startOverButton = createEl("button", "chatbot-profile-link", {
+      type: "button",
+      "data-chatbot-action": "start-over-demo-profile",
+    });
+    startOverButton.textContent = "Start Over";
+    nav.appendChild(startOverButton);
+    card.appendChild(nav);
+
+    var status = createEl("div", "chatbot-profile-action-status chatbot-wizard-status", {
+      "aria-live": "polite",
+    });
+    card.appendChild(status);
+
+    addRawElement(profileMessagesEl, card);
+    updateProfileInputState();
+    if (wizard.stage === "review") runReviewValidation();
+  }
+
+  function renderWizardStageFields(stageEl, wizard) {
+    var target = profileSession.getState().target;
+    var fields = WIZARD.fieldsForStage(wizard.stage, target);
+    var recommended = fields.filter(function (item) { return item.recommended; });
+    var additional = fields.filter(function (item) { return !item.recommended; });
+    if (recommended.length && additional.length) {
+      var recommendedTitle = createEl("div", "chatbot-profile-subtitle");
+      recommendedTitle.textContent = "Recommended for this Comparison Target";
+      stageEl.appendChild(recommendedTitle);
+    }
+    recommended.forEach(function (item) {
+      stageEl.appendChild(renderWizardFieldRow(item.field, wizard, true));
+    });
+    if (recommended.length && additional.length) {
+      var additionalTitle = createEl("div", "chatbot-profile-subtitle");
+      additionalTitle.textContent = "Additional optional fields";
+      stageEl.appendChild(additionalTitle);
+    }
+    additional.forEach(function (item) {
+      stageEl.appendChild(renderWizardFieldRow(item.field, wizard, false));
+    });
+    if (wizard.stage === "body_measurements") {
+      var derivedEl = createEl("div", "chatbot-wizard-derived", {
+        "data-wizard-derived": "1",
+      });
+      stageEl.appendChild(derivedEl);
+      refreshDerivedPreview();
+    }
+  }
+
+  function buildWizardUnitControl(field, meta, entry) {
+    if (meta.fixedUnit) {
+      var fixed = createEl("span", "chatbot-profile-unit");
+      fixed.textContent = meta.canonicalUnit;
+      return fixed;
+    }
+    var select = createEl("select", "chatbot-profile-input chatbot-wizard-unit", {
+      "data-wizard-part": "unit",
+      "aria-label": meta.label + " unit",
+    });
+    if (!entry.unit) {
+      var prompt = createEl("option");
+      prompt.value = "";
+      prompt.textContent = "Select unit";
+      select.appendChild(prompt);
+    }
+    meta.units.forEach(function (unit) {
+      var option = createEl("option");
+      option.value = unit;
+      option.textContent = unit;
+      select.appendChild(option);
+    });
+    select.value = entry.unit || "";
+    return select;
+  }
+
+  function renderWizardFieldRow(field, wizard, recommended) {
+    var meta = WIZARD.FIELDS[field];
+    var entry = wizard.entries[field] || WIZARD.newEntry(field);
+    var row = createEl("div", "chatbot-profile-field chatbot-wizard-field", {
+      "data-wizard-field": field,
+      "data-wizard-recommended": recommended ? "1" : "0",
+    });
+
+    var heading = createEl("div", "chatbot-profile-field-heading");
+    var labelWrap = createEl("div", "chatbot-wizard-label-wrap");
+    var label = createEl("label", "chatbot-profile-field-label", {
+      for: "wizard-" + field,
+    });
+    label.textContent = meta.label;
+    var optionalTag = createEl("span", "chatbot-wizard-optional");
+    optionalTag.textContent = recommended ? "Optional — recommended" : "Optional";
+    labelWrap.append(label, optionalTag);
+    var badge = createEl("span", "chatbot-profile-status", {
+      "data-wizard-status": "1",
+    });
+    badge.hidden = true;
+    heading.append(labelWrap, badge);
+    row.appendChild(heading);
+
+    var edit = createEl("div", "chatbot-profile-edit");
+    if (meta.kind === "choice") {
+      var select = createEl("select", "chatbot-profile-input", {
+        id: "wizard-" + field,
+        "data-wizard-part": "value",
+      });
+      var prompt = createEl("option");
+      prompt.value = "";
+      prompt.textContent = "Choose a value (optional)";
+      select.appendChild(prompt);
+      meta.choices.forEach(function (choice) {
+        var option = createEl("option");
+        option.value = choice[0];
+        option.textContent = choice[1];
+        select.appendChild(option);
+      });
+      select.value = WIZARD.isBlank(entry) ? "" : String(entry.raw);
+      edit.appendChild(select);
+    } else if (entry.unit === "ft/in") {
+      var feet = createEl("input", "chatbot-profile-input chatbot-wizard-number", {
+        id: "wizard-" + field,
+        type: "text",
+        inputmode: "decimal",
+        "data-wizard-part": "feet",
+        value: entry.raw && entry.raw.feet != null ? entry.raw.feet : "",
+        "aria-label": meta.label + " feet",
+      });
+      var feetUnit = createEl("span", "chatbot-profile-unit");
+      feetUnit.textContent = "ft";
+      var inches = createEl("input", "chatbot-profile-input chatbot-wizard-number", {
+        type: "text",
+        inputmode: "decimal",
+        "data-wizard-part": "inches",
+        value: entry.raw && entry.raw.inches != null ? entry.raw.inches : "",
+        "aria-label": meta.label + " inches",
+      });
+      var inchUnit = createEl("span", "chatbot-profile-unit");
+      inchUnit.textContent = "in";
+      edit.append(feet, feetUnit, inches, inchUnit, buildWizardUnitControl(field, meta, entry));
+    } else {
+      var value = createEl("input", "chatbot-profile-input chatbot-wizard-number", {
+        id: "wizard-" + field,
+        type: "text",
+        inputmode: "decimal",
+        "data-wizard-part": "value",
+        value: WIZARD.isBlank(entry) ? "" : String(entry.raw),
+      });
+      edit.append(value, buildWizardUnitControl(field, meta, entry));
+    }
+    var clearButton = createEl("button", "chatbot-profile-link chatbot-wizard-clear", {
+      type: "button",
+      "data-chatbot-action": "wizard-clear-field",
+      "data-field": field,
+    });
+    clearButton.textContent = "Remove";
+    edit.appendChild(clearButton);
+    row.appendChild(edit);
+
+    var original = createEl("div", "chatbot-wizard-original", {
+      "data-wizard-original": "1",
+    });
+    original.hidden = true;
+    row.appendChild(original);
+    var message = createEl("div", "chatbot-profile-field-message", {
+      "data-wizard-message": "1",
+    });
+    message.hidden = true;
+    row.appendChild(message);
+
+    refreshWizardFieldRow(field, row);
+    return row;
+  }
+
+  function refreshWizardFieldRow(field, row) {
+    var wizard = wizardState();
+    if (!wizard || !row) return;
+    var entry = wizard.entries[field] || WIZARD.newEntry(field);
+    var result = WIZARD.validateEntry(field, entry, wizard.entries);
+    var badge = row.querySelector("[data-wizard-status]");
+    badge.hidden = result.status === "neutral";
+    badge.textContent = WIZARD.statusLabel(result.status);
+    badge.className = "chatbot-profile-status status-" + result.status;
+    var message = row.querySelector("[data-wizard-message]");
+    message.hidden = !result.message;
+    message.textContent = result.message || "";
+    message.classList.toggle("is-preserved", result.status === "outside_reference_support");
+    var original = row.querySelector("[data-wizard-original]");
+    var showOriginal =
+      !WIZARD.isBlank(entry) && entry.original && entry.original.unit !== entry.unit;
+    original.hidden = !showOriginal;
+    original.textContent = showOriginal
+      ? "Original value preserved for review: " +
+        WIZARD.formatRaw(entry.original.raw, entry.original.unit)
+      : "";
+    var clearButton = row.querySelector('[data-chatbot-action="wizard-clear-field"]');
+    if (clearButton) clearButton.hidden = WIZARD.isBlank(entry);
+  }
+
+  function replaceWizardFieldRow(field, row) {
+    var wizard = wizardState();
+    if (!wizard || !row) return;
+    var recommended = row.getAttribute("data-wizard-recommended") === "1";
+    var replacement = renderWizardFieldRow(field, wizard, recommended);
+    row.replaceWith(replacement);
+  }
+
+  function refreshDerivedPreview() {
+    var wizard = wizardState();
+    var container = profileMessagesEl.querySelector("[data-wizard-derived]");
+    if (!wizard || !container) return;
+    container.innerHTML = "";
+    var derived = WIZARD.deriveFeatures(wizard.entries);
+    var fields = Object.keys(derived);
+    container.hidden = !fields.length;
+    if (!fields.length) return;
+    var subtitle = createEl("div", "chatbot-profile-subtitle");
+    subtitle.textContent = "Derived Match Features";
+    container.appendChild(subtitle);
+    fields.forEach(function (field) {
+      var feature = derived[field];
+      var item = createEl("div", "chatbot-profile-derived");
+      var copy = createEl("span", "chatbot-profile-derived-copy");
+      copy.textContent =
+        feature.label + ": " + feature.value + " " + feature.unit +
+        " — calculated deterministically from " + feature.derivedFrom.join(" + ");
+      item.appendChild(copy);
+      container.appendChild(item);
+    });
+  }
+
+  function refreshDerivedAndConflicts(field) {
+    if (WIZARD.DERIVED_TRIGGER_FIELDS.indexOf(field) === -1) return;
+    refreshDerivedPreview();
+    var bmiRow = profileMessagesEl.querySelector('[data-wizard-field="bmi"]');
+    if (bmiRow && field !== "bmi") refreshWizardFieldRow("bmi", bmiRow);
+  }
+
+  function readWizardRaw(field, row) {
+    var feet = row.querySelector('[data-wizard-part="feet"]');
+    if (feet) {
+      var inches = row.querySelector('[data-wizard-part="inches"]');
+      return { feet: feet.value, inches: inches ? inches.value : "" };
+    }
+    var value = row.querySelector('[data-wizard-part="value"]');
+    return value ? value.value : "";
+  }
+
+  profileMessagesEl.addEventListener("input", function (event) {
+    var part = event.target.getAttribute("data-wizard-part");
+    if (!part || part === "unit") return;
+    var row = event.target.closest("[data-wizard-field]");
+    var wizard = wizardState();
+    if (!row || !wizard) return;
+    var field = row.getAttribute("data-wizard-field");
+    if (WIZARD.FIELDS[field].kind === "choice") return;
+    wizard.entries[field] = WIZARD.editEntry(
+      field,
+      wizard.entries[field] || WIZARD.newEntry(field),
+      readWizardRaw(field, row),
+    );
+    profileSession.updateWizard(wizard);
+  });
+
+  // Validation runs on field exit (and again on step continuation); blank
+  // optional fields stay neutral.
+  profileMessagesEl.addEventListener("focusout", function (event) {
+    var part = event.target.getAttribute("data-wizard-part");
+    if (!part || part === "unit") return;
+    var row = event.target.closest("[data-wizard-field]");
+    var wizard = wizardState();
+    if (!row || !wizard) return;
+    var field = row.getAttribute("data-wizard-field");
+    refreshWizardFieldRow(field, row);
+    refreshDerivedAndConflicts(field);
+    saveState();
+  });
+
+  profileMessagesEl.addEventListener("change", function (event) {
+    var part = event.target.getAttribute("data-wizard-part");
+    if (!part) return;
+    var row = event.target.closest("[data-wizard-field]");
+    var wizard = wizardState();
+    if (!row || !wizard) return;
+    var field = row.getAttribute("data-wizard-field");
+    var meta = WIZARD.FIELDS[field];
+    if (part === "unit") {
+      var newUnit = event.target.value;
+      if (!newUnit) return;
+      // Changing a unit converts the visible value; the original value and
+      // unit stay preserved on the entry for review.
+      wizard.entries[field] = WIZARD.convertEntry(
+        field,
+        wizard.entries[field] || WIZARD.newEntry(field),
+        newUnit,
+      );
+      profileSession.updateWizard(wizard);
+      replaceWizardFieldRow(field, row);
+      refreshDerivedAndConflicts(field);
+      saveState();
+      return;
+    }
+    if (meta.kind === "choice") {
+      wizard.entries[field] = { raw: event.target.value, unit: null, original: null };
+      profileSession.updateWizard(wizard);
+      refreshWizardFieldRow(field, row);
+      saveState();
+    }
+  });
+
+  function wizardBack() {
+    var wizard = wizardState();
+    if (!wizard) return;
+    var index = stageIndex(wizard.stage);
+    if (index === 0) return;
+    wizard.stage = WIZARD.STAGES[index - 1].id;
+    profileSession.updateWizard(wizard);
+    renderProfileWizard();
+  }
+
+  function wizardContinue() {
+    var wizard = wizardState();
+    if (!wizard) return;
+    var validation = WIZARD.validateStage(
+      wizard.stage,
+      wizard.entries,
+      profileSession.getState().target,
+    );
+    profileMessagesEl.querySelectorAll("[data-wizard-field]").forEach(function (row) {
+      refreshWizardFieldRow(row.getAttribute("data-wizard-field"), row);
+    });
+    var status = profileMessagesEl.querySelector(".chatbot-wizard-status");
+    if (validation.blocked) {
+      if (status) {
+        status.textContent =
+          "Resolve or remove the fields marked above to continue. Blank optional fields can stay blank.";
+      }
+      return;
+    }
+    var index = stageIndex(wizard.stage);
+    if (index >= WIZARD.STAGES.length - 1) return;
+    wizard.stage = WIZARD.STAGES[index + 1].id;
+    profileSession.updateWizard(wizard);
+    renderProfileWizard();
+  }
+
+  function wizardGotoStage(stageId) {
+    var wizard = wizardState();
+    if (!wizard) return;
+    var known = WIZARD.STAGES.filter(function (stage) {
+      return stage.id === stageId;
+    });
+    if (!known.length) return;
+    wizard.stage = stageId;
+    profileSession.updateWizard(wizard);
+    renderProfileWizard();
+  }
+
+  function wizardClearField(field) {
+    var wizard = wizardState();
+    if (!wizard || !WIZARD.FIELDS[field]) return;
+    delete wizard.entries[field];
+    profileSession.updateWizard(wizard);
+    var row = profileMessagesEl.querySelector('[data-wizard-field="' + field + '"]');
+    if (row) replaceWizardFieldRow(field, row);
+    refreshDerivedAndConflicts(field);
+    saveState();
+  }
+
+  function wizardRemoveReviewField(field) {
+    var wizard = wizardState();
+    if (!wizard || !WIZARD.FIELDS[field]) return;
+    delete wizard.entries[field];
+    profileSession.updateWizard(wizard);
+    runReviewValidation();
+  }
+
+  // The Review stage submits the wizard entries through the deterministic
+  // /profile/validate contract; the backend remains the validation authority.
+  function runReviewValidation() {
+    var wizard = wizardState();
+    var holder = profileMessagesEl.querySelector("[data-wizard-review]");
+    if (!wizard || wizard.stage !== "review" || !holder) return;
+    holder.innerHTML = "";
+    var candidates = WIZARD.buildCandidates(wizard.entries);
+    if (!candidates.length) {
+      var empty = createEl("p", "chatbot-profile-notice");
+      empty.textContent =
+        "No fields are entered yet. Every field is optional, but the review " +
+        "needs at least one entered value — use Back to add one on any stage.";
+      holder.appendChild(empty);
+      saveState();
+      return;
+    }
+    profileSession.setCandidates(candidates);
+    var pending = createEl("p", "chatbot-profile-notice");
+    pending.textContent = "Validating fields and units…";
+    holder.appendChild(pending);
+    var coldStartNotice = setTimeout(function () {
+      pending.textContent =
+        "Preparing the research assistant — this can take up to a minute after inactivity.";
+    }, 4000);
+    DEMO.requestJson(
       fetch,
       API_URL + "/profile/validate",
       {
@@ -781,267 +1230,173 @@
       30000,
     )
       .then(function (draft) {
+        clearTimeout(coldStartNotice);
         profileSession.applyDraft(draft);
-        renderProfileDraft(draft);
-        return draft;
-      });
-  }
-
-  function sendProfileMessage(text) {
-    addMessage(profileMessagesEl, "user", text);
-    input.value = "";
-    input.style.height = "auto";
-    busy = true;
-    sendBtn.disabled = true;
-    var typing = showTyping(profileMessagesEl);
-
-    DEMO.requestJson(
-      fetch,
-      API_URL + "/profile/extract",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
-      },
-      30000,
-    )
-      .then(function (data) {
-        profileSession.appendCandidates(data.candidates || []);
-        return validateProfileCandidates();
-      })
-      .then(function (draft) {
-        typing.remove();
-        var count = Object.keys(draft.reported_features || {}).length;
-        var reply = count
-          ? "I created an editable Profile Draft. Review every value and status below before confirming."
-          : "I could not identify a supported field yet. Add an easy-to-know measurement such as age, height, weight, or blood pressure.";
-        addMessage(profileMessagesEl, "assistant", reply);
+        holder.innerHTML = "";
+        renderProfileDraft(draft, holder);
       })
       .catch(function (error) {
-        typing.remove();
-        addMessage(
-          profileMessagesEl,
-          "assistant",
-          "I could not update the Profile Draft. " + error.message + " Please correct the message or try again.",
-        );
+        clearTimeout(coldStartNotice);
+        holder.innerHTML = "";
+        var copy = createEl("p", "chatbot-profile-notice");
+        copy.textContent =
+          "The review validation is unavailable right now. Your entered values are unchanged.";
+        var retry = createEl("button", "chatbot-demo-button", {
+          type: "button",
+          "data-chatbot-action": "wizard-retry-validate",
+        });
+        retry.textContent = "Retry";
+        var editButton = createEl("button", "chatbot-profile-secondary", {
+          type: "button",
+          "data-chatbot-action": "wizard-goto-stage",
+          "data-stage": WIZARD.STAGES[0].id,
+        });
+        editButton.textContent = "Continue editing";
+        holder.append(copy, retry, editButton);
+        console.error("Profile validation error:", error);
       })
       .finally(function () {
-        busy = false;
-        sendBtn.disabled = false;
         saveState();
       });
   }
 
-  function statusLabel(status) {
-    return {
-      valid: "Valid",
-      ambiguous: "Needs clarification",
-      out_of_range: "Outside accepted input range",
-      outside_reference_support: "Outside reference support",
-      unsupported: "Unsupported for this demo",
-      conflicting: "Conflicting values",
-    }[status] || status;
-  }
-
-  function renderProfileDraft(draft) {
-    profileCardCounter += 1;
-    var cardId = "profile-review-" + profileCardCounter;
-    var oldCards = profileMessagesEl.querySelectorAll(".chatbot-profile-review[data-profile-current='1']");
-    oldCards.forEach(function (card) {
-      card.remove();
+  function renderProfileDraft(draft, holder) {
+    var review = createEl("div", "chatbot-profile-review", {
+      "data-profile-current": "1",
     });
-
-    var card = createEl(
-      "div",
-      "chatbot-msg chatbot-msg-assistant chatbot-profile-review",
-      { "data-profile-current": "1" },
-    );
     var isExample = profileSession.getState().source === "example";
     var title = createEl("div", "chatbot-profile-title");
     title.textContent = isExample
       ? "Synthetic Example Profile — review required"
       : "Profile Draft — review required";
-    card.appendChild(title);
-
+    review.appendChild(title);
     if (isExample) {
       var exampleBadge = createEl("div", "chatbot-demo-label");
       exampleBadge.textContent = "Reviewed example — editable, not a real patient";
-      card.appendChild(exampleBadge);
+      review.appendChild(exampleBadge);
     }
-
     var notice = createEl("p", "chatbot-profile-notice");
     notice.textContent =
-      "Demo/research comparison only. No matching or personal prediction has started.";
-    card.appendChild(notice);
+      "Demo/research comparison only — use a synthetic or sufficiently " +
+      "de-identified profile. No matching or personal prediction has started.";
+    review.appendChild(notice);
 
     var features = draft.reported_features || {};
+    var reportedTitle = createEl("div", "chatbot-profile-subtitle");
+    reportedTitle.textContent = "Reported Features";
+    review.appendChild(reportedTitle);
     Object.keys(features).forEach(function (field) {
       var feature = features[field];
-      var row = createEl("div", "chatbot-profile-field");
-      row.setAttribute("data-profile-field", field);
+      var row = createEl("div", "chatbot-profile-field", {
+        "data-profile-field": field,
+      });
       var heading = createEl("div", "chatbot-profile-field-heading");
-      var label = createEl("label", "chatbot-profile-field-label");
+      var label = createEl("span", "chatbot-profile-field-label");
       label.textContent = feature.label;
-      label.setAttribute("for", cardId + "-" + field);
-      var badge = createEl(
-        "span",
-        "chatbot-profile-status status-" + feature.status,
-      );
-      badge.textContent = statusLabel(feature.status);
+      var badge = createEl("span", "chatbot-profile-status status-" + feature.status);
+      badge.textContent = WIZARD.backendStatusLabel(feature.status, feature.message);
       heading.append(label, badge);
+      row.appendChild(heading);
 
-      var edit = createEl("div", "chatbot-profile-edit");
-      var inputEl;
-      if (PROFILE_CHOICES[field]) {
-        inputEl = createEl("select", "chatbot-profile-input", {
-          id: cardId + "-" + field,
-          name: field,
-        });
-        var promptOption = createEl("option");
-        promptOption.value = "";
-        promptOption.textContent = "Choose a value";
-        inputEl.appendChild(promptOption);
-        PROFILE_CHOICES[field].forEach(function (choice) {
-          var option = createEl("option");
-          option.value = choice[0];
-          option.textContent = choice[1];
-          inputEl.appendChild(option);
-        });
-        if (feature.normalized_value != null) {
-          inputEl.value = String(feature.normalized_value);
-        }
+      var entered = createEl("div", "chatbot-profile-source");
+      var meta = WIZARD.FIELDS[field];
+      if (meta && meta.kind === "choice") {
+        entered.textContent =
+          "Entered: " + WIZARD.choiceLabel(field, String(feature.original_value));
       } else {
-        inputEl = createEl("input", "chatbot-profile-input", {
-          id: cardId + "-" + field,
-          name: field,
-          type: "text",
-          value:
-            feature.normalized_value == null
-              ? String(feature.original_value == null ? "" : feature.original_value)
-              : String(feature.normalized_value),
-        });
+        entered.textContent =
+          "Entered: " + feature.original_value +
+          (feature.original_unit ? " " + feature.original_unit : "");
       }
-      if (feature.status === "unsupported") inputEl.disabled = true;
-      edit.appendChild(inputEl);
-      if (feature.normalized_unit) {
-        var unit = createEl("span", "chatbot-profile-unit");
-        unit.textContent = feature.normalized_unit;
-        edit.appendChild(unit);
+      row.appendChild(entered);
+      if (feature.normalized_value != null) {
+        var used = createEl("div", "chatbot-profile-source");
+        used.textContent = meta && meta.kind === "choice"
+          ? "Used for comparison: " + WIZARD.choiceLabel(field, String(feature.normalized_value))
+          : "Used for comparison: " + feature.normalized_value +
+            (feature.normalized_unit ? " " + feature.normalized_unit : "");
+        row.appendChild(used);
       }
-
-      var source = createEl("div", "chatbot-profile-source");
-      source.textContent =
-        "Source: “" + feature.source_text + "”" +
-        (feature.original_unit ? " (original unit: " + feature.original_unit + ")" : "");
-      row.append(heading, edit, source);
       if (feature.message) {
         var message = createEl("div", "chatbot-profile-field-message");
         message.textContent = feature.message;
+        message.classList.toggle(
+          "is-preserved",
+          feature.status === "outside_reference_support",
+        );
         row.appendChild(message);
       }
       if (feature.alternatives) {
         var alternatives = createEl("div", "chatbot-profile-conflicts");
-        alternatives.textContent = "Conflicting values: " + feature.alternatives.join("; ");
+        alternatives.textContent =
+          "Conflicting values: " + feature.alternatives.join("; ");
         row.appendChild(alternatives);
       }
-      if (feature.source_texts) {
-        var sources = createEl("div", "chatbot-profile-conflicts");
-        sources.textContent =
-          "Sources: “" + feature.source_texts.join("”; “") + "”";
-        row.appendChild(sources);
-      }
-      if (feature.source_history && feature.source_history.length > 1) {
-        var historyCopy = createEl("div", "chatbot-profile-source-history");
-        historyCopy.textContent =
-          "Source history: " +
-          feature.source_history.map(function (entry) {
-            return (
-              "“" + entry.source_text + "”" +
-              (entry.original_unit ? " (" + entry.original_unit + ")" : "")
-            );
-          }).join("; ");
-        row.appendChild(historyCopy);
-      }
-      card.appendChild(row);
+
+      var actions = createEl("div", "chatbot-profile-actions");
+      var editButton = createEl("button", "chatbot-profile-link", {
+        type: "button",
+        "data-chatbot-action": "wizard-goto-stage",
+        "data-stage": meta ? meta.stage : WIZARD.STAGES[0].id,
+      });
+      editButton.textContent = "Edit";
+      var removeButton = createEl("button", "chatbot-profile-link", {
+        type: "button",
+        "data-chatbot-action": "wizard-remove-review-field",
+        "data-field": field,
+      });
+      removeButton.textContent = "Remove";
+      actions.append(editButton, removeButton);
+      row.appendChild(actions);
+      review.appendChild(row);
     });
 
     var derived = draft.derived_features || {};
     if (Object.keys(derived).length) {
       var derivedTitle = createEl("div", "chatbot-profile-subtitle");
       derivedTitle.textContent = "Derived Match Features";
-      card.appendChild(derivedTitle);
+      review.appendChild(derivedTitle);
       Object.keys(derived).forEach(function (field) {
         var feature = derived[field];
         var item = createEl("div", "chatbot-profile-derived");
         var derivedCopy = createEl("span", "chatbot-profile-derived-copy");
         derivedCopy.textContent =
           feature.label + ": " + feature.value + " " + feature.unit +
-          " (from " + feature.derived_from.join(" + ") + ")";
+          " (calculated deterministically from " + feature.derived_from.join(" + ") + ")";
         var derivedBadge = createEl(
           "span",
           "chatbot-profile-status status-" + feature.status,
         );
-        derivedBadge.textContent = statusLabel(feature.status);
+        derivedBadge.textContent = WIZARD.backendStatusLabel(feature.status, feature.message);
         item.append(derivedCopy, derivedBadge);
         if (feature.message) {
           var derivedMessage = createEl("div", "chatbot-profile-field-message");
           derivedMessage.textContent = feature.message;
           item.appendChild(derivedMessage);
         }
-        card.appendChild(item);
+        review.appendChild(item);
       });
     }
 
     var actions = createEl("div", "chatbot-profile-actions");
-    var saveButton = createEl("button", "chatbot-profile-secondary", {
-      type: "button",
-      "data-chatbot-action": "save-profile-edits",
-    });
-    saveButton.textContent = "Save corrections";
     var confirmButton = createEl("button", "chatbot-profile-primary", {
       type: "button",
       "data-chatbot-action": "confirm-demo-profile",
     });
     confirmButton.textContent = "Confirm Demo Profile";
     confirmButton.disabled = !draft.can_confirm;
-    var startOverButton = createEl("button", "chatbot-profile-link", {
-      type: "button",
-      "data-chatbot-action": "start-over-demo-profile",
-    });
-    startOverButton.textContent = "Start Over";
-    actions.append(saveButton, confirmButton, startOverButton);
-    card.appendChild(actions);
+    actions.append(confirmButton);
+    review.appendChild(actions);
 
     var status = createEl("div", "chatbot-profile-action-status", {
       "aria-live": "polite",
     });
     if (!draft.can_confirm) {
-      status.textContent = "Resolve fields marked for clarification or conflict before confirming.";
+      status.textContent =
+        "Resolve the fields marked Add a unit, Check this value, or Conflict before confirming.";
     }
-    card.appendChild(status);
-    addRawElement(profileMessagesEl, card);
-  }
-
-  function saveProfileEdits(button) {
-    var card = button.closest(".chatbot-profile-review");
-    var state = profileSession.getState();
-    if (!card || state.phase !== "draft" || !state.draft) return;
-    var edits = {};
-    card.querySelectorAll("[data-profile-field] input, [data-profile-field] select").forEach(function (fieldInput) {
-      edits[fieldInput.name] = fieldInput.value.trim();
-    });
-    var corrections = PROFILE.createCorrections(state.draft, edits);
-    var status = card.querySelector(".chatbot-profile-action-status");
-    if (!corrections.length) {
-      status.textContent = "No changed values to save.";
-      return;
-    }
-    button.disabled = true;
-    profileSession.appendCandidates(corrections);
-    validateProfileCandidates(status).catch(function (error) {
-      button.disabled = false;
-      status.textContent = "Could not save corrections. " + error.message;
-    });
+    review.appendChild(status);
+    holder.appendChild(review);
   }
 
   function confirmDemoProfile(button) {
@@ -1063,11 +1418,7 @@
     )
       .then(function (confirmed) {
         profileSession.confirm(confirmed);
-        card.setAttribute("data-profile-current", "0");
-        card.querySelectorAll("input, select, button").forEach(function (control) {
-          control.disabled = true;
-        });
-        status.textContent = "Profile confirmed.";
+        profileMessagesEl.innerHTML = "";
         renderConfirmedProfile(confirmed);
         updateProfileInputState();
       })
