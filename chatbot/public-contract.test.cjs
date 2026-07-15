@@ -35,6 +35,37 @@ test("a failed ordinary chat exposes an explicit retry action", () => {
 });
 
 
+test("backend preparation starts only after a backend-backed task is selected", () => {
+  const selectTask = extractFunctionSource("selectTask");
+  assert.match(selectTask, /isBackendBackedTask\(task\)/);
+  assert.match(selectTask, /prepareBackend\(\)/);
+  const isBackendBackedTask = extractFunctionSource("isBackendBackedTask");
+  assert.match(isBackendBackedTask, /task === "paper" \|\| task === "profile"/);
+  const fabClick = source.match(/fab\.addEventListener\("click", function \(\) \{[\s\S]*?\n  \}\);/)[0];
+  assert.doesNotMatch(fabClick, /prepareBackend/);
+});
+
+
+test("backend preparation uses health without blocking locally rendered profile editing", () => {
+  const prepareBackend = extractFunctionSource("prepareBackend");
+  assert.match(prepareBackend, /API_URL \+ "\/health"/);
+  assert.match(prepareBackend, /60000/);
+  assert.doesNotMatch(prepareBackend, /disabled|profileSession|renderProfileWizard/);
+  assert.match(source, /You can continue locally while the service wakes/);
+});
+
+
+test("service recovery offers Retry, Continue editing, and Back to tasks without raw HTTP copy", () => {
+  const renderBackendPreparation = extractFunctionSource("renderBackendPreparation");
+  assert.match(renderBackendPreparation, /"retry-service", "Retry"/);
+  assert.match(renderBackendPreparation, /"continue-editing", "Continue editing"/);
+  assert.match(renderBackendPreparation, /"back-to-tasks", "Back to tasks"/);
+  assert.doesNotMatch(source, /502|503|Bad Gateway|Service Unavailable/);
+  const showTask = extractFunctionSource("showTask");
+  assert.match(showTask, /renderBackendPreparation\(\)/);
+});
+
+
 test("the message input shows a scrollbar only after real vertical overflow", () => {
   assert.match(
     styles,
@@ -44,6 +75,42 @@ test("the message input shows a scrollbar only after real vertical overflow", ()
     source,
     /this\.style\.overflowY = this\.scrollHeight > 80 \? "auto" : "hidden"/,
   );
+});
+
+
+test("mobile uses the dynamic visual viewport, full-screen single-column shell, and safe areas", () => {
+  assert.match(source, /window\.visualViewport/);
+  assert.match(source, /--chatbot-viewport-height/);
+  assert.match(styles, /@media \(max-width: 700px\)[\s\S]*height: var\(--chatbot-viewport-height, 100dvh\)/);
+  assert.match(styles, /\.chatbot-input-row[\s\S]*env\(safe-area-inset-bottom\)/);
+  assert.match(styles, /\.chatbot-wizard-nav[\s\S]*position: sticky[\s\S]*bottom: 0[\s\S]*env\(safe-area-inset-bottom\)/);
+  assert.doesNotMatch(styles, /\.chatbot-wizard-nav[\s\S]*bottom:\s*calc\(-/);
+  assert.match(styles, /overflow-wrap: anywhere/);
+});
+
+
+test("closing the Assistant unlocks the page and restores its exact scroll position", () => {
+  const closeAssistant = extractFunctionSource("closeAssistant");
+  const lockPageScroll = extractFunctionSource("lockPageScroll");
+  const unlockPageScroll = extractFunctionSource("unlockPageScroll");
+  assert.match(closeAssistant, /unlockPageScroll\(\)/);
+  assert.match(lockPageScroll, /matchMedia\("\(max-width: 700px\)"\)\.matches/);
+  assert.match(lockPageScroll, /lockedPageScrollY = window\.scrollY/);
+  assert.match(unlockPageScroll, /window\.scrollTo\(\{ top: restoreY, behavior: "auto" \}\)/);
+});
+
+
+test("Continue editing returns focus to the first real profile control", () => {
+  const continueEditing = extractFunctionSource("continueEditing");
+  assert.match(continueEditing, /button:not\(\[disabled\]\), input:not\(\[disabled\]\), select:not\(\[disabled\]\)/);
+  assert.match(continueEditing, /editable\.focus\(\{ preventScroll: true \}\)/);
+  assert.doesNotMatch(continueEditing, /profileMessagesEl\.focus/);
+});
+
+
+test("light and dark themes style the same service and wizard-safe-area surfaces", () => {
+  assert.match(styles, /\.quarto-dark \.chatbot-service-status/);
+  assert.match(styles, /\.quarto-dark \.chatbot-wizard-nav/);
 });
 
 

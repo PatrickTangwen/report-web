@@ -72,12 +72,21 @@
     "What are the main limitations of this study?",
   ];
 
+  var BACKEND_STATES = {
+    IDLE: "idle",
+    PREPARING: "preparing",
+    READY: "ready",
+    UNAVAILABLE: "unavailable",
+  };
+
   var ICON_EXPAND = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
   var ICON_COLLAPSE = '<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
   var ICON_BACK = '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>';
 
   var paperHistory = [];
   var busy = false;
+  var backendPreparation = { state: BACKEND_STATES.IDLE, promise: null };
+  var lockedPageScrollY = null;
 
   // ── Build DOM ──
 
@@ -120,6 +129,14 @@
   closeBtn.innerHTML = "&times;";
   headerActions.append(expandBtn, closeBtn);
   header.append(headerLeft, headerActions);
+
+  // One shell-level service state keeps cold-start copy and recovery actions
+  // consistent across the two backend-backed Research Tasks. It is deliberately
+  // absent from the task menu and Explore Visualizations.
+  var serviceStatusEl = createEl("div", "chatbot-service-status", {
+    "aria-live": "polite",
+  });
+  serviceStatusEl.hidden = true;
 
   // Body — the Research Task Menu plus one view per Research Task. Exactly
   // one of these four is visible at a time (see showTask()).
@@ -185,7 +202,7 @@
     "Research prototype — not medical advice. Powered by DeepSeek.";
 
   // Assemble
-  panel.append(header, body, inputRow, disclaimer);
+  panel.append(header, serviceStatusEl, body, inputRow, disclaimer);
 
   document.body.appendChild(fab);
   document.body.appendChild(panel);
@@ -213,6 +230,7 @@
     var current = TASKS.filter(function (t) { return t.id === task; })[0];
     headerTitle.textContent = current ? current.label : "Guided Research Assistant";
     updateComposerVisibility();
+    renderBackendPreparation();
     if (task === "paper") paperMessagesEl.scrollTop = paperMessagesEl.scrollHeight;
     if (task === "profile") profileMessagesEl.scrollTop = profileMessagesEl.scrollHeight;
   }
@@ -223,6 +241,7 @@
     if (task === "paper") initPaperView();
     if (task === "visualizations") initVisualizationsView();
     if (task === "profile") initProfileView();
+    if (isBackendBackedTask(task)) prepareBackend();
     saveState();
     if (!inputRow.hidden) input.focus();
   }
@@ -231,6 +250,83 @@
     shellSession.backToTasks();
     showTask(null);
     saveState();
+  }
+
+  function isBackendBackedTask(task) {
+    return task === "paper" || task === "profile";
+  }
+
+  function renderBackendPreparation() {
+    var task = shellSession.getState().activeTask;
+    var backendTask = isBackendBackedTask(task);
+    serviceStatusEl.innerHTML = "";
+    serviceStatusEl.hidden =
+      !backendTask ||
+      backendPreparation.state === BACKEND_STATES.IDLE ||
+      backendPreparation.state === BACKEND_STATES.READY;
+    if (serviceStatusEl.hidden) return;
+
+    if (backendPreparation.state === BACKEND_STATES.PREPARING) {
+      var preparing = createEl("p", "chatbot-service-copy");
+      preparing.textContent =
+        "Preparing the research assistant… You can continue locally while the service wakes.";
+      serviceStatusEl.appendChild(preparing);
+      return;
+    }
+
+    var copy = createEl("p", "chatbot-service-copy");
+    copy.textContent =
+      "The research service is not ready yet. Your work in this Assistant is unchanged.";
+    var actions = createEl("div", "chatbot-service-actions");
+    actions.appendChild(outcomeActionButton("retry-service", "Retry", "primary"));
+    if (task === "profile") {
+      actions.appendChild(
+        outcomeActionButton("continue-editing", "Continue editing", "secondary"),
+      );
+    }
+    actions.appendChild(outcomeActionButton("back-to-tasks", "Back to tasks", "link"));
+    serviceStatusEl.append(copy, actions);
+  }
+
+  // Selecting a backend-backed task is the only proactive wake-up seam. The
+  // Assistant opening and the task menu never contact the backend, and the
+  // locally rendered Profile Wizard remains interactive during preparation.
+  function prepareBackend(force) {
+    if (
+      !force &&
+      (backendPreparation.state === BACKEND_STATES.PREPARING ||
+        backendPreparation.state === BACKEND_STATES.READY)
+    ) {
+      renderBackendPreparation();
+      return backendPreparation.promise;
+    }
+    backendPreparation.state = BACKEND_STATES.PREPARING;
+    renderBackendPreparation();
+    backendPreparation.promise = DEMO.requestJson(
+      fetch,
+      API_URL + "/health",
+      { cache: "no-store" },
+      60000,
+    )
+      .then(function () {
+        backendPreparation.state = BACKEND_STATES.READY;
+        renderBackendPreparation();
+      })
+      .catch(function () {
+        backendPreparation.state = BACKEND_STATES.UNAVAILABLE;
+        renderBackendPreparation();
+      });
+    return backendPreparation.promise;
+  }
+
+  function continueEditing() {
+    serviceStatusEl.hidden = true;
+    if (shellSession.getState().activeTask === "profile") {
+      var editable = profileMessagesEl.querySelector(
+        "button:not([disabled]), input:not([disabled]), select:not([disabled])",
+      );
+      if (editable) editable.focus({ preventScroll: true });
+    }
   }
 
   // ── State persistence ──
@@ -294,22 +390,64 @@
   if (activeTaskOnLoad === "paper") initPaperView();
   if (activeTaskOnLoad === "visualizations") initVisualizationsView();
   if (activeTaskOnLoad === "profile") initProfileView();
+  if (isBackendBackedTask(activeTaskOnLoad)) prepareBackend();
   updateProfileInputState();
 
   // ── Events ──
 
   function closeAssistant() {
     panel.classList.remove("is-open");
+    unlockPageScroll();
     fab.style.display = "";
     fab.setAttribute("aria-label", "Open the Guided Research Assistant");
     saveState();
   }
+
+  function lockPageScroll() {
+    if (!window.matchMedia("(max-width: 700px)").matches) return;
+    if (lockedPageScrollY !== null) return;
+    lockedPageScrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = -lockedPageScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.classList.add("chatbot-assistant-open");
+  }
+
+  function unlockPageScroll() {
+    if (lockedPageScrollY === null) return;
+    var restoreY = lockedPageScrollY;
+    lockedPageScrollY = null;
+    document.body.classList.remove("chatbot-assistant-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    window.scrollTo({ top: restoreY, behavior: "auto" });
+  }
+
+  function syncAssistantViewport() {
+    var viewport = window.visualViewport;
+    var height = viewport ? viewport.height : window.innerHeight;
+    var offsetTop = viewport ? viewport.offsetTop : 0;
+    panel.style.setProperty("--chatbot-viewport-height", Math.round(height) + "px");
+    panel.style.setProperty("--chatbot-viewport-top", Math.round(offsetTop) + "px");
+  }
+
+  syncAssistantViewport();
+  window.addEventListener("resize", syncAssistantViewport);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", syncAssistantViewport);
+    window.visualViewport.addEventListener("scroll", syncAssistantViewport);
+  }
+  if (panel.classList.contains("is-open")) lockPageScroll();
 
   fab.addEventListener("click", function () {
     var opening = !panel.classList.contains("is-open");
     panel.classList.toggle("is-open");
     fab.setAttribute("aria-label", opening ? "Close the Guided Research Assistant" : "Open the Guided Research Assistant");
     if (opening) {
+      lockPageScroll();
       fab.style.display = "none";
       updateComposerVisibility();
       if (!inputRow.hidden) input.focus();
@@ -360,6 +498,8 @@
     if (action === "wizard-reopen-editing") reopenWizardForEditing();
     if (action === "start-over-demo-profile") startOverDemoProfile();
     if (action === "retry-chat") retryChat(button);
+    if (action === "retry-service") prepareBackend(true);
+    if (action === "continue-editing") continueEditing();
   });
 
   // Auto-resize textarea
@@ -742,7 +882,8 @@
       .catch(function (error) {
         button.disabled = false;
         if (buildButton) buildButton.disabled = false;
-        status.textContent = "Could not load the Synthetic Example Profile. " + error.message;
+        status.textContent =
+          "The Synthetic Example Profile is unavailable right now. Retry, continue with manual entry, or go Back to tasks.";
       });
   }
 
