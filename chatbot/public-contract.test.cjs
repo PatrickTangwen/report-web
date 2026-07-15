@@ -396,9 +396,9 @@ test("the single action confirms then compares, and reaching eligibility never a
 
 test("a recoverable comparison failure offers Retry, Continue editing, and Back to tasks", () => {
   const renderComparisonFailure = extractFunctionSource("renderComparisonFailure");
-  assert.match(renderComparisonFailure, /"data-chatbot-action":\s*"confirm-and-compare"/);
-  assert.match(renderComparisonFailure, /"data-chatbot-action":\s*"wizard-reopen-editing"/);
-  assert.match(renderComparisonFailure, /"data-chatbot-action":\s*"back-to-tasks"/);
+  assert.match(renderComparisonFailure, /outcomeActionButton\("confirm-and-compare", "Retry comparison"/);
+  assert.match(renderComparisonFailure, /outcomeActionButton\("wizard-reopen-editing", "Continue editing"/);
+  assert.match(renderComparisonFailure, /outcomeActionButton\("back-to-tasks", "Back to tasks"/);
 });
 
 
@@ -407,4 +407,74 @@ test("returning from Review to edit preserves valid wizard state", () => {
   assert.match(reopenWizardForEditing, /profileSession\.reopenForEditing\(\)/);
   assert.match(reopenWizardForEditing, /renderProfileWizard\(\)/);
   assert.doesNotMatch(reopenWizardForEditing, /entries = \{\}|reset\(\)/);
+});
+
+
+test("the comparison result routes matched to handoff and every other outcome into the wizard", () => {
+  const handleComparisonResult = extractFunctionSource("handleComparisonResult");
+  assert.match(handleComparisonResult, /status === "matched_reference_neighborhood"/);
+  assert.match(handleComparisonResult, /handoffMatchedResult\(result\)/);
+  assert.match(handleComparisonResult, /renderNoStableNeighborhood\(result\)/);
+  const runComparison = extractFunctionSource("runComparison");
+  assert.match(runComparison, /handleComparisonResult\(result\)/);
+});
+
+
+test("an insufficient-coverage match result is not mislabeled as No Stable Neighborhood", () => {
+  const handleComparisonResult = extractFunctionSource("handleComparisonResult");
+  assert.match(handleComparisonResult, /status === "no_stable_neighborhood"/);
+  assert.match(handleComparisonResult, /renderCoverageShortfall\(result\)/);
+  const renderCoverageShortfall = extractFunctionSource("renderCoverageShortfall");
+  assert.match(renderCoverageShortfall, /Coverage no longer sufficient/);
+  assert.doesNotMatch(renderCoverageShortfall, /no stable neighborhood/i);
+  assert.doesNotMatch(renderCoverageShortfall, /risk|confidence|similarity|accuracy|%/i);
+});
+
+
+test("a matched result auto-creates the Visualization Request and collapses the Assistant to the menu", () => {
+  const handoffMatchedResult = extractFunctionSource("handoffMatchedResult");
+  assert.match(handoffMatchedResult, /DEMO\.createMatchedRequest\(result\)/);
+  assert.match(handoffMatchedResult, /DEMO\.saveRequest\(sessionStorage, request\)/);
+  assert.match(handoffMatchedResult, /DEMO\.notifyRequest\(window, request\)/);
+  assert.match(handoffMatchedResult, /closeAssistant\(\)/);
+  assert.match(handoffMatchedResult, /shellSession\.backToTasks\(\)/);
+  assert.match(handoffMatchedResult, /findUseCaseUrl\(\)/);
+});
+
+
+test("the matched handoff is automatic — no manual View matched references button remains", () => {
+  assert.doesNotMatch(source, /"data-chatbot-action":\s*"view-matched-references"/);
+  assert.doesNotMatch(source, /View matched reference patients/);
+  assert.doesNotMatch(source, /function viewMatchedReferences/);
+  assert.doesNotMatch(source, /function renderCohortComparison/);
+});
+
+
+test("a No Stable Neighborhood stays in the wizard with the three agreed actions and no Visualization Request", () => {
+  const renderNoStableNeighborhood = extractFunctionSource("renderNoStableNeighborhood");
+  assert.match(renderNoStableNeighborhood, /No stable neighborhood/);
+  assert.match(renderNoStableNeighborhood, /renderWizardOutcomeCard\(/);
+  assert.doesNotMatch(renderNoStableNeighborhood, /createMatchedRequest|saveRequest|notifyRequest|findUseCaseUrl/);
+  // The shared in-wizard outcome card carries the three agreed actions.
+  const renderWizardOutcomeCard = extractFunctionSource("renderWizardOutcomeCard");
+  assert.match(renderWizardOutcomeCard, /outcomeActionButton\("wizard-reopen-editing", "Edit Demo Profile"/);
+  assert.match(renderWizardOutcomeCard, /outcomeActionButton\("start-over-demo-profile", "Start a new comparison"/);
+  assert.match(renderWizardOutcomeCard, /outcomeActionButton\("back-to-tasks", "Back to tasks"/);
+});
+
+
+test("reopening after a matched transition offers an edit-or-restart Profile action", () => {
+  const renderComparisonComplete = extractFunctionSource("renderComparisonComplete");
+  assert.match(renderComparisonComplete, /Comparison complete/);
+  assert.match(renderComparisonComplete, /outcomeActionButton\("wizard-reopen-editing", "Edit Demo Profile"/);
+  assert.match(renderComparisonComplete, /outcomeActionButton\("start-over-demo-profile", "Start a new comparison"/);
+});
+
+
+test("no risk, confidence, similarity percentage, or full profile-coverage panel is shown with the outcome", () => {
+  const renderComparisonComplete = extractFunctionSource("renderComparisonComplete");
+  const renderNoStableNeighborhood = extractFunctionSource("renderNoStableNeighborhood");
+  [renderComparisonComplete, renderNoStableNeighborhood].forEach((fn) => {
+    assert.doesNotMatch(fn, /risk|confidence|similarity|accuracy|%/i);
+  });
 });

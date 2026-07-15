@@ -138,7 +138,7 @@ test("API authority is resolved once for local preview and deployment", () => {
 });
 
 
-test("matched result request stores exact references and aggregate context without profile values", () => {
+test("matched result request stores exact references and only the compact Matched Reference Summary", () => {
   const result = {
     dataset_version: "fibrotic-2026-07-13-example",
     cohort_comparison_result: {
@@ -156,7 +156,21 @@ test("matched result request stores exact references and aggregate context witho
         {
           domain: "demographics",
           metrics: [
-            { feature: "age", median: 55, range: [50, 60], unit: "years" },
+            { feature: "age", label: "Age", median: 55, range: [50, 60], unit: "years" },
+            {
+              feature: "sex",
+              label: "Sex",
+              distribution: [
+                { category: "female", count: 1 },
+                { category: "male", count: 1 },
+              ],
+            },
+          ],
+        },
+        {
+          domain: "optional_laboratory",
+          metrics: [
+            { feature: "hba1c", label: "HbA1c", median: 40, range: [35, 45], unit: "mmol/mol" },
           ],
         },
       ],
@@ -183,9 +197,89 @@ test("matched result request stores exact references and aggregate context witho
   assert.equal(request.display_mode, "matched_selection");
   assert.equal(request.minimum_region_size, 5);
   assert.deepEqual(request.visual_reference_ids, ["vr_match_one", "vr_match_two"]);
-  assert.equal(request.summary.domains[0].metrics[0].median, 55);
+  // Compact summary keeps only count, median age, and sex distribution.
+  assert.deepEqual(Object.keys(request.summary).sort(), ["age", "reference_count", "sex", "title"]);
+  assert.equal(request.summary.reference_count, 2);
+  assert.equal(request.summary.age.median, 55);
+  assert.deepEqual(request.summary.sex.distribution, [
+    { category: "female", count: 1 },
+    { category: "male", count: 1 },
+  ]);
+  // The detailed per-domain aggregate is not carried into the request.
+  assert.equal(request.summary.domains, undefined);
+  assert.equal(JSON.stringify(request).includes("hba1c"), false);
+  assert.equal(JSON.stringify(request).includes("optional_laboratory"), false);
   assert.equal(JSON.stringify(request).includes("confirmed_profile"), false);
   assert.equal(JSON.stringify(request).includes("reported_features"), false);
+});
+
+
+test("a matched request preserves privacy suppression of age and sex cells", () => {
+  const request = demo.createMatchedRequest(
+    {
+      dataset_version: "fibrotic-2026-07-13-example",
+      cohort_comparison_result: {
+        status: "matched_reference_neighborhood",
+        target: "CKD",
+        neighborhood_size: 5,
+        minimum_display_region_size: 5,
+      },
+      visual_reference_ids: ["a", "b", "c", "d", "e"],
+      aggregate_callout_data: {
+        reference_count: 5,
+        title: "CKD matched reference neighborhood",
+        description: "Aggregate comparison context.",
+        domains: [
+          {
+            domain: "demographics",
+            metrics: [
+              { feature: "age", label: "Age", suppressed: true },
+              { feature: "sex", label: "Sex", suppressed: true },
+            ],
+          },
+        ],
+      },
+    },
+    "2026-07-13T12:00:00.000Z",
+  );
+
+  assert.equal(request.summary.age.suppressed, true);
+  assert.equal(request.summary.sex.suppressed, true);
+  assert.equal(request.summary.age.median, undefined);
+});
+
+
+test("a matched request tolerates a demographics-free aggregate", () => {
+  const request = demo.createMatchedRequest(
+    {
+      dataset_version: "fibrotic-2026-07-13-example",
+      cohort_comparison_result: {
+        status: "matched_reference_neighborhood",
+        target: "CKD",
+        neighborhood_size: 5,
+        minimum_display_region_size: 5,
+      },
+      visual_reference_ids: ["a", "b", "c", "d", "e"],
+      aggregate_callout_data: {
+        reference_count: 5,
+        title: "CKD matched reference neighborhood",
+        description: "Aggregate comparison context.",
+        domains: [
+          {
+            domain: "blood_pressure",
+            metrics: [
+              { feature: "sbp", label: "SBP", median: 130, range: [120, 140], unit: "mmHg" },
+            ],
+          },
+        ],
+      },
+    },
+    "2026-07-13T12:00:00.000Z",
+  );
+
+  assert.equal(request.summary.age, null);
+  assert.equal(request.summary.sex, null);
+  assert.equal(request.summary.reference_count, 5);
 });
 
 

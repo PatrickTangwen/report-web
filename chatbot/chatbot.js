@@ -358,7 +358,6 @@
     if (action === "wizard-retry-validate") runReviewValidation();
     if (action === "confirm-and-compare") confirmAndCompareProfile(button);
     if (action === "wizard-reopen-editing") reopenWizardForEditing();
-    if (action === "view-matched-references") viewMatchedReferences(button);
     if (action === "start-over-demo-profile") startOverDemoProfile();
     if (action === "retry-chat") retryChat(button);
   });
@@ -1576,8 +1575,7 @@
       .then(function (result) {
         clearTimeout(coldStartNotice);
         if (!profileMatchController.isCurrent(run.token)) return;
-        profileMessagesEl.innerHTML = "";
-        renderCohortComparison(result);
+        handleComparisonResult(result);
       })
       .catch(function (error) {
         clearTimeout(coldStartNotice);
@@ -1586,6 +1584,33 @@
         renderComparisonFailure(error);
         console.error("Profile matching error:", error);
       });
+  }
+
+  // A Matched Reference Neighborhood hands off to the destination
+  // visualization; every other outcome stays inside the Demo Profile Wizard.
+  function outcomeActionButton(action, label, variant) {
+    var button = createEl("button", "chatbot-profile-" + variant, {
+      type: "button",
+      "data-chatbot-action": action,
+    });
+    button.textContent = label;
+    return button;
+  }
+
+  function handleComparisonResult(result) {
+    var status = result.cohort_comparison_result.status;
+    profileMessagesEl.innerHTML = "";
+    if (status === "matched_reference_neighborhood") {
+      handoffMatchedResult(result);
+    } else if (status === "no_stable_neighborhood") {
+      renderNoStableNeighborhood(result);
+    } else {
+      // The client gates comparison behind eligibility, but the backend
+      // re-validates and is the authority. If it reports the confirmed profile
+      // no longer satisfies a reviewed coverage pattern, say so honestly rather
+      // than mislabeling it a No Stable Neighborhood.
+      renderCoverageShortfall(result);
+    }
   }
 
   // Recoverable comparison failure keeps the confirmed profile and offers the
@@ -1606,22 +1631,11 @@
       "aria-live": "polite",
     });
     var actions = createEl("div", "chatbot-profile-actions");
-    var retry = createEl("button", "chatbot-profile-primary", {
-      type: "button",
-      "data-chatbot-action": "confirm-and-compare",
-    });
-    retry.textContent = "Retry comparison";
-    var edit = createEl("button", "chatbot-profile-secondary", {
-      type: "button",
-      "data-chatbot-action": "wizard-reopen-editing",
-    });
-    edit.textContent = "Continue editing";
-    var backTasks = createEl("button", "chatbot-profile-link", {
-      type: "button",
-      "data-chatbot-action": "back-to-tasks",
-    });
-    backTasks.textContent = "Back to tasks";
-    actions.append(retry, edit, backTasks);
+    actions.append(
+      outcomeActionButton("confirm-and-compare", "Retry comparison", "primary"),
+      outcomeActionButton("wizard-reopen-editing", "Continue editing", "secondary"),
+      outcomeActionButton("back-to-tasks", "Back to tasks", "link"),
+    );
     card.append(title, copy, actions, status);
     addRawElement(profileMessagesEl, card);
   }
@@ -1646,158 +1660,115 @@
     return match ? match[1] : String(target).replace(/_/g, " ");
   }
 
-  function formatDomain(domain) {
-    return String(domain).replace(/_/g, " ");
+  // A matched result creates a Visualization Request, collapses the Assistant,
+  // and opens the destination visualization in the current tab. The Assistant
+  // returns to the Research Task Menu so reopening lands on the menu with an
+  // edit-or-restart Profile action (rendered by renderComparisonComplete).
+  function handoffMatchedResult(result) {
+    var request;
+    try {
+      request = DEMO.createMatchedRequest(result);
+    } catch (error) {
+      renderComparisonFailure(error);
+      console.error("Matched handoff error:", error);
+      return;
+    }
+    DEMO.saveRequest(sessionStorage, request);
+    DEMO.notifyRequest(window, request);
+    renderComparisonComplete(result);
+    shellSession.backToTasks();
+    showTask(null);
+    closeAssistant();
+    var destination = new URL(findUseCaseUrl());
+    var samePage =
+      destination.origin === window.location.origin &&
+      destination.pathname === window.location.pathname;
+    if (samePage) {
+      window.location.hash = destination.hash;
+    } else {
+      window.location.assign(destination.href);
+    }
   }
 
-  function renderAggregateDomains(container, aggregate) {
-    if (!aggregate || !Array.isArray(aggregate.domains)) return;
-    aggregate.domains.forEach(function (domain) {
-      var section = createEl("div", "chatbot-match-domain");
-      var heading = createEl("strong");
-      heading.textContent = formatDomain(domain.domain);
-      var list = createEl("ul");
-      domain.metrics.forEach(function (metric) {
-        var item = createEl("li");
-        if (metric.suppressed) {
-          item.textContent = metric.label + ": suppressed because the aggregate cell is too small";
-        } else if (metric.distribution) {
-          item.textContent =
-            metric.label + ": " +
-            metric.distribution.map(function (entry) {
-              return formatDomain(entry.category) + " (n=" + entry.count + ")";
-            }).join(", ");
-        } else {
-          item.textContent =
-            metric.label + ": median " + metric.median +
-            (metric.unit ? " " + metric.unit : "") +
-            "; range " + metric.range[0] + "–" + metric.range[1] +
-            (metric.unit ? " " + metric.unit : "");
-        }
-        list.appendChild(item);
-      });
-      section.append(heading, list);
-      container.appendChild(section);
-    });
-  }
-
-  function renderCohortComparison(result) {
-    var comparison = result.cohort_comparison_result;
-    var coverage = comparison.profile_coverage || {};
+  // Left in the Profile Session after a matched handoff, so reopening the
+  // Assistant and returning to Build a Demo Profile offers edit-or-restart.
+  function renderComparisonComplete(result) {
     var card = createEl(
       "div",
-      "chatbot-msg chatbot-msg-assistant chatbot-match-result",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-complete",
     );
     var title = createEl("div", "chatbot-profile-title");
-    title.textContent = "Cohort Comparison Result";
-    var target = createEl("p", "chatbot-match-target");
-    target.textContent = "Target: " + targetLabel(comparison.target);
-    var presentation = {
-      insufficient_profile_coverage: ["Coverage needed", "is-coverage-needed"],
-      no_stable_neighborhood: ["No stable neighborhood", "is-no-result"],
-      matched_reference_neighborhood: ["Matched neighborhood", "is-matched"],
-    }[comparison.status] || ["Comparison status", "is-no-result"];
-    card.classList.add(presentation[1]);
-    var resultStatus = createEl("div", "chatbot-result-status");
-    resultStatus.textContent = presentation[0];
-    var coverageDetails = createEl("p", "chatbot-match-coverage");
-    var availableDomains = coverage.available_domains || [];
-    var unavailableDomains = coverage.unavailable_domains || [];
-    coverageDetails.textContent =
-      "Profile Coverage — available domains: " +
-      (availableDomains.length ? availableDomains.map(formatDomain).join(", ") : "none") +
-      "; unavailable domains: " +
-      (unavailableDomains.length ? unavailableDomains.map(formatDomain).join(", ") : "none") +
-      ". Missing domains were not imputed or treated as matches.";
-    var outsideSupport = coverage.outside_reference_support_domains || [];
-    if (outsideSupport.length) {
-      coverageDetails.textContent +=
-        " Values in these domains were outside this cohort's reference support and were preserved without clamping: " +
-        outsideSupport.map(formatDomain).join(", ") + ".";
-    }
-    card.append(title, target, resultStatus, coverageDetails);
-
-    if (comparison.status === "insufficient_profile_coverage") {
-      var recommendation = coverage.coverage_recommendation;
-      var coverageCopy = createEl("p", "chatbot-profile-notice");
-      var recommendationCopy = recommendation
-        ? recommendation.missing_domains.map(function (domain) {
-            var measurements = recommendation.measurements_by_domain[domain] || [];
-            return formatDomain(domain) +
-              (measurements.length ? " (for example, " + measurements.join(" or ") + ")" : "");
-          }).join("; ")
-        : "";
-      coverageCopy.textContent = recommendation
-        ? "The confirmed profile does not match a calibrated coverage pattern for this target. " +
-          "To reach the nearest complete calibrated pattern, add: " + recommendationCopy +
-          ". Missing fields were not treated as matches."
-        : "The confirmed profile does not match a calibrated coverage pattern for this target.";
-      card.appendChild(coverageCopy);
-    } else if (comparison.status === "no_stable_neighborhood") {
-      var emptyCopy = createEl("p", "chatbot-profile-notice");
-      emptyCopy.textContent =
-        "No Stable Neighborhood: fewer than five references satisfied the validated threshold. " +
-        "The system did not force nearest neighbors into the result. This does not mean " +
-        "comparable people do not exist outside this research cohort." +
-        (outsideSupport.length
-          ? " Confirmed values in the " + outsideSupport.map(formatDomain).join(", ") +
-            " domain were outside this cohort's reference support and were preserved without clamping."
-          : "");
-      card.appendChild(emptyCopy);
-    } else {
-      var matchedCopy = createEl("p", "chatbot-profile-notice");
-      matchedCopy.textContent =
-        comparison.neighborhood_size +
-        " threshold-qualified reference patients were selected from the confirmed target cohort.";
-      card.appendChild(matchedCopy);
-      renderAggregateDomains(card, result.aggregate_callout_data);
-      var limitations = createEl("p", "chatbot-match-limitations");
-      limitations.textContent = comparison.limitations.join(" ");
-      var view = createEl("button", "chatbot-demo-button", {
-        type: "button",
-        "data-chatbot-action": "view-matched-references",
-      });
-      view.textContent = "View matched reference patients";
-      view.setAttribute("data-match-result", JSON.stringify(result));
-      var viewStatus = createEl("div", "chatbot-demo-status", {
-        "aria-live": "polite",
-      });
-      card.append(limitations, view, viewStatus);
-    }
-    var startOver = createEl("button", "chatbot-profile-link", {
-      type: "button",
-      "data-chatbot-action": "start-over-demo-profile",
-    });
-    startOver.textContent = "Start Over";
-    card.appendChild(startOver);
+    title.textContent = "Comparison complete";
+    var copy = createEl("p", "chatbot-profile-notice");
+    copy.textContent =
+      "Your confirmed Demo Profile for " + targetLabel(result.cohort_comparison_result.target) +
+      " matched a reference neighborhood, now highlighted in the Use Case visualization. " +
+      "This is a research cohort comparison — not a diagnosis, prognosis, or personal outcome.";
+    var actions = createEl("div", "chatbot-profile-actions");
+    actions.append(
+      outcomeActionButton("wizard-reopen-editing", "Edit Demo Profile", "secondary"),
+      outcomeActionButton("start-over-demo-profile", "Start a new comparison", "primary"),
+    );
+    card.append(title, copy, actions);
     addRawElement(profileMessagesEl, card);
   }
 
-  function viewMatchedReferences(button) {
-    if (button.disabled) return;
-    var status = button.parentElement.querySelector(".chatbot-demo-status");
-    try {
-      var result = JSON.parse(button.getAttribute("data-match-result"));
-      var request = DEMO.createMatchedRequest(result);
-      DEMO.saveRequest(sessionStorage, request);
-      DEMO.notifyRequest(window, request);
-      var destination = new URL(findUseCaseUrl());
-      var samePage =
-        destination.origin === window.location.origin &&
-        destination.pathname === window.location.pathname;
-      status.textContent = "Opening the exact matched references in the fibrotic walkthrough.";
-      if (samePage) {
-        window.location.hash = destination.hash;
-        button.textContent = "Show matched references again";
-        status.textContent = "Walkthrough started. Replay and reset controls are available below.";
-      } else {
-        window.location.assign(destination.href);
-      }
-    } catch (error) {
-      button.disabled = false;
-      status.textContent = "The visualization request is unavailable. Run the comparison again.";
-      console.error("Matched reference walkthrough error:", error);
-    }
+  // A No Stable Neighborhood is an honest no-result: no Visualization Request,
+  // stay in the wizard with Edit Demo Profile, Start a new comparison, and
+  // Back to tasks.
+  function renderNoStableNeighborhood(result) {
+    var coverage = result.cohort_comparison_result.profile_coverage || {};
+    var outside = coverage.outside_reference_support_domains || [];
+    renderWizardOutcomeCard(
+      "No stable neighborhood",
+      "Too few reference patients satisfied the validated matching threshold, so no " +
+        "stable neighborhood was formed. The system did not force nearest neighbors into a " +
+        "result. This does not mean comparable people do not exist outside this research cohort." +
+        (outside.length
+          ? " Confirmed values in these domains were outside this cohort's reference support and " +
+            "were preserved without clamping: " +
+            outside.map(function (id) { return WIZARD.coverageDomain(id).label; }).join(", ") + "."
+          : ""),
+    );
+  }
+
+  // Defensive: the backend re-validated the confirmed profile and no longer
+  // finds an eligible coverage pattern. Keep the same in-wizard recovery
+  // actions instead of implying a matching no-result.
+  function renderCoverageShortfall(result) {
+    var recommendation =
+      (result.cohort_comparison_result.profile_coverage || {}).coverage_recommendation;
+    var additions = recommendation && recommendation.missing_domains.length
+      ? " Add information from another feature domain — for example " +
+        recommendation.missing_domains.map(function (id) {
+          return WIZARD.coverageDomain(id).label;
+        }).join(" or ") + " — then compare again."
+      : "";
+    renderWizardOutcomeCard(
+      "Coverage no longer sufficient",
+      "The confirmed profile no longer satisfies a reviewed coverage pattern for this " +
+        "Comparison Target, so no comparison was run. Missing information was not imputed " +
+        "or treated as a match." + additions,
+    );
+  }
+
+  function renderWizardOutcomeCard(title, copyText) {
+    var card = createEl(
+      "div",
+      "chatbot-msg chatbot-msg-assistant chatbot-profile-recover",
+    );
+    var titleEl = createEl("div", "chatbot-profile-title");
+    titleEl.textContent = title;
+    var copy = createEl("p", "chatbot-profile-notice");
+    copy.textContent = copyText;
+    var actions = createEl("div", "chatbot-profile-actions");
+    actions.append(
+      outcomeActionButton("wizard-reopen-editing", "Edit Demo Profile", "secondary"),
+      outcomeActionButton("start-over-demo-profile", "Start a new comparison", "primary"),
+      outcomeActionButton("back-to-tasks", "Back to tasks", "link"),
+    );
+    card.append(titleEl, copy, actions);
+    addRawElement(profileMessagesEl, card);
   }
 
   function startOverDemoProfile() {

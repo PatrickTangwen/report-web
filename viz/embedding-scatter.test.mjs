@@ -9,6 +9,8 @@ import {
   createRegionNavigator,
   createRunController,
   layoutForRequest,
+  matchedAgeText,
+  matchedSexText,
   normalizePoints,
   regionOutlinePercentages,
   resolveReferenceIndices,
@@ -283,6 +285,38 @@ test("walkthrough copy distinguishes a live match from a fixed preset", () => {
     walkthroughCopy({ type: "preset_selection" }).kicker,
     "Preset reference selection",
   );
+});
+
+
+test("the compact summary renders median age from the demographics metric", () => {
+  assert.equal(matchedAgeText({ median: 55, unit: "years" }), "Median 55 years");
+  assert.equal(matchedAgeText({ median: 55 }), "Median 55");
+});
+
+
+test("the compact summary renders the sex distribution with de-identified counts", () => {
+  assert.equal(
+    matchedSexText({
+      distribution: [
+        { category: "female", count: 3 },
+        { category: "male", count: 2 },
+      ],
+    }),
+    "female (n=3), male (n=2)",
+  );
+});
+
+
+test("the compact summary withholds privacy-suppressed age and sex cells", () => {
+  assert.equal(matchedAgeText({ suppressed: true }), "Withheld to protect small cells");
+  assert.equal(matchedSexText({ suppressed: true }), "Withheld to protect small cells");
+});
+
+
+test("the compact summary reports Not available when a demographic metric is absent", () => {
+  assert.equal(matchedAgeText(null), "Not available");
+  assert.equal(matchedSexText(null), "Not available");
+  assert.equal(matchedSexText({ distribution: [] }), "Not available");
 });
 
 

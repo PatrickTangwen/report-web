@@ -191,6 +191,25 @@ export function walkthroughCopy(request) {
 }
 
 
+// Compact Matched Reference Summary text. A missing metric reads "Not
+// available"; a privacy-suppressed cell is withheld rather than shown.
+export function matchedAgeText(age) {
+  if (!age) return "Not available";
+  if (age.suppressed) return "Withheld to protect small cells";
+  const unit = age.unit ? ` ${age.unit}` : "";
+  return `Median ${age.median}${unit}`;
+}
+
+export function matchedSexText(sex) {
+  if (!sex) return "Not available";
+  if (sex.suppressed) return "Withheld to protect small cells";
+  if (!Array.isArray(sex.distribution) || !sex.distribution.length) return "Not available";
+  return sex.distribution
+    .map((entry) => `${String(entry.category).replaceAll("_", " ")} (n=${entry.count})`)
+    .join(", ");
+}
+
+
 export function createRunController() {
   let currentToken = 0;
   return {
@@ -516,6 +535,9 @@ export async function createEmbeddingScatter(config) {
     updateRegionNavigation();
   }
 
+  // Compact Matched Reference Summary only: Comparison Target, matched-reference
+  // count, and the privacy-permitted median age and sex distribution. No risk
+  // score, confidence, similarity, full coverage, or detailed aggregate report.
   function showCallout(request, layout) {
     const copy = walkthroughCopy(request);
     region.classList.toggle("is-visible", layout.mode !== "overview");
@@ -525,21 +547,13 @@ export async function createEmbeddingScatter(config) {
     kicker.className = "embedding-summary-kicker";
     kicker.textContent = copy.kicker;
     const title = document.createElement("h3");
-    title.textContent = request.summary.title;
-    const description = document.createElement("p");
-    description.textContent = request.summary.description;
+    title.textContent = "Matched Reference Summary";
     const details = document.createElement("dl");
     [
-      ["Reference points", request.summary.reference_count],
       ["Target", config.displayName(request.target)],
-      [
-        "Display layout",
-        layout.mode === "compact"
-          ? "One compact display region"
-          : layout.mode === "multi_region"
-            ? `${layout.regions.length} separated display regions`
-            : "Dispersed overview",
-      ],
+      ["Matched references", request.summary.reference_count],
+      ["Median age", matchedAgeText(request.summary.age)],
+      ["Sex distribution", matchedSexText(request.summary.sex)],
     ].forEach(([term, value]) => {
       const pair = document.createElement("div");
       const key = document.createElement("dt");
@@ -549,11 +563,6 @@ export async function createEmbeddingScatter(config) {
       pair.append(key, content);
       details.appendChild(pair);
     });
-    const note = document.createElement("p");
-    note.className = "embedding-summary-note";
-    note.textContent =
-      "Display preset only; no query patient is embedded and no clinical similarity or personal outcome is inferred.";
-    summary.append(kicker, title, description, details, note);
     const layoutNote = document.createElement("p");
     layoutNote.className = "embedding-layout-note";
     layoutNote.textContent =
@@ -562,33 +571,10 @@ export async function createEmbeddingScatter(config) {
         : layout.mode === "multi_region"
           ? "The highlighted references occupy separated display regions. Use Back and Next to inspect them; the regions are annotation aids, not clinical subtypes."
           : "The highlighted references are broadly dispersed, so the full embedding overview is preserved instead of drawing a misleading region.";
-    summary.insertBefore(layoutNote, note);
-    if (Array.isArray(request.summary.domains)) {
-      request.summary.domains.forEach((domain) => {
-        const domainSection = document.createElement("section");
-        domainSection.className = "embedding-summary-domain";
-        const domainTitle = document.createElement("h4");
-        domainTitle.textContent = String(domain.domain).replaceAll("_", " ");
-        const list = document.createElement("ul");
-        domain.metrics.forEach((metric) => {
-          const item = document.createElement("li");
-          if (metric.suppressed) {
-            item.textContent = `${metric.label}: suppressed because the aggregate cell is too small`;
-          } else if (metric.distribution) {
-            item.textContent = `${metric.label}: ${metric.distribution
-              .map((entry) => `${String(entry.category).replaceAll("_", " ")} (n=${entry.count})`)
-              .join(", ")}`;
-          } else {
-            const unit = metric.unit ? ` ${metric.unit}` : "";
-            item.textContent = `${metric.label}: median ${metric.median}${unit}; range ${metric.range[0]}–${metric.range[1]}${unit}`;
-          }
-          list.appendChild(item);
-        });
-        domainSection.append(domainTitle, list);
-        summary.insertBefore(domainSection, note);
-      });
-    }
+    const note = document.createElement("p");
+    note.className = "embedding-summary-note";
     note.textContent = copy.note;
+    summary.append(kicker, title, details, layoutNote, note);
     status.textContent = `Walkthrough complete · ${request.summary.reference_count} reference points highlighted`;
     replayButton.hidden = false;
     playButton.hidden = true;

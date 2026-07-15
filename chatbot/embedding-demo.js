@@ -79,16 +79,31 @@
       display_mode: "matched_selection",
       minimum_region_size: comparison.minimum_display_region_size,
       visual_reference_ids: result.visual_reference_ids.slice(),
-      summary: {
-        reference_count: aggregate.reference_count,
-        title: aggregate.title,
-        description: aggregate.description,
-        domains: Array.isArray(aggregate.domains)
-          ? JSON.parse(JSON.stringify(aggregate.domains))
-          : [],
-      },
+      // Compact Matched Reference Summary only: matched count plus the
+      // privacy-permitted median age and sex distribution. The full per-domain
+      // aggregate is deliberately not carried into the visualization request.
+      summary: compactMatchedSummary(aggregate),
       created_at: createdAt || new Date().toISOString(),
       consumed: false,
+    };
+  }
+
+  function compactMatchedSummary(aggregate) {
+    var demographics = (aggregate.domains || []).filter(function (domain) {
+      return domain.domain === "demographics";
+    })[0];
+    var metrics = (demographics && demographics.metrics) || [];
+    function metricFor(feature) {
+      var match = metrics.filter(function (metric) {
+        return metric.feature === feature;
+      })[0];
+      return match || null;
+    }
+    return {
+      reference_count: aggregate.reference_count,
+      title: aggregate.title,
+      age: metricFor("age"),
+      sex: metricFor("sex"),
     };
   }
 
