@@ -130,13 +130,13 @@ export async function createGroupedEmbeddingExplorer(config) {
     legend.appendChild(item);
     legendButtons.set(group.key, item);
   });
-  shell.appendChild(legend);
 
   const { width, height } = sizeEmbeddingCanvas(
     shell,
     canvas,
     config.width || 1000,
   );
+  shell.appendChild(legend);
 
   const renderer = createEmbeddingRenderer({
     data,

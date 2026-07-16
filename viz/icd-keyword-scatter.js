@@ -112,6 +112,14 @@ export async function createIcdKeywordScatter(config) {
   const allIndices = data.map((_, index) => index);
   const chapters = [...new Set(data.map((point) => point.chapter))];
   const chapterIndex = new Map(chapters.map((chapter, index) => [chapter, index]));
+  const chapterCounts = new Map(chapters.map((chapter) => [chapter, 0]));
+  data.forEach((point) => {
+    chapterCounts.set(point.chapter, chapterCounts.get(point.chapter) + 1);
+  });
+  const chapterLabels = new Map(chapters.map((chapter) => [
+    chapter,
+    `${chapter} (${chapterCounts.get(chapter).toLocaleString()})`,
+  ]));
   const colors = config.colors;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -156,17 +164,17 @@ export async function createIcdKeywordScatter(config) {
     item.setAttribute("aria-pressed", "false");
     const marker = document.createElement("i");
     marker.style.background = colors[index % colors.length];
-    item.append(marker, document.createTextNode(chapter));
+    item.append(marker, document.createTextNode(chapterLabels.get(chapter)));
     legend.appendChild(item);
     legendButtons.set(chapter, item);
   });
-  shell.appendChild(legend);
 
   const { width, height } = sizeEmbeddingCanvas(
     shell,
     canvas,
     config.width || 1000,
   );
+  shell.appendChild(legend);
 
   const renderer = createEmbeddingRenderer({
     data,
@@ -240,7 +248,7 @@ export async function createIcdKeywordScatter(config) {
     frame,
     canvas,
     scatterplot,
-    (index) => data[index]?.chapter,
+    (index) => chapterLabels.get(data[index]?.chapter),
   );
 
   function showExplanation(request, result) {

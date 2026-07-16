@@ -296,7 +296,9 @@ test("ICD embedding shares the fibrotic viewport and interactions while preservi
     icdSubscriptions.get("pointover")(0);
     const icdTooltip = shell.children[1].children[1];
     const genitourinaryLabel = shell.children[2].children[0];
-    assert.equal(icdTooltip.textContent, "Genitourinary");
+    assert.equal(shell.children[2].children.length, 2);
+    assert.equal(genitourinaryLabel.children[1].textContent, "Genitourinary (1)");
+    assert.equal(icdTooltip.textContent, "Genitourinary (1)");
     assert.equal(icdTooltip.classList.contains("is-visible"), true);
     assert.equal(genitourinaryLabel.classList.contains("is-active"), false);
     assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "false");
