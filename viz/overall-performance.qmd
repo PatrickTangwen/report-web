@@ -230,18 +230,6 @@ evalChart = {
     modelColors[m] = m === proposedModel ? "#2c5aa0" : grayScale[gi++ % grayScale.length];
   }
 
-  const ruleMarks = models.map((model) =>
-    Plot.ruleY(filtered.filter(d =>
-      d.model === model && d.ci_lower != null && d.ci_upper != null
-    ), {
-      x1: "ci_lower",
-      x2: "ci_upper",
-      y: "disease",
-      stroke: modelColors[model],
-      strokeWidth: 1.5,
-      strokeOpacity: 0.5,
-    })
-  );
   const dotMarks = models.map((model) =>
     Plot.dot(filtered.filter(d => d.model === model), {
       x: "value",
@@ -259,10 +247,7 @@ evalChart = {
     marginRight: 20,
     x: { label: selectedMetric, grid: true },
     y: { label: null, domain: diseases },
-    marks: [
-      ...ruleMarks,
-      ...dotMarks,
-    ],
+    marks: dotMarks,
   });
 
   // Wrap with title
@@ -276,8 +261,7 @@ evalChart = {
   const tooltip = createChartTooltip(container);
 
   const dotGroups = [...chart.querySelectorAll('g[aria-label="dot"]')];
-  const ruleGroups = [...chart.querySelectorAll('g[aria-label="rule"]')];
-  if (dotGroups.length !== models.length || ruleGroups.length !== models.length) {
+  if (dotGroups.length !== models.length) {
     throw new Error("Model performance mark groups do not match the model data");
   }
   const tooltipPoints = [];
@@ -322,7 +306,7 @@ evalChart = {
 
   const seriesNodes = new Map(models.map((model, index) => [
     model,
-    [ruleGroups[index], dotGroups[index]],
+    [dotGroups[index]],
   ]));
   bindHighlightGroups({
     groupKeys: models,
