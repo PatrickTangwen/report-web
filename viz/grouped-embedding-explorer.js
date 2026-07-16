@@ -2,6 +2,7 @@ import {
   createEmbeddingRenderer,
   createRendererQueue,
   fitEmbeddingDimensions,
+  fitEmbeddingWidth,
 } from "./embedding-renderer.js";
 import {
   bindHighlightTarget,
@@ -29,17 +30,6 @@ export function groupAssignments(pointCount, groups) {
 }
 
 
-export async function resetEmbeddingExplorer(
-  groupHighlight,
-  rendererQueue,
-  renderer,
-  allIndices,
-) {
-  groupHighlight.clear();
-  await rendererQueue.run(() => renderer.zoomToPoints(allIndices, { padding: 0.08 }));
-}
-
-
 export async function createGroupedEmbeddingExplorer(config) {
   const data = config.data;
   const groups = config.groups;
@@ -50,7 +40,6 @@ export async function createGroupedEmbeddingExplorer(config) {
   }
   const assignments = groupAssignments(data.length, groups);
   const allIndices = data.map((_, index) => index);
-  const { width, height } = fitEmbeddingDimensions(config.width || 1000);
 
   const shell = document.createElement("section");
   shell.className = ["embedding-explorer", config.className].filter(Boolean).join(" ");
@@ -83,10 +72,6 @@ export async function createGroupedEmbeddingExplorer(config) {
   const frame = document.createElement("div");
   frame.className = "embedding-frame";
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
   canvas.setAttribute("role", "img");
   canvas.setAttribute("aria-label", config.canvasLabel(data.length));
   canvas.tabIndex = 0;
@@ -117,6 +102,32 @@ export async function createGroupedEmbeddingExplorer(config) {
   });
   shell.appendChild(legend);
 
+  const measurementWidth = fitEmbeddingWidth(config.width || 1000);
+  shell.style.position = "absolute";
+  shell.style.left = "0";
+  shell.style.top = "0";
+  shell.style.visibility = "hidden";
+  shell.style.pointerEvents = "none";
+  shell.style.width = `${measurementWidth}px`;
+  shell.setAttribute("aria-hidden", "true");
+  canvas.hidden = true;
+  document.body.appendChild(shell);
+  const componentChromeHeight = Math.ceil(shell.getBoundingClientRect().height);
+  shell.remove();
+  canvas.hidden = false;
+  shell.removeAttribute("aria-hidden");
+  ["position", "left", "top", "visibility", "pointer-events", "width"]
+    .forEach((property) => shell.style.removeProperty(property));
+
+  const { width, height } = fitEmbeddingDimensions(
+    config.width || 1000,
+    componentChromeHeight,
+  );
+  canvas.width = width;
+  canvas.height = height;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+
   const renderer = createEmbeddingRenderer({
     data,
     xField: config.xField,
@@ -135,6 +146,13 @@ export async function createGroupedEmbeddingExplorer(config) {
 
   function drawOverview() {
     return rendererQueue.run(() => renderer.drawOverview());
+  }
+
+  function resetEmbedding() {
+    groupHighlight.clear();
+    return rendererQueue.run(() => (
+      renderer.zoomToPoints(allIndices, { padding: 0.08 })
+    ));
   }
 
   const groupHighlight = createHighlightController(groupKeys, (activeGroup) => {
@@ -200,10 +218,10 @@ export async function createGroupedEmbeddingExplorer(config) {
   canvas.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     event.preventDefault();
-    resetEmbeddingExplorer(groupHighlight, rendererQueue, renderer, allIndices);
+    resetEmbedding();
   });
   resetButton.addEventListener("click", () => {
-    resetEmbeddingExplorer(groupHighlight, rendererQueue, renderer, allIndices);
+    resetEmbedding();
   });
 
   await rendererQueue.run(async () => {
@@ -216,9 +234,7 @@ export async function createGroupedEmbeddingExplorer(config) {
     groupHighlight.select(groupKey);
     return true;
   };
-  shell.resetEmbedding = () => (
-    resetEmbeddingExplorer(groupHighlight, rendererQueue, renderer, allIndices)
-  );
+  shell.resetEmbedding = resetEmbedding;
   if (config.initialGroup !== undefined && config.initialGroup !== null) {
     shell.selectGroup(config.initialGroup);
   }

@@ -26,14 +26,17 @@ export function fitEmbeddingWidth(maxWidth, documentLike = document) {
 }
 
 
-export function fitEmbeddingDimensions(maxWidth, documentLike = document) {
+export function fitEmbeddingDimensions(maxWidth, componentChromeHeight, documentLike = document) {
   const aspectRatio = 0.62;
   const widthLimit = fitEmbeddingWidth(maxWidth, documentLike);
   const viewportHeight = Number(documentLike.documentElement.clientHeight) || Infinity;
-  const heightLimit = Math.max(240, viewportHeight - 210);
+  const navigation = documentLike.querySelector("#quarto-header");
+  const navigationHeight = navigation?.getBoundingClientRect?.().height || 0;
+  const heightLimit = viewportHeight - navigationHeight - componentChromeHeight;
   const width = Math.floor(Math.min(widthLimit, heightLimit / aspectRatio));
-  const height = Math.round(width * aspectRatio);
-  return { width, height };
+  const boundedWidth = Math.max(320, width);
+  const height = Math.round(boundedWidth * aspectRatio);
+  return { width: boundedWidth, height };
 }
 
 

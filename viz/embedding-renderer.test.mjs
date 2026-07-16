@@ -70,29 +70,33 @@ test("shared embedding width respects content, viewport, and minimum bounds", ()
 });
 
 
-test("embedding dimensions preserve aspect ratio and fit below desktop navigation", () => {
-  function documentAt(mainWidth, viewportWidth, viewportHeight) {
+test("embedding dimensions use measured navigation and component chrome", () => {
+  function documentAt(mainWidth, viewportWidth, viewportHeight, navigationHeight) {
     return {
       documentElement: {
         clientWidth: viewportWidth,
         clientHeight: viewportHeight,
       },
-      querySelector: (selector) => (
-        selector === "main.content" ? { clientWidth: mainWidth } : null
-      ),
+      querySelector: (selector) => {
+        if (selector === "main.content") return { clientWidth: mainWidth };
+        if (selector === "#quarto-header") {
+          return { getBoundingClientRect: () => ({ height: navigationHeight }) };
+        }
+        return null;
+      },
     };
   }
 
   assert.deepEqual(
-    fitEmbeddingDimensions(1000, documentAt(1100, 1280, 720)),
-    { width: 822, height: 510 },
+    fitEmbeddingDimensions(1000, 130, documentAt(1100, 1280, 720, 58)),
+    { width: 858, height: 532 },
   );
   assert.deepEqual(
-    fitEmbeddingDimensions(1000, documentAt(1100, 1680, 1200)),
+    fitEmbeddingDimensions(1000, 130, documentAt(1100, 1680, 1200, 58)),
     { width: 1000, height: 620 },
   );
   assert.deepEqual(
-    fitEmbeddingDimensions(1000, documentAt(300, 360, 600)),
+    fitEmbeddingDimensions(1000, 130, documentAt(300, 360, 600, 58)),
     { width: 320, height: 198 },
   );
 });
