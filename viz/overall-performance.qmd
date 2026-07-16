@@ -14,7 +14,7 @@ format:
 
 This page presents the learned representations from the ALIGATEHR-Gen model and its quantitative performance against baselines. Explore the patient and ICD code embedding spaces, and compare evaluation metrics across diseases.
 
-## Patient Embeddings — Coloured by Sex
+## Patient Embeddings
 
 ```{ojs}
 //| echo: false
@@ -35,12 +35,13 @@ createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).defa
 //| echo: false
 
 import { createPatientEmbeddingExplorer } from "./patient-embedding-explorer.js"
+import { createPatientEmbeddingSwitcher } from "./patient-embedding-switcher.js"
 ```
 
 ```{ojs}
 //| echo: false
 
-umapSex = {
+patientEmbeddings = {
   const buildGroup = (label, color, predicate) => {
     const indices = [];
     patientData.forEach((d, i) => {
@@ -48,7 +49,7 @@ umapSex = {
     });
     return { label, color, indices };
   };
-  return createPatientEmbeddingExplorer({
+  const createSexEmbedding = () => createPatientEmbeddingExplorer({
     data: patientData,
     xField: "umap_1",
     yField: "umap_2",
@@ -61,52 +62,55 @@ umapSex = {
       buildGroup("Male", "#4a90d9", d => d.sex_male === 1),
     ],
   });
-}
-```
 
-## Patient Embeddings — Coloured by Age
+  const createAgeEmbedding = () => {
+    // Age is continuous, so the explorer groups patients into quartile bands.
+    const bandColors = ["#440154", "#31688e", "#35b779", "#fde725"];
+    const bandNames = ["Youngest quartile", "Lower-middle quartile", "Upper-middle quartile", "Oldest quartile"];
+    const sortedAges = patientData.map(d => d.age).sort((a, b) => a - b);
+    const quantile = q => sortedAges[Math.min(sortedAges.length - 1, Math.floor(q * sortedAges.length))];
+    const cuts = [quantile(0.25), quantile(0.5), quantile(0.75)];
+    const bandOf = age => {
+      if (age <= cuts[0]) return 0;
+      if (age <= cuts[1]) return 1;
+      if (age <= cuts[2]) return 2;
+      return 3;
+    };
 
-```{ojs}
-//| echo: false
+    const groups = bandColors.map((color, band) => {
+      const indices = [];
+      const ages = [];
+      patientData.forEach((d, i) => {
+        if (bandOf(d.age) === band) { indices.push(i); ages.push(d.age); }
+      });
+      const lo = Math.min(...ages);
+      const hi = Math.max(...ages);
+      return {
+        label: `${bandNames[band]} · ${lo}–${hi} yrs`,
+        color,
+        indices,
+      };
+    });
 
-umapAge = {
-  // Age is continuous, so the explorer groups patients into quartile bands.
-  const bandColors = ["#440154", "#31688e", "#35b779", "#fde725"];
-  const bandNames = ["Youngest quartile", "Lower-middle quartile", "Upper-middle quartile", "Oldest quartile"];
-  const sortedAges = patientData.map(d => d.age).sort((a, b) => a - b);
-  const quantile = q => sortedAges[Math.min(sortedAges.length - 1, Math.floor(q * sortedAges.length))];
-  const cuts = [quantile(0.25), quantile(0.5), quantile(0.75)];
-  const bandOf = age => {
-    if (age <= cuts[0]) return 0;
-    if (age <= cuts[1]) return 1;
-    if (age <= cuts[2]) return 2;
-    return 3;
+    return createPatientEmbeddingExplorer({
+      data: patientData,
+      xField: "umap_1",
+      yField: "umap_2",
+      title: "Patient Embeddings — Coloured by Age",
+      subtitle: "Pre-trained EHR Encoder · UMAP view",
+      datasetLabel: `${patientData.length.toLocaleString()} patients`,
+      createScatterplot,
+      groups,
+    });
   };
 
-  const groups = bandColors.map((color, band) => {
-    const indices = [];
-    const ages = [];
-    patientData.forEach((d, i) => {
-      if (bandOf(d.age) === band) { indices.push(i); ages.push(d.age); }
-    });
-    const lo = Math.min(...ages);
-    const hi = Math.max(...ages);
-    return {
-      label: `${bandNames[band]} · ${lo}–${hi} yrs`,
-      color,
-      indices,
-    };
-  });
-
-  return createPatientEmbeddingExplorer({
-    data: patientData,
-    xField: "umap_1",
-    yField: "umap_2",
-    title: "Patient Embeddings — Coloured by Age",
-    subtitle: "Pre-trained EHR Encoder · UMAP view",
-    datasetLabel: `${patientData.length.toLocaleString()} patients`,
-    createScatterplot,
-    groups,
+  return createPatientEmbeddingSwitcher({
+    label: "Colour patient embeddings by",
+    initialKey: "sex",
+    options: [
+      { key: "sex", label: "Sex", create: createSexEmbedding },
+      { key: "age", label: "Age", create: createAgeEmbedding },
+    ],
   });
 }
 ```

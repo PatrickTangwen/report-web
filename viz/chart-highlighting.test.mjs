@@ -8,28 +8,7 @@ import {
   createHighlightController,
   highlightOpacity,
 } from "./chart-highlighting.js";
-
-
-class FakeElement extends EventTarget {
-  constructor() {
-    super();
-    this.style = {};
-    this.attributes = new Map();
-    const classes = new Set();
-    this.classList = {
-      contains: (name) => classes.has(name),
-      toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name),
-    };
-  }
-
-  setAttribute(name, value) {
-    this.attributes.set(name, String(value));
-  }
-
-  getAttribute(name) {
-    return this.attributes.get(name) ?? null;
-  }
-}
+import { FakeElement } from "./test-dom.mjs";
 
 
 test("a pinned selection remains active while the pointer crosses other groups", () => {

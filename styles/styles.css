@@ -222,6 +222,76 @@ figcaption {
   margin-bottom: 1.25rem;
 }
 
+.patient-embedding-switcher {
+  width: 100%;
+  max-width: 1000px;
+}
+
+.patient-embedding-switcher-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.patient-embedding-switcher-label {
+  color: #52606d;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.patient-embedding-switcher-actions {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  background: #f0f4f8;
+}
+
+.patient-embedding-switcher-button {
+  min-width: 4.5rem;
+  padding: 0.38rem 0.85rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #52606d;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.patient-embedding-switcher-button:hover,
+.patient-embedding-switcher-button:focus-visible {
+  background: #e4eaf1;
+  color: #243b53;
+}
+
+.patient-embedding-switcher-button:focus-visible {
+  outline: 3px solid rgba(44, 90, 160, 0.25);
+  outline-offset: 2px;
+}
+
+.patient-embedding-switcher-button.is-active {
+  background: #2c5aa0;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(36, 59, 83, 0.22);
+}
+
+.patient-embedding-switcher-panel[aria-busy="true"] {
+  opacity: 0.7;
+}
+
+@media (max-width: 576px) {
+  .patient-embedding-switcher-controls {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+}
+
 .cell-output:has(.patient-embedding-explorer) {
   overflow: visible;
 }
@@ -723,6 +793,30 @@ figcaption {
 .quarto-dark .embedding-button {
   border-color: #495057;
   background: #2b3035;
+}
+
+.quarto-dark .patient-embedding-switcher-label {
+  color: #a9bacb;
+}
+
+.quarto-dark .patient-embedding-switcher-actions {
+  border-color: #495057;
+  background: #212529;
+}
+
+.quarto-dark .patient-embedding-switcher-button {
+  color: #a9bacb;
+}
+
+.quarto-dark .patient-embedding-switcher-button:hover,
+.quarto-dark .patient-embedding-switcher-button:focus-visible {
+  background: #2b3035;
+  color: #e5edf5;
+}
+
+.quarto-dark .patient-embedding-switcher-button.is-active {
+  background: #5a8fd4;
+  color: #fff;
 }
 
 .quarto-dark .embedding-button-primary {
