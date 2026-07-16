@@ -3,9 +3,36 @@ import test from "node:test";
 
 import {
   createEmbeddingRenderer,
+  createRendererQueue,
   fitEmbeddingWidth,
   normalizeCoordinates,
 } from "./embedding-renderer.js";
+
+
+test("renderer queue applies the latest state after in-flight work", async () => {
+  const queue = createRendererQueue();
+  const writes = [];
+  let releaseStale;
+  let markStarted;
+  const started = new Promise((resolve) => {
+    markStarted = resolve;
+  });
+  const stale = queue.run(() => new Promise((resolve) => {
+    releaseStale = () => {
+      writes.push("stale highlight");
+      resolve();
+    };
+    markStarted();
+  }));
+  const latest = queue.run(() => {
+    writes.push("latest group");
+  });
+
+  await started;
+  releaseStale();
+  await Promise.all([stale, latest]);
+  assert.deepEqual(writes, ["stale highlight", "latest group"]);
+});
 
 
 test("shared coordinate normalization preserves aspect ratio for every embedding", () => {

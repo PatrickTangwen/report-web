@@ -26,6 +26,17 @@ export function fitEmbeddingWidth(maxWidth, documentLike = document) {
 }
 
 
+export function createRendererQueue() {
+  let tail = Promise.resolve();
+  return {
+    run(operation) {
+      tail = tail.catch(() => {}).then(operation);
+      return tail;
+    },
+  };
+}
+
+
 export function createEmbeddingRenderer(config) {
   const points = normalizeCoordinates(config.data, config.xField, config.yField);
   const allIndices = config.data.map((_, index) => index);
