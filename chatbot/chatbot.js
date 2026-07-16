@@ -1801,8 +1801,8 @@
     return match ? match[1] : String(target).replace(/_/g, " ");
   }
 
-  // A matched result creates a Visualization Request, collapses the Assistant,
-  // and opens the destination visualization in the current tab. The Assistant
+  // A matched result selects its disease group in the embedding, collapses the
+  // Assistant, and opens the destination visualization in the current tab. The Assistant
   // returns to the Research Task Menu so reopening lands on the menu with an
   // edit-or-restart Profile action (rendered by renderComparisonComplete).
   function handoffMatchedResult(result) {
@@ -1843,7 +1843,7 @@
     var copy = createEl("p", "chatbot-profile-notice");
     copy.textContent =
       "Your confirmed Demo Profile for " + targetLabel(result.cohort_comparison_result.target) +
-      " matched a reference neighborhood, now highlighted in the Use Case visualization. " +
+      " matched a reference neighborhood. Its disease group is now highlighted in the Use Case visualization. " +
       "This is a research cohort comparison — not a diagnosis, prognosis, or personal outcome.";
     var actions = createEl("div", "chatbot-profile-actions");
     actions.append(

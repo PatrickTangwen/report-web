@@ -19,7 +19,7 @@ This page shows how each architectural component of ALIGATEHR-Gen contributes to
 ```{ojs}
 //| echo: false
 
-import { bindHighlightTarget, createHighlightController, highlightOpacity } from "./chart-highlighting.js"
+import { bindHighlightGroups } from "./chart-highlighting.js"
 ```
 
 ```{ojs}
@@ -125,22 +125,10 @@ ablationChart = {
     variant,
     [...chart.querySelectorAll(`.ablation-series-${index}`)],
   ]));
-  const highlight = createHighlightController(variants, (activeVariant) => {
-    seriesNodes.forEach((nodes, variant) => {
-      nodes.forEach((node) => {
-        node.style.opacity = highlightOpacity(variant, activeVariant);
-        node.setAttribute("aria-pressed", String(highlight.pinned() === variant));
-      });
-    });
-  });
-  variants.forEach((variant) => {
-    seriesNodes.get(variant).forEach((node) => {
-      node.setAttribute("tabindex", "0");
-      node.setAttribute("role", "button");
-      node.setAttribute("aria-label", `Highlight ${variant}`);
-      node.setAttribute("aria-pressed", "false");
-      bindHighlightTarget(node, variant, highlight);
-    });
+  bindHighlightGroups({
+    groupKeys: variants,
+    targetsByGroup: seriesNodes,
+    labelForGroup: variant => `Highlight ${variant}`,
   });
 
   return container;

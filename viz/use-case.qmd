@@ -38,8 +38,10 @@ fibroticEmbedding = {
   host.className = "embedding-loader";
   host.setAttribute("aria-live", "polite");
   host.setAttribute("aria-atomic", "true");
+  let removeRequestListener = () => {};
   let loadController = null;
   invalidation.then(() => {
+    removeRequestListener();
     if (loadController) loadController.cancel();
   });
   const colors = [
@@ -123,15 +125,34 @@ fibroticEmbedding = {
       window.clearTimeout(coldStartNotice);
       if (!loadController.isCurrent(run.token)) return;
 
+      const consumed = helper.consumeRequest(sessionStorage, embedding.dataset_version);
+      const initialDisease = consumed.status === "ready" && consumed.should_play
+        ? consumed.request.target
+        : null;
+      if (consumed.status === "ready") {
+        sessionStorage.removeItem(helper.REQUEST_KEY);
+      }
+
       const chart = await createEmbeddingScatter({
         data: embedding.points,
         datasetVersion: embedding.dataset_version,
         createScatterplot: createFibroticScatterplot,
         colors,
         displayName,
+        initialDisease,
       });
       host.replaceChildren(chart);
       host.setAttribute("aria-busy", "false");
+      removeRequestListener();
+      removeRequestListener = helper.connectRequestConsumer(
+        window,
+        sessionStorage,
+        embedding.dataset_version,
+        request => {
+          chart.selectDisease(request.target);
+          sessionStorage.removeItem(helper.REQUEST_KEY);
+        },
+      );
       window.__ALIGATEHR_FIBROTIC_READY__ = true;
     } catch (error) {
       if (coldStartNotice) window.clearTimeout(coldStartNotice);

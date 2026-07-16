@@ -205,7 +205,7 @@ icdUmap = {
 ```{ojs}
 //| echo: false
 
-import { bindHighlightTarget, createHighlightController, highlightOpacity } from "./chart-highlighting.js"
+import { bindHighlightGroups } from "./chart-highlighting.js"
 ```
 
 ```{ojs}
@@ -322,27 +322,11 @@ evalChart = {
     model,
     [...chart.querySelectorAll(`.eval-series-${index}`)],
   ]));
-  const highlight = createHighlightController(models, (activeModel) => {
-    seriesNodes.forEach((nodes, model) => {
-      nodes.forEach((node) => {
-        node.style.opacity = highlightOpacity(model, activeModel);
-      });
-    });
-    legendButtons.forEach((button, model) => {
-      const isActive = model === activeModel;
-      button.classList.toggle("is-active", isActive);
-      button.classList.toggle("is-muted", activeModel !== null && !isActive);
-      button.setAttribute("aria-pressed", String(highlight.pinned() === model));
-    });
-  });
-  models.forEach((model) => {
-    bindHighlightTarget(legendButtons.get(model), model, highlight);
-    seriesNodes.get(model).forEach((node) => {
-      node.setAttribute("tabindex", "0");
-      node.setAttribute("role", "button");
-      node.setAttribute("aria-label", `Highlight ${model}`);
-      bindHighlightTarget(node, model, highlight);
-    });
+  bindHighlightGroups({
+    groupKeys: models,
+    targetsByGroup: seriesNodes,
+    actionsByGroup: legendButtons,
+    labelForGroup: model => `Highlight ${model}`,
   });
 
   return container;

@@ -35,6 +35,12 @@ export function createHighlightController(groupKeys, apply) {
       pinned = pinned === group ? null : group;
       render();
     },
+    select(group) {
+      validate(group);
+      pinned = group;
+      hovered = null;
+      render();
+    },
     clear() {
       pinned = null;
       hovered = null;
@@ -81,4 +87,46 @@ export function bindHighlightTarget(element, group, controller) {
     element.removeEventListener("click", toggle);
     element.removeEventListener("keydown", keydown);
   };
+}
+
+
+export function bindHighlightGroups(config) {
+  const groupKeys = config.groupKeys;
+  const targetsByGroup = config.targetsByGroup;
+  const actionsByGroup = config.actionsByGroup || new Map();
+  const labelForGroup = config.labelForGroup || ((group) => `Highlight ${group}`);
+  let controller;
+
+  controller = createHighlightController(groupKeys, (activeGroup) => {
+    groupKeys.forEach((group) => {
+      const isActive = group === activeGroup;
+      (targetsByGroup.get(group) || []).forEach((target) => {
+        target.style.opacity = highlightOpacity(
+          group,
+          activeGroup,
+          config.dimOpacity,
+        );
+        target.setAttribute("aria-pressed", String(controller.pinned() === group));
+      });
+      const action = actionsByGroup.get(group);
+      if (!action) return;
+      action.classList.toggle("is-active", isActive);
+      action.classList.toggle("is-muted", activeGroup !== null && !isActive);
+      action.setAttribute("aria-pressed", String(controller.pinned() === group));
+    });
+  });
+
+  groupKeys.forEach((group) => {
+    const action = actionsByGroup.get(group);
+    if (action) bindHighlightTarget(action, group, controller);
+    (targetsByGroup.get(group) || []).forEach((target) => {
+      target.setAttribute("tabindex", "0");
+      target.setAttribute("role", "button");
+      target.setAttribute("aria-label", labelForGroup(group));
+      target.setAttribute("aria-pressed", "false");
+      bindHighlightTarget(target, group, controller);
+    });
+  });
+
+  return controller;
 }
