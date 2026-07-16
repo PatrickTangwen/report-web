@@ -185,7 +185,7 @@ icdUmap = {
 ```{ojs}
 //| echo: false
 
-import { bindHighlightGroups } from "./chart-highlighting.js"
+import { bindHighlightGroups, bindSingleMarkTooltip, createChartTooltip } from "./chart-highlighting.js"
 ```
 
 ```{ojs}
@@ -230,11 +230,10 @@ evalChart = {
     modelColors[m] = m === proposedModel ? "#2c5aa0" : grayScale[gi++ % grayScale.length];
   }
 
-  const ruleMarks = models.map((model, index) =>
-    Plot.ruleX(filtered.filter(d =>
+  const ruleMarks = models.map((model) =>
+    Plot.ruleY(filtered.filter(d =>
       d.model === model && d.ci_lower != null && d.ci_upper != null
     ), {
-      className: `chart-highlight-series eval-series-${index}`,
       x1: "ci_lower",
       x2: "ci_upper",
       y: "disease",
@@ -243,16 +242,13 @@ evalChart = {
       strokeOpacity: 0.5,
     })
   );
-  const dotMarks = models.map((model, index) =>
+  const dotMarks = models.map((model) =>
     Plot.dot(filtered.filter(d => d.model === model), {
-      className: `chart-highlight-series eval-series-${index}`,
       x: "value",
       y: "disease",
       fill: modelColors[model],
       r: model === proposedModel ? 6 : 4,
       symbol: model === proposedModel ? "circle" : "diamond2",
-      tip: true,
-      title: d => `${d.model}\n${d.disease}\n${selectedMetric}: ${d.value.toFixed(4)}${d.ci_lower != null ? `\nCI: [${d.ci_lower.toFixed(4)}, ${d.ci_upper.toFixed(4)}]` : ""}`,
     })
   );
 
@@ -277,6 +273,32 @@ evalChart = {
   container.appendChild(titleDiv);
   container.appendChild(chart);
 
+  const tooltip = createChartTooltip(container);
+
+  const dotGroups = [...chart.querySelectorAll('g[aria-label="dot"]')];
+  const ruleGroups = [...chart.querySelectorAll('g[aria-label="rule"]')];
+  if (dotGroups.length !== models.length || ruleGroups.length !== models.length) {
+    throw new Error("Model performance mark groups do not match the model data");
+  }
+  const tooltipPoints = [];
+  const tooltipRows = [];
+  models.forEach((model, index) => {
+    const rows = filtered.filter(d => d.model === model);
+    const points = [...dotGroups[index].querySelectorAll("circle, path")];
+    if (points.length !== rows.length) {
+      throw new Error(`Model performance points do not match ${model}`);
+    }
+    tooltipPoints.push(...points);
+    tooltipRows.push(...rows);
+  });
+  bindSingleMarkTooltip(tooltipPoints, tooltip, index => {
+    const d = tooltipRows[index];
+    const interval = d.ci_lower != null
+      ? `<br>CI: [${d.ci_lower.toFixed(4)}, ${d.ci_upper.toFixed(4)}]`
+      : "";
+    return `<strong>${d.model}</strong><br>${d.disease}<br>${selectedMetric}: ${d.value.toFixed(4)}${interval}`;
+  });
+
   // Custom legend
   const legendDiv = document.createElement("div");
   legendDiv.className = "chart-highlight-legend";
@@ -300,7 +322,7 @@ evalChart = {
 
   const seriesNodes = new Map(models.map((model, index) => [
     model,
-    [...chart.querySelectorAll(`.eval-series-${index}`)],
+    [ruleGroups[index], dotGroups[index]],
   ]));
   bindHighlightGroups({
     groupKeys: models,

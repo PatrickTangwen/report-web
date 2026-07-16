@@ -170,7 +170,7 @@ fibroticEmbedding = {
 ```{ojs}
 //| echo: false
 
-import { bindSingleMarkTooltip } from "./chart-highlighting.js"
+import { bindSingleMarkTooltip, createChartTooltip } from "./chart-highlighting.js"
 ```
 
 ```{ojs}
@@ -243,10 +243,7 @@ pathwayChart = {
   container.appendChild(titleDiv);
   container.appendChild(chart);
 
-  const tooltip = document.createElement("div");
-  tooltip.className = "chart-tooltip";
-  tooltip.style.cssText = "position:fixed;display:none;pointer-events:none;padding:8px 12px;border-radius:4px;font-size:0.85rem;line-height:1.4;z-index:1000;background:rgba(0,0,0,0.85);color:#fff;max-width:320px;white-space:nowrap;";
-  container.appendChild(tooltip);
+  const tooltip = createChartTooltip(container);
 
   const circles = chart.querySelectorAll("circle");
   circles.forEach((circle, i) => {

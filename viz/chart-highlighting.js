@@ -136,6 +136,16 @@ export function bindSingleMarkTooltip(targets, tooltip, htmlForIndex) {
 }
 
 
+export function createChartTooltip(container) {
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.style.cssText = "position:fixed;display:none;pointer-events:none;padding:8px 12px;border-radius:4px;font-size:0.85rem;line-height:1.4;z-index:1000;background:rgba(0,0,0,0.85);color:#fff;max-width:320px;white-space:nowrap;";
+  container.appendChild(tooltip);
+  return tooltip;
+}
+
+
 export function bindHighlightGroups(config) {
   const groupKeys = config.groupKeys;
   const targetsByGroup = config.targetsByGroup;
