@@ -77,9 +77,12 @@ export async function createGroupedEmbeddingExplorer(config) {
   canvas.tabIndex = 0;
   frame.appendChild(canvas);
 
-  const tooltip = document.createElement("div");
-  tooltip.className = "embedding-tooltip";
-  frame.appendChild(tooltip);
+  let tooltip = null;
+  if (config.renderTooltip) {
+    tooltip = document.createElement("div");
+    tooltip.className = "embedding-tooltip";
+    frame.appendChild(tooltip);
+  }
   shell.appendChild(frame);
 
   const legend = document.createElement("div");
@@ -176,37 +179,39 @@ export async function createGroupedEmbeddingExplorer(config) {
     bindHighlightTarget(button, groupKey, groupHighlight, { persistent: true });
   });
 
-  scatterplot.subscribe("pointover", (index) => {
-    const point = data[index];
-    if (!point) return;
-    config.renderTooltip(tooltip, point);
-    tooltip.classList.add("is-visible");
-  });
-  scatterplot.subscribe("pointout", () => {
-    tooltip.classList.remove("is-visible");
-  });
+  if (tooltip) {
+    scatterplot.subscribe("pointover", (index) => {
+      const point = data[index];
+      if (!point) return;
+      config.renderTooltip(tooltip, point);
+      tooltip.classList.add("is-visible");
+    });
+    scatterplot.subscribe("pointout", () => {
+      tooltip.classList.remove("is-visible");
+    });
+    canvas.addEventListener("mousemove", (event) => {
+      if (!tooltip.classList.contains("is-visible")) return;
+      const canvasRect = canvas.getBoundingClientRect();
+      const frameRect = frame.getBoundingClientRect();
+      const cursorX = event.clientX - frameRect.left;
+      const cursorY = event.clientY - frameRect.top;
+      const tipW = tooltip.offsetWidth || 200;
+      const tipH = tooltip.offsetHeight || 60;
+      const rightEdge = canvasRect.right - frameRect.left;
+      const bottomEdge = canvasRect.bottom - frameRect.top;
+      let left = cursorX + 12;
+      if (left + tipW > rightEdge) left = cursorX - tipW - 12;
+      let top = cursorY + 12;
+      if (top + tipH > bottomEdge) top = cursorY - tipH - 12;
+      tooltip.style.left = `${Math.max(0, left)}px`;
+      tooltip.style.top = `${Math.max(0, top)}px`;
+    });
+  }
   scatterplot.subscribe("select", ({ points: selected }) => {
     const pointIndex = selected?.[0];
     if (pointIndex === undefined || assignments[pointIndex] === undefined) return;
     groupHighlight.select(groups[assignments[pointIndex]].key);
     scatterplot.deselect({ preventEvent: true });
-  });
-  canvas.addEventListener("mousemove", (event) => {
-    if (!tooltip.classList.contains("is-visible")) return;
-    const canvasRect = canvas.getBoundingClientRect();
-    const frameRect = frame.getBoundingClientRect();
-    const cursorX = event.clientX - frameRect.left;
-    const cursorY = event.clientY - frameRect.top;
-    const tipW = tooltip.offsetWidth || 200;
-    const tipH = tooltip.offsetHeight || 60;
-    const rightEdge = canvasRect.right - frameRect.left;
-    const bottomEdge = canvasRect.bottom - frameRect.top;
-    let left = cursorX + 12;
-    if (left + tipW > rightEdge) left = cursorX - tipW - 12;
-    let top = cursorY + 12;
-    if (top + tipH > bottomEdge) top = cursorY - tipH - 12;
-    tooltip.style.left = `${Math.max(0, left)}px`;
-    tooltip.style.top = `${Math.max(0, top)}px`;
   });
   canvas.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;

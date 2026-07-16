@@ -32,10 +32,6 @@ export async function createEmbeddingScatter(config) {
       pointSize: [2.5, 3],
       select: false,
     }),
-    renderTooltip: (tooltip, point) => {
-      tooltip.textContent =
-        `${config.displayName(point.disease)} · ${config.displayName(point.group)}`;
-    },
   });
   shell.selectDisease = shell.selectGroup;
   return shell;

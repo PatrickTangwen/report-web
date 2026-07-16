@@ -56,9 +56,6 @@ fibroticEmbedding = {
     SSc_Connective_Tissue: "Systemic Sclerosis / Connective Tissue",
     Crohns_Disease: "Crohn's Disease",
     Fibrosis_of_Skin: "Skin Fibrosis",
-    pure: "Pure display group",
-    intermediate: "Intermediate display group",
-    overlap: "Overlap display group",
   };
   const displayName = value => names[value] || String(value).replace(/_/g, " ");
 

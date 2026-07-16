@@ -5,6 +5,7 @@ import {
   createGroupedEmbeddingExplorer,
   groupAssignments,
 } from "./grouped-embedding-explorer.js";
+import { createEmbeddingScatter } from "./embedding-scatter.js";
 
 
 class FakeElement extends EventTarget {
@@ -134,6 +135,38 @@ test("point hover shows a tooltip without activating its group label", async () 
     assert.equal(tooltip.classList.contains("is-visible"), true);
     assert.equal(ckdLabel.classList.contains("is-active"), false);
     assert.equal(ckdLabel.getAttribute("aria-pressed"), "false");
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+
+test("fibrotic embedding does not register point-hover tooltips", async () => {
+  const originalDocument = globalThis.document;
+  const subscriptions = new Map();
+  globalThis.document = fakeDocument();
+
+  try {
+    const shell = await createEmbeddingScatter({
+      data: [{ tsne_x: 0, tsne_y: 0, disease: "CKD", group: "pure" }],
+      colors: ["#4477aa"],
+      displayName: (value) => value,
+      datasetVersion: "test-release",
+      createScatterplot: () => ({
+        subscribe: (eventName, handler) => subscriptions.set(eventName, handler),
+        set() {},
+        async draw() {},
+        deselect() {},
+        select() {},
+        async zoomToPoints() {},
+      }),
+    });
+
+    const frame = shell.children[1];
+    assert.equal(subscriptions.has("pointover"), false);
+    assert.equal(subscriptions.has("pointout"), false);
+    assert.equal(subscriptions.has("select"), true);
+    assert.equal(frame.children.length, 1);
   } finally {
     globalThis.document = originalDocument;
   }
