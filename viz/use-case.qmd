@@ -16,7 +16,7 @@ This page demonstrates the clinical utility of ALIGATEHR-Gen through a focused c
 
 ## Patient Embeddings — 7 Fibrotic Diseases {#fibrotic-embedding}
 
-The plot below loads its display-safe reference points from the same backend Dataset Release used by preset and confirmed Demo Profile walkthroughs. It contains no source participant IDs or individual clinical profiles.
+The plot below loads display-safe reference points from the current backend Dataset Release. Hover or select a disease label to highlight its points while keeping the full embedding in view. It contains no source participant IDs or individual clinical profiles.
 
 ```{ojs}
 //| echo: false
@@ -33,15 +33,13 @@ createFibroticScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1
 ```{ojs}
 //| echo: false
 
-fibroticWalkthrough = {
+fibroticEmbedding = {
   const host = document.createElement("div");
   host.className = "embedding-loader";
   host.setAttribute("aria-live", "polite");
   host.setAttribute("aria-atomic", "true");
-  let removeRequestListener = () => {};
   let loadController = null;
   invalidation.then(() => {
-    removeRequestListener();
     if (loadController) loadController.cancel();
   });
   const colors = [
@@ -116,30 +114,14 @@ fibroticWalkthrough = {
         }
       }, 4000);
       const apiUrl = helper.resolveApiUrl(window.location, window.ALIGATEHR_API_URL);
-      const [embedding, preset] = await Promise.all([
-        helper.requestJson(
-          fetch,
-          apiUrl + "/embedding/fibrotic",
-          { cache: "no-store", signal: run.signal },
-          30000,
-        ),
-        helper.requestJson(
-          fetch,
-          apiUrl + "/embedding/fibrotic/preset",
-          { cache: "no-store", signal: run.signal },
-          30000,
-        ),
-      ]);
+      const embedding = await helper.requestJson(
+        fetch,
+        apiUrl + "/embedding/fibrotic",
+        { cache: "no-store", signal: run.signal },
+        30000,
+      );
       window.clearTimeout(coldStartNotice);
       if (!loadController.isCurrent(run.token)) return;
-      if (embedding.dataset_version !== preset.dataset_version) {
-        throw new Error("Dataset versions differ. Refresh after the backend release finishes updating.");
-      }
-
-      const consumed = helper.consumeRequest(sessionStorage, embedding.dataset_version);
-      if (consumed.status === "version_mismatch") {
-        throw new Error("The saved walkthrough belongs to an older Dataset Release. Start the demo again from the chatbot.");
-      }
 
       const chart = await createEmbeddingScatter({
         data: embedding.points,
@@ -147,19 +129,9 @@ fibroticWalkthrough = {
         createScatterplot: createFibroticScatterplot,
         colors,
         displayName,
-        preset,
-        request: consumed.request,
-        autoplay: consumed.should_play,
       });
       host.replaceChildren(chart);
       host.setAttribute("aria-busy", "false");
-      removeRequestListener();
-      removeRequestListener = helper.connectRequestConsumer(
-        window,
-        sessionStorage,
-        embedding.dataset_version,
-        request => chart.embeddingWalkthrough.play(request),
-      );
       window.__ALIGATEHR_FIBROTIC_READY__ = true;
     } catch (error) {
       if (coldStartNotice) window.clearTimeout(coldStartNotice);

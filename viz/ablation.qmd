@@ -19,6 +19,12 @@ This page shows how each architectural component of ALIGATEHR-Gen contributes to
 ```{ojs}
 //| echo: false
 
+import { bindHighlightTarget, createHighlightController, highlightOpacity } from "./chart-highlighting.js"
+```
+
+```{ojs}
+//| echo: false
+
 ablationData = {
   const text = await FileAttachment("data/ablation_results.csv").text();
   return d3.csvParse(text, d3.autoType);
@@ -51,6 +57,30 @@ ablationChart = {
   const filtered = ablationData.filter(d => d.disease === ablationDisease && d.metric === ablationMetric);
   filtered.sort((a, b) => a.delta - b.delta);
 
+  const barMarks = filtered.map((row, index) =>
+    Plot.barX([row], {
+      className: `chart-highlight-series ablation-series-${index}`,
+      x: "delta",
+      y: "variant",
+      fill: "delta",
+      tip: true,
+      title: d => `${d.variant}\n${d.disease} · ${d.metric}\nFull model: ${d.full_model_value.toFixed(4)}\nVariant: ${d.value.toFixed(4)}\nΔ: ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`,
+    })
+  );
+  const labelMarks = filtered.map((row, index) =>
+    Plot.text([row], {
+      className: `chart-highlight-series ablation-series-${index}`,
+      x: "delta",
+      y: "variant",
+      text: d => `${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`,
+      dx: row.delta < 0 ? -10 : 0,
+      dy: -12,
+      textAnchor: row.delta < 0 ? "end" : "start",
+      fontSize: 11,
+      fill: "#2c3e50",
+    })
+  );
+
   const chart = Plot.plot({
     width: 1000,
     height: 350,
@@ -72,32 +102,8 @@ ablationChart = {
     },
     marks: [
       Plot.ruleX([0], { stroke: "#2c3e50", strokeWidth: 1.5, strokeDasharray: "4,3" }),
-      Plot.barX(filtered, {
-        x: "delta",
-        y: "variant",
-        fill: "delta",
-        tip: true,
-        title: d => `${d.variant}\n${d.disease} · ${d.metric}\nFull model: ${d.full_model_value.toFixed(4)}\nVariant: ${d.value.toFixed(4)}\nΔ: ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`,
-      }),
-      Plot.text(filtered.filter(d => d.delta < 0), {
-        x: "delta",
-        y: "variant",
-        text: d => d.delta.toFixed(4),
-        dx: -10,
-        dy: -12,
-        textAnchor: "end",
-        fontSize: 11,
-        fill: "#2c3e50",
-      }),
-      Plot.text(filtered.filter(d => d.delta >= 0), {
-        x: "delta",
-        y: "variant",
-        text: d => "+" + d.delta.toFixed(4),
-        dy: -12,
-        textAnchor: "start",
-        fontSize: 11,
-        fill: "#2c3e50",
-      }),
+      ...barMarks,
+      ...labelMarks,
     ],
   });
 
@@ -108,6 +114,34 @@ ablationChart = {
   titleDiv.style.marginBottom = "8px";
   container.appendChild(titleDiv);
   container.appendChild(chart);
+
+  const hint = document.createElement("div");
+  hint.className = "chart-highlight-hint";
+  hint.textContent = "Hover or select a component to highlight it; select it again or press Esc to clear.";
+  container.appendChild(hint);
+
+  const variants = filtered.map(d => d.variant);
+  const seriesNodes = new Map(variants.map((variant, index) => [
+    variant,
+    [...chart.querySelectorAll(`.ablation-series-${index}`)],
+  ]));
+  const highlight = createHighlightController(variants, (activeVariant) => {
+    seriesNodes.forEach((nodes, variant) => {
+      nodes.forEach((node) => {
+        node.style.opacity = highlightOpacity(variant, activeVariant);
+        node.setAttribute("aria-pressed", String(highlight.pinned() === variant));
+      });
+    });
+  });
+  variants.forEach((variant) => {
+    seriesNodes.get(variant).forEach((node) => {
+      node.setAttribute("tabindex", "0");
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-label", `Highlight ${variant}`);
+      node.setAttribute("aria-pressed", "false");
+      bindHighlightTarget(node, variant, highlight);
+    });
+  });
 
   return container;
 }

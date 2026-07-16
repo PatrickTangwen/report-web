@@ -96,3 +96,37 @@ test("shared renderer owns overview, highlight, and zoom", async () => {
     ["zoom", [1], { transition: true }],
   ]);
 });
+
+
+test("group hover can highlight at the normal point size without selection inflation", async () => {
+  const calls = [];
+  const scatterplot = {
+    set: (options) => calls.push(["set", options]),
+    draw: async () => calls.push(["draw"]),
+    select: () => calls.push(["select"]),
+  };
+  const data = [
+    { x: 0, y: 0, group: 0 },
+    { x: 1, y: 1, group: 1 },
+  ];
+  const renderer = createEmbeddingRenderer({
+    data,
+    xField: "x",
+    yField: "y",
+    zValues: [0, 1],
+    canvas: {},
+    width: 600,
+    height: 400,
+    pointColor: ["#111", "#222"],
+    createScatterplot: () => scatterplot,
+  });
+
+  await renderer.drawHighlighted([1], {
+    pointColor: ["#aeb7c2", "#222"],
+    pointSize: [2.5, 3],
+    select: false,
+  });
+
+  assert.deepEqual(calls[0][1].pointSize, [2.5, 3]);
+  assert.equal(calls.some(([operation]) => operation === "select"), false);
+});

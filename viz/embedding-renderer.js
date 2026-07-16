@@ -73,7 +73,9 @@ export function createEmbeddingRenderer(config) {
       },
       { preventFilterReset: true },
     );
-    scatterplot.select(indices, { preventEvent: true });
+    if (options.select !== false) {
+      scatterplot.select(indices, { preventEvent: true });
+    }
   }
 
   return {

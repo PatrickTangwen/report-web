@@ -3,9 +3,10 @@ import {
   fitEmbeddingWidth,
   normalizeCoordinates,
 } from "./embedding-renderer.js";
-
-
-let embeddingInstanceCounter = 0;
+import {
+  bindHighlightTarget,
+  createHighlightController,
+} from "./chart-highlighting.js";
 
 
 export function normalizePoints(data) {
@@ -303,19 +304,15 @@ function button(label, className = "embedding-button") {
 
 export async function createEmbeddingScatter(config) {
   const data = config.data;
-  const normalized = normalizePoints(data);
   const allIndices = data.map((_, index) => index);
   const diseases = [...new Set(data.map((point) => point.disease))];
   const diseaseIndex = new Map(diseases.map((disease, index) => [disease, index]));
   const width = fitEmbeddingWidth(config.width || 1000);
   const height = Math.max(380, Math.round(width * 0.62));
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  embeddingInstanceCounter += 1;
-  const instanceId = `fibrotic-walkthrough-${embeddingInstanceCounter}`;
 
   const shell = document.createElement("section");
   shell.className = "embedding-walkthrough";
-  shell.setAttribute("aria-label", "Fibrotic reference embedding walkthrough");
+  shell.setAttribute("aria-label", "Fibrotic disease embedding explorer");
 
   const heading = document.createElement("div");
   heading.className = "embedding-heading";
@@ -334,79 +331,27 @@ export async function createEmbeddingScatter(config) {
   canvas.style.height = `${height}px`;
   canvas.setAttribute("role", "img");
   canvas.setAttribute("aria-label", `${data.length.toLocaleString()} reference points`);
-  canvas.setAttribute("aria-describedby", `${instanceId}-summary`);
   canvas.tabIndex = 0;
   frame.appendChild(canvas);
-
-  const region = document.createElement("div");
-  region.className = "embedding-region";
-  region.setAttribute("aria-hidden", "true");
-  region.innerHTML =
-    '<svg viewBox="0 0 1000 620" preserveAspectRatio="none">' +
-    '<ellipse cx="500" cy="330" rx="285" ry="205"></ellipse>' +
-    '<line x1="705" y1="185" x2="815" y2="85"></line>' +
-    '<circle cx="500" cy="330" r="8"></circle>' +
-    "</svg>";
-  frame.appendChild(region);
-
-  const multiRegionOverview = document.createElement("div");
-  multiRegionOverview.className = "embedding-multi-region-overview";
-  multiRegionOverview.setAttribute("aria-hidden", "true");
-  frame.appendChild(multiRegionOverview);
 
   const tooltip = document.createElement("div");
   tooltip.className = "embedding-tooltip";
   frame.appendChild(tooltip);
   shell.appendChild(frame);
 
-  const controls = document.createElement("div");
-  controls.className = "embedding-controls";
-  const status = document.createElement("span");
-  status.className = "embedding-status";
-  status.setAttribute("aria-live", "polite");
-  status.textContent = "Overview · waiting for a walkthrough request";
-  const playButton = button("Play walkthrough", "embedding-button embedding-button-primary");
-  const backButton = button("Back region");
-  backButton.setAttribute("aria-label", "Show previous display region");
-  const regionStatus = document.createElement("span");
-  regionStatus.className = "embedding-region-status";
-  regionStatus.setAttribute("aria-live", "polite");
-  const nextButton = button("Next region");
-  nextButton.setAttribute("aria-label", "Show next display region");
-  const replayButton = button("Replay");
-  const resetButton = button("Reset view");
-  backButton.hidden = true;
-  regionStatus.hidden = true;
-  nextButton.hidden = true;
-  replayButton.hidden = true;
-  controls.append(
-    status,
-    playButton,
-    backButton,
-    regionStatus,
-    nextButton,
-    replayButton,
-    resetButton,
-  );
-  shell.appendChild(controls);
-
-  const summary = document.createElement("aside");
-  summary.className = "embedding-summary";
-  summary.id = `${instanceId}-summary`;
-  summary.setAttribute("role", "region");
-  summary.setAttribute("aria-label", "Matched reference neighborhood summary");
-  summary.tabIndex = -1;
-  summary.hidden = true;
-  shell.appendChild(summary);
-
   const legend = document.createElement("div");
   legend.className = "embedding-legend";
+  const legendButtons = new Map();
   diseases.forEach((disease, index) => {
-    const item = document.createElement("span");
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "embedding-legend-action";
+    item.setAttribute("aria-pressed", "false");
     const marker = document.createElement("i");
     marker.className = `embedding-legend-color-${index % 7}`;
     item.append(marker, document.createTextNode(config.displayName(disease)));
     legend.appendChild(item);
+    legendButtons.set(disease, item);
   });
   shell.appendChild(legend);
 
@@ -424,315 +369,76 @@ export async function createEmbeddingScatter(config) {
     createScatterplot: config.createScatterplot,
   });
   const scatterplot = renderer.scatterplot;
-  const columns = renderer.columns;
-  let activeRequest = config.request || config.preset;
-  let activeLayout = null;
-  let regionNavigator = null;
-  let regionTransitionActive = false;
-  const runController = createRunController();
-  const regionController = createRunController();
   const rendererQueue = createRendererQueue();
 
-  async function renderOverview() {
-    await renderer.drawOverview();
-  }
+  const diseaseIndices = new Map(
+    diseases.map((disease) => [
+      disease,
+      data
+        .map((point, index) => point.disease === disease ? index : null)
+        .filter((index) => index !== null),
+    ]),
+  );
+
+  const groupHighlight = createHighlightController(diseases, (activeDisease) => {
+    legendButtons.forEach((button, disease) => {
+      const isActive = disease === activeDisease;
+      button.classList.toggle("is-active", isActive);
+      button.classList.toggle("is-muted", activeDisease !== null && !isActive);
+      button.setAttribute("aria-pressed", String(groupHighlight.pinned() === disease));
+    });
+    if (activeDisease === null) {
+      drawOverview();
+      return;
+    }
+    const color = config.colors[diseaseIndex.get(activeDisease)];
+    rendererQueue.run(() => renderer.drawHighlighted(
+      diseaseIndices.get(activeDisease),
+      {
+        pointColor: ["#aeb7c2", color],
+        opacity: [0.12, 0.9],
+        pointSize: [2.5, 3],
+        select: false,
+      },
+    ));
+  });
+  legendButtons.forEach((button, disease) => {
+    bindHighlightTarget(button, disease, groupHighlight);
+  });
 
   function drawOverview() {
-    return rendererQueue.run(renderOverview);
-  }
-
-  function drawDimmed() {
-    return rendererQueue.run(async () => {
-      scatterplot.set({
-        colorBy: "valueA",
-        opacityBy: null,
-        sizeBy: null,
-        pointColor: ["#aeb7c2"],
-        opacity: 0.2,
-        pointSize: 2.5,
-      });
-      await scatterplot.draw({ ...columns, z: data.map(() => 0) });
-    });
-  }
-
-  function drawHighlighted(indices) {
-    return rendererQueue.run(() => renderer.drawHighlighted(indices));
-  }
-
-  function zoomToPoints(indices, options) {
-    return rendererQueue.run(() => renderer.zoomToPoints(indices, options));
+    return rendererQueue.run(() => renderer.drawOverview());
   }
 
   function restoreOverview() {
     return rendererQueue.run(async () => {
-      await renderOverview();
-      await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
+      await renderer.drawOverview();
+      await renderer.zoomToPoints(allIndices, { padding: 0.08 });
     });
   }
 
-  function hideRegionNavigation() {
-    backButton.hidden = true;
-    regionStatus.hidden = true;
-    nextButton.hidden = true;
-  }
-
-  function hideMultiRegionOverview() {
-    multiRegionOverview.classList.remove("is-visible");
-    multiRegionOverview.replaceChildren();
-  }
-
-  function showMultiRegionOverview(layout) {
-    multiRegionOverview.replaceChildren();
-    regionOutlinePercentages(normalized, layout.regions).forEach((outline) => {
-      const marker = document.createElement("div");
-      marker.className = "embedding-region-outline";
-      marker.style.left = `${outline.left}%`;
-      marker.style.top = `${outline.top}%`;
-      marker.style.width = `${outline.width}%`;
-      marker.style.height = `${outline.height}%`;
-      const label = document.createElement("span");
-      label.textContent = outline.label;
-      marker.appendChild(label);
-      multiRegionOverview.appendChild(marker);
-    });
-    multiRegionOverview.classList.add("is-visible");
-  }
-
-  function updateRegionNavigation() {
-    if (!regionNavigator || activeLayout?.mode !== "multi_region") {
-      hideRegionNavigation();
-      return;
-    }
-    const navigation = regionNavigator.state();
-    backButton.hidden = false;
-    regionStatus.hidden = false;
-    nextButton.hidden = false;
-    backButton.disabled = !navigation.canBack;
-    nextButton.disabled = !navigation.canNext;
-    regionStatus.textContent = `Display region ${navigation.index + 1} of ${navigation.count}`;
-  }
-
-  async function focusCurrentRegion(animate) {
-    const token = regionController.start();
-    regionTransitionActive = true;
-    const navigation = regionNavigator.state();
-    backButton.disabled = true;
-    nextButton.disabled = true;
-    status.textContent =
-      `Display region ${navigation.index + 1} of ${navigation.count} · ` +
-      `${navigation.region.length} highlighted reference points`;
-    region.classList.add("is-visible");
-    try {
-      await zoomToPoints(navigation.region, {
-        padding: 0.25,
-        transition: animate,
-        transitionDuration: animate ? 620 : 0,
-      });
-    } finally {
-      if (regionController.isCurrent(token)) regionTransitionActive = false;
-    }
-    if (!regionController.isCurrent(token)) return;
-    updateRegionNavigation();
-  }
-
-  // Compact Matched Reference Summary only: Comparison Target, matched-reference
-  // count, and the privacy-permitted median age and sex distribution. No risk
-  // score, confidence, similarity, full coverage, or detailed aggregate report.
-  function showCallout(request, layout) {
-    const copy = walkthroughCopy(request);
-    region.classList.toggle("is-visible", layout.mode !== "overview");
-    summary.hidden = false;
-    summary.replaceChildren();
-    const kicker = document.createElement("div");
-    kicker.className = "embedding-summary-kicker";
-    kicker.textContent = copy.kicker;
-    const title = document.createElement("h3");
-    title.textContent = "Matched Reference Summary";
-    const details = document.createElement("dl");
-    [
-      ["Target", config.displayName(request.target)],
-      ["Matched references", request.summary.reference_count],
-      ["Median age", matchedAgeText(request.summary.age)],
-      ["Sex distribution", matchedSexText(request.summary.sex)],
-    ].forEach(([term, value]) => {
-      const pair = document.createElement("div");
-      const key = document.createElement("dt");
-      const content = document.createElement("dd");
-      key.textContent = term;
-      content.textContent = value;
-      pair.append(key, content);
-      details.appendChild(pair);
-    });
-    const layoutNote = document.createElement("p");
-    layoutNote.className = "embedding-layout-note";
-    layoutNote.textContent =
-      layout.mode === "compact"
-        ? "The highlighted references occupy one local display region. This region is an annotation aid, not a clinical cluster."
-        : layout.mode === "multi_region"
-          ? "The highlighted references occupy separated display regions. Use Back and Next to inspect them; the regions are annotation aids, not clinical subtypes."
-          : "The highlighted references are broadly dispersed, so the full embedding overview is preserved instead of drawing a misleading region.";
-    const note = document.createElement("p");
-    note.className = "embedding-summary-note";
-    note.textContent = copy.note;
-    summary.append(kicker, title, details, layoutNote, note);
-    status.textContent = `Walkthrough complete · ${request.summary.reference_count} reference points highlighted`;
-    replayButton.hidden = false;
-    playButton.hidden = true;
-    updateRegionNavigation();
-  }
-
-  async function play(request, animate = !reducedMotion) {
-    activeRequest = request;
-    const token = runController.start();
-    regionController.cancel();
-    regionTransitionActive = false;
-    let indices;
-    let layout;
-    try {
-      indices = resolveReferenceIndices(data, request.visual_reference_ids);
-      layout = layoutForRequest(data, request, indices);
-    } catch (error) {
-      cancelRun(
-        "The visualization request does not match the active Dataset Release. Start the comparison again.",
-      );
-      return;
-    }
-    activeLayout = layout;
-    regionNavigator = layout.regions.length
-      ? createRegionNavigator(layout.regions)
-      : null;
-    region.classList.remove("is-visible");
-    summary.hidden = true;
-    hideRegionNavigation();
-    hideMultiRegionOverview();
-    playButton.disabled = true;
-    replayButton.disabled = true;
-    resetButton.disabled = true;
-
-    for (const stage of walkthroughPlan(!animate)) {
-      if (stage === "overview") {
-        status.textContent = "Overview · preparing reference cohort";
-        await drawOverview();
-        await zoomToPoints(allIndices, { padding: 0.08 });
-        await delay(380);
-      } else if (stage === "dim") {
-        status.textContent = "Dimming unrelated reference points";
-        await drawDimmed();
-        await delay(420);
-      } else if (stage === "highlight") {
-        status.textContent = `${animate ? "Highlighting" : "Showing"} ${indices.length} ${walkthroughCopy(request).pointNoun}`;
-        await drawHighlighted(indices);
-        if (animate) await delay(420);
-      } else if (stage === "zoom") {
-        if (layout.mode === "multi_region") {
-          if (animate) {
-            status.textContent = `Showing ${layout.regions.length} separated display regions`;
-            showMultiRegionOverview(layout);
-            await delay(900);
-            if (!runController.isCurrent(token)) return;
-            hideMultiRegionOverview();
-          }
-          await focusCurrentRegion(animate);
-        } else {
-          const focusIndices = layout.mode === "overview" ? allIndices : indices;
-          status.textContent = layout.mode === "overview"
-            ? "Keeping broadly dispersed matches in the full embedding overview"
-            : "Zooming to the compact display region";
-          await zoomToPoints(focusIndices, {
-            padding: layout.mode === "overview" ? 0.08 : 0.25,
-            transition: animate,
-            transitionDuration: animate ? 760 : 0,
-          });
-        }
-      } else if (stage === "callout") {
-        showCallout(request, layout);
-      }
-      if (!runController.isCurrent(token)) return;
-    }
-    playButton.disabled = false;
-    replayButton.disabled = false;
-    resetButton.disabled = false;
-    summary.focus({ preventScroll: true });
-  }
-
-  async function reset() {
-    runController.cancel();
-    regionController.cancel();
-    region.classList.remove("is-visible");
-    summary.hidden = true;
-    activeLayout = null;
-    regionNavigator = null;
-    regionTransitionActive = false;
-    hideRegionNavigation();
-    hideMultiRegionOverview();
-    replayButton.hidden = true;
-    playButton.hidden = false;
-    playButton.disabled = false;
-    replayButton.disabled = false;
-    resetButton.disabled = false;
-    status.textContent = "Overview · walkthrough ready";
-    await restoreOverview();
-  }
-
-  function cancelRun(message) {
-    runController.cancel();
-    regionController.cancel();
-    regionTransitionActive = false;
-    playButton.disabled = false;
-    replayButton.disabled = false;
-    resetButton.disabled = false;
-    status.textContent = message;
-    region.classList.remove("is-visible");
-    summary.hidden = true;
-    hideRegionNavigation();
-    hideMultiRegionOverview();
-    restoreOverview();
-  }
-
-  bindWalkthroughControls({
-    playButton,
-    replayButton,
-    resetButton,
-    getRequest: () => activeRequest,
-    play,
-    reset,
-  });
-  backButton.addEventListener("click", () => {
-    regionNavigator.back();
-    focusCurrentRegion(!reducedMotion);
-  });
-  nextButton.addEventListener("click", () => {
-    regionNavigator.next();
-    focusCurrentRegion(!reducedMotion);
-  });
-  canvas.addEventListener("pointerdown", () => {
-    if (playButton.disabled || regionTransitionActive) {
-      cancelRun("Walkthrough paused by visitor interaction");
-    }
-  });
-  canvas.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      cancelRun("Walkthrough cancelled and reset to the overview");
-    }
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && (playButton.disabled || regionTransitionActive)) {
-      cancelRun("Walkthrough paused while this tab is hidden");
-    }
-  });
-  window.addEventListener("pagehide", () => {
-    runController.cancel();
-    regionController.cancel();
-    regionTransitionActive = false;
-  });
+  let hoveredPointDisease = null;
   scatterplot.subscribe("pointover", (index) => {
     const point = data[index];
     if (!point) return;
+    hoveredPointDisease = point.disease;
+    groupHighlight.hover(point.disease);
     tooltip.textContent = `${config.displayName(point.disease)} · ${config.displayName(point.group)}`;
     tooltip.classList.add("is-visible");
   });
-  scatterplot.subscribe("pointout", () => tooltip.classList.remove("is-visible"));
+  scatterplot.subscribe("pointout", () => {
+    if (hoveredPointDisease !== null) {
+      groupHighlight.leave(hoveredPointDisease);
+      hoveredPointDisease = null;
+    }
+    tooltip.classList.remove("is-visible");
+  });
+  scatterplot.subscribe("select", ({ points: selected }) => {
+    const point = data[selected?.[0]];
+    if (!point) return;
+    groupHighlight.toggle(point.disease);
+    scatterplot.deselect({ preventEvent: true });
+  });
   canvas.addEventListener("mousemove", (event) => {
     const rect = canvas.getBoundingClientRect();
     tooltip.style.left = `${event.clientX - rect.left + 12}px`;
@@ -740,12 +446,10 @@ export async function createEmbeddingScatter(config) {
   });
 
   await restoreOverview();
-  if (config.autoplay && config.request) {
-    window.setTimeout(() => play(config.request), 80);
-  } else if (config.request) {
-    window.setTimeout(() => play(config.request, false), 80);
-  }
-
-  shell.embeddingWalkthrough = { play, reset };
+  canvas.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    groupHighlight.clear();
+  });
   return shell;
 }

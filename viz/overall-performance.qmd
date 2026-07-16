@@ -205,6 +205,12 @@ icdUmap = {
 ```{ojs}
 //| echo: false
 
+import { bindHighlightTarget, createHighlightController, highlightOpacity } from "./chart-highlighting.js"
+```
+
+```{ojs}
+//| echo: false
+
 evalData = {
   const text = await FileAttachment("data/evaluation_metrics.csv").text();
   return d3.csvParse(text, d3.autoType);
@@ -244,6 +250,32 @@ evalChart = {
     modelColors[m] = m === proposedModel ? "#2c5aa0" : grayScale[gi++ % grayScale.length];
   }
 
+  const ruleMarks = models.map((model, index) =>
+    Plot.ruleX(filtered.filter(d =>
+      d.model === model && d.ci_lower != null && d.ci_upper != null
+    ), {
+      className: `chart-highlight-series eval-series-${index}`,
+      x1: "ci_lower",
+      x2: "ci_upper",
+      y: "disease",
+      stroke: modelColors[model],
+      strokeWidth: 1.5,
+      strokeOpacity: 0.5,
+    })
+  );
+  const dotMarks = models.map((model, index) =>
+    Plot.dot(filtered.filter(d => d.model === model), {
+      className: `chart-highlight-series eval-series-${index}`,
+      x: "value",
+      y: "disease",
+      fill: modelColors[model],
+      r: model === proposedModel ? 6 : 4,
+      symbol: model === proposedModel ? "circle" : "diamond2",
+      tip: true,
+      title: d => `${d.model}\n${d.disease}\n${selectedMetric}: ${d.value.toFixed(4)}${d.ci_lower != null ? `\nCI: [${d.ci_lower.toFixed(4)}, ${d.ci_upper.toFixed(4)}]` : ""}`,
+    })
+  );
+
   const chart = Plot.plot({
     width: 1000,
     height: 420,
@@ -251,27 +283,9 @@ evalChart = {
     marginRight: 20,
     x: { label: selectedMetric, grid: true },
     y: { label: null, domain: diseases },
-    color: { legend: true },
     marks: [
-      // Error bars (if CI available)
-      Plot.ruleX(filtered.filter(d => d.ci_lower != null && d.ci_upper != null), {
-        x1: "ci_lower",
-        x2: "ci_upper",
-        y: "disease",
-        stroke: d => modelColors[d.model],
-        strokeWidth: 1.5,
-        strokeOpacity: 0.5,
-      }),
-      // Dots
-      Plot.dot(filtered, {
-        x: "value",
-        y: "disease",
-        fill: d => modelColors[d.model],
-        r: d => d.model === proposedModel ? 6 : 4,
-        symbol: d => d.model === proposedModel ? "circle" : "diamond2",
-        tip: true,
-        title: d => `${d.model}\n${d.disease}\n${selectedMetric}: ${d.value.toFixed(4)}${d.ci_lower != null ? `\nCI: [${d.ci_lower.toFixed(4)}, ${d.ci_upper.toFixed(4)}]` : ""}`,
-      }),
+      ...ruleMarks,
+      ...dotMarks,
     ],
   });
 
@@ -285,14 +299,51 @@ evalChart = {
 
   // Custom legend
   const legendDiv = document.createElement("div");
-  legendDiv.style.cssText = "margin-top:8px;display:flex;flex-wrap:wrap;gap:12px;font-family:'Source Sans Pro',sans-serif;font-size:0.85rem;";
-  for (const m of models) {
-    const color = modelColors[m];
-    const shape = m === proposedModel ? "●" : "◆";
-    const weight = m === proposedModel ? "font-weight:600;" : "";
-    legendDiv.innerHTML += `<span style="${weight}"><span style="color:${color};margin-right:3px;">${shape}</span>${m}</span>`;
-  }
+  legendDiv.className = "chart-highlight-legend";
   container.appendChild(legendDiv);
+
+  const legendButtons = new Map();
+  models.forEach((model) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "chart-highlight-action";
+    button.classList.toggle("is-proposed", model === proposedModel);
+    button.setAttribute("aria-pressed", "false");
+    const marker = document.createElement("span");
+    marker.className = "chart-highlight-marker";
+    marker.style.color = modelColors[model];
+    marker.textContent = model === proposedModel ? "●" : "◆";
+    button.append(marker, document.createTextNode(model));
+    legendDiv.appendChild(button);
+    legendButtons.set(model, button);
+  });
+
+  const seriesNodes = new Map(models.map((model, index) => [
+    model,
+    [...chart.querySelectorAll(`.eval-series-${index}`)],
+  ]));
+  const highlight = createHighlightController(models, (activeModel) => {
+    seriesNodes.forEach((nodes, model) => {
+      nodes.forEach((node) => {
+        node.style.opacity = highlightOpacity(model, activeModel);
+      });
+    });
+    legendButtons.forEach((button, model) => {
+      const isActive = model === activeModel;
+      button.classList.toggle("is-active", isActive);
+      button.classList.toggle("is-muted", activeModel !== null && !isActive);
+      button.setAttribute("aria-pressed", String(highlight.pinned() === model));
+    });
+  });
+  models.forEach((model) => {
+    bindHighlightTarget(legendButtons.get(model), model, highlight);
+    seriesNodes.get(model).forEach((node) => {
+      node.setAttribute("tabindex", "0");
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-label", `Highlight ${model}`);
+      bindHighlightTarget(node, model, highlight);
+    });
+  });
 
   return container;
 }
