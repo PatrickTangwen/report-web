@@ -29,6 +29,41 @@ export function groupAssignments(pointCount, groups) {
 }
 
 
+export function bindEmbeddingTooltip(frame, canvas, scatterplot, labelAt) {
+  const tooltip = document.createElement("div");
+  tooltip.className = "embedding-tooltip";
+  frame.appendChild(tooltip);
+
+  scatterplot.subscribe("pointover", (index) => {
+    const label = labelAt(index);
+    if (!label) return;
+    tooltip.textContent = label;
+    tooltip.classList.add("is-visible");
+  });
+  scatterplot.subscribe("pointout", () => {
+    tooltip.classList.remove("is-visible");
+  });
+  canvas.addEventListener("mousemove", (event) => {
+    if (!tooltip.classList.contains("is-visible")) return;
+    const canvasRect = canvas.getBoundingClientRect();
+    const frameRect = frame.getBoundingClientRect();
+    const cursorX = event.clientX - frameRect.left;
+    const cursorY = event.clientY - frameRect.top;
+    const tipW = tooltip.offsetWidth || 200;
+    const tipH = tooltip.offsetHeight || 60;
+    const rightEdge = canvasRect.right - frameRect.left;
+    const bottomEdge = canvasRect.bottom - frameRect.top;
+    let left = cursorX + 12;
+    if (left + tipW > rightEdge) left = cursorX - tipW - 12;
+    let top = cursorY + 12;
+    if (top + tipH > bottomEdge) top = cursorY - tipH - 12;
+    tooltip.style.left = `${Math.max(0, left)}px`;
+    tooltip.style.top = `${Math.max(0, top)}px`;
+  });
+  return tooltip;
+}
+
+
 export async function createGroupedEmbeddingExplorer(config) {
   const data = config.data;
   const groups = config.groups;
@@ -75,13 +110,6 @@ export async function createGroupedEmbeddingExplorer(config) {
   canvas.setAttribute("aria-label", config.canvasLabel(data.length));
   canvas.tabIndex = 0;
   frame.appendChild(canvas);
-
-  let tooltip = null;
-  if (config.renderTooltip) {
-    tooltip = document.createElement("div");
-    tooltip.className = "embedding-tooltip";
-    frame.appendChild(tooltip);
-  }
   shell.appendChild(frame);
 
   const legend = document.createElement("div");
@@ -158,32 +186,11 @@ export async function createGroupedEmbeddingExplorer(config) {
     bindHighlightTarget(button, groupKey, groupHighlight, { persistent: true });
   });
 
-  if (tooltip) {
-    scatterplot.subscribe("pointover", (index) => {
+  if (config.tooltipLabel) {
+    bindEmbeddingTooltip(frame, canvas, scatterplot, (index) => {
       const point = data[index];
-      if (!point) return;
-      config.renderTooltip(tooltip, point);
-      tooltip.classList.add("is-visible");
-    });
-    scatterplot.subscribe("pointout", () => {
-      tooltip.classList.remove("is-visible");
-    });
-    canvas.addEventListener("mousemove", (event) => {
-      if (!tooltip.classList.contains("is-visible")) return;
-      const canvasRect = canvas.getBoundingClientRect();
-      const frameRect = frame.getBoundingClientRect();
-      const cursorX = event.clientX - frameRect.left;
-      const cursorY = event.clientY - frameRect.top;
-      const tipW = tooltip.offsetWidth || 200;
-      const tipH = tooltip.offsetHeight || 60;
-      const rightEdge = canvasRect.right - frameRect.left;
-      const bottomEdge = canvasRect.bottom - frameRect.top;
-      let left = cursorX + 12;
-      if (left + tipW > rightEdge) left = cursorX - tipW - 12;
-      let top = cursorY + 12;
-      if (top + tipH > bottomEdge) top = cursorY - tipH - 12;
-      tooltip.style.left = `${Math.max(0, left)}px`;
-      tooltip.style.top = `${Math.max(0, top)}px`;
+      const group = groups[assignments[index]];
+      return point && group ? config.tooltipLabel(point, group) : null;
     });
   }
   scatterplot.subscribe("select", ({ points: selected }) => {

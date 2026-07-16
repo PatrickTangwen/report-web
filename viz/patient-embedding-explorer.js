@@ -30,6 +30,7 @@ export function createPatientEmbeddingExplorer(config) {
       ...group,
       key: index,
     })),
+    tooltipLabel: (_point, group) => group.label,
     highlightOptions: (group) => patientHighlightOptions(group.color),
   });
 }

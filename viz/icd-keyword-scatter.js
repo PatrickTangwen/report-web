@@ -6,6 +6,7 @@ import {
   bindHighlightTarget,
   createHighlightController,
 } from "./chart-highlighting.js";
+import { bindEmbeddingTooltip } from "./grouped-embedding-explorer.js";
 
 
 function normalizeCode(value) {
@@ -235,6 +236,12 @@ export async function createIcdKeywordScatter(config) {
   legendButtons.forEach((button, chapter) => {
     bindHighlightTarget(button, chapter, groupHighlight, { persistent: true });
   });
+  bindEmbeddingTooltip(
+    frame,
+    canvas,
+    scatterplot,
+    (index) => data[index]?.chapter,
+  );
 
   function showExplanation(request, result) {
     vocabularyBadge.textContent = request.vocabulary_version;

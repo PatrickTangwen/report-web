@@ -132,7 +132,10 @@ test("point hover shows a tooltip without activating its group label", async () 
       }),
       canvasLabel: () => "One patient embedding point",
       highlightOptions: () => ({ pointSize: [3, 3] }),
-      renderTooltip: (_tooltip, point) => tooltipPoints.push(point.disease),
+      tooltipLabel: (point, group) => {
+        tooltipPoints.push(point.disease);
+        return group.label;
+      },
     });
 
     subscriptions.get("pointover")(0);
@@ -142,6 +145,7 @@ test("point hover shows a tooltip without activating its group label", async () 
     const legend = shell.children[2];
     const ckdLabel = legend.children[0];
     assert.deepEqual(tooltipPoints, ["CKD"]);
+    assert.equal(tooltip.textContent, "Chronic Kidney Disease");
     assert.equal(tooltip.classList.contains("is-visible"), true);
     assert.equal(ckdLabel.classList.contains("is-active"), false);
     assert.equal(ckdLabel.getAttribute("aria-pressed"), "false");
@@ -183,7 +187,7 @@ test("fibrotic embedding does not register point-hover tooltips", async () => {
 });
 
 
-test("sex and age embeddings use the fibrotic point interaction contract", async () => {
+test("sex and age point hover shows only the group label without activating it", async () => {
   const originalDocument = globalThis.document;
   const subscriptions = new Map();
   globalThis.document = fakeDocument();
@@ -206,13 +210,20 @@ test("sex and age embeddings use the fibrotic point interaction contract", async
       }),
     });
 
-    subscriptions.get("select")({ points: [0] });
+    subscriptions.get("pointover")(0);
 
     const frame = shell.children[1];
+    const tooltip = frame.children[1];
     const femaleLabel = shell.children[2].children[0];
-    assert.equal(subscriptions.has("pointover"), false);
-    assert.equal(subscriptions.has("pointout"), false);
-    assert.equal(frame.children.length, 1);
+    assert.equal(tooltip.textContent, "Female");
+    assert.equal(tooltip.classList.contains("is-visible"), true);
+    assert.equal(femaleLabel.classList.contains("is-active"), false);
+    assert.equal(femaleLabel.getAttribute("aria-pressed"), "false");
+
+    subscriptions.get("pointout")();
+    assert.equal(tooltip.classList.contains("is-visible"), false);
+
+    subscriptions.get("select")({ points: [0] });
     assert.equal(femaleLabel.classList.contains("is-active"), true);
     assert.equal(femaleLabel.getAttribute("aria-pressed"), "true");
   } finally {
@@ -278,13 +289,19 @@ test("ICD embedding shares the fibrotic viewport and interactions while preservi
       { width: fibroticRendererConfigs[0].width, height: fibroticRendererConfigs[0].height },
     );
     assert.equal(icdSubscriptions.has("select"), true);
-    assert.equal(icdSubscriptions.has("pointover"), false);
-    assert.equal(shell.children[1].children.length, 1);
+    assert.equal(icdSubscriptions.has("pointover"), true);
     assert.equal(shell.children.length, fibroticShell.children.length);
     assert.deepEqual(icdDraws.at(-1).z, [1, 0]);
 
-    icdSubscriptions.get("select")({ points: [0] });
+    icdSubscriptions.get("pointover")(0);
+    const icdTooltip = shell.children[1].children[1];
     const genitourinaryLabel = shell.children[2].children[0];
+    assert.equal(icdTooltip.textContent, "Genitourinary");
+    assert.equal(icdTooltip.classList.contains("is-visible"), true);
+    assert.equal(genitourinaryLabel.classList.contains("is-active"), false);
+    assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "false");
+
+    icdSubscriptions.get("select")({ points: [0] });
     assert.equal(genitourinaryLabel.classList.contains("is-active"), true);
     assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "true");
 
