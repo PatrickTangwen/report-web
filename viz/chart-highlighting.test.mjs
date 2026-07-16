@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   bindHighlightTarget,
   bindHighlightGroups,
+  bindSingleMarkTooltip,
   createHighlightController,
   highlightOpacity,
 } from "./chart-highlighting.js";
@@ -143,4 +144,70 @@ test("shared DOM binding previews, pins, and clears the same group", () => {
   assert.equal(firstTarget.style.opacity, 1);
   assert.equal(secondTarget.style.opacity, 1);
   assert.equal(controller.pinned(), null);
+});
+
+
+test("clicking a hovered pinned target again clears both pinned and hover state", () => {
+  const first = new FakeElement();
+  const second = new FakeElement();
+  const controller = bindHighlightGroups({
+    groupKeys: ["first", "second"],
+    targetsByGroup: new Map([
+      ["first", [first]],
+      ["second", [second]],
+    ]),
+  });
+
+  first.dispatchEvent(new Event("pointerenter"));
+  first.dispatchEvent(new Event("click", { cancelable: true }));
+  first.dispatchEvent(new Event("pointerleave"));
+  first.dispatchEvent(new Event("pointerenter"));
+  first.dispatchEvent(new Event("click", { cancelable: true }));
+
+  assert.equal(controller.pinned(), null);
+  assert.equal(controller.active(), null);
+  assert.equal(first.style.opacity, 1);
+  assert.equal(second.style.opacity, 1);
+});
+
+
+test("single-mark tooltip replaces its content and hides when the active mark is left", () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { innerWidth: 800, innerHeight: 600 };
+  const first = new FakeElement();
+  const second = new FakeElement();
+  const tooltip = new FakeElement();
+  tooltip.offsetWidth = 160;
+  tooltip.offsetHeight = 80;
+
+  try {
+    bindSingleMarkTooltip(
+      [first, second],
+      tooltip,
+      (index) => index === 0 ? "First component" : "Second component",
+    );
+
+    const firstEnter = new Event("mouseenter");
+    Object.defineProperties(firstEnter, {
+      clientX: { value: 100 },
+      clientY: { value: 120 },
+    });
+    first.dispatchEvent(firstEnter);
+    assert.equal(tooltip.innerHTML, "First component");
+    assert.equal(tooltip.style.display, "block");
+
+    const secondEnter = new Event("mouseenter");
+    Object.defineProperties(secondEnter, {
+      clientX: { value: 300 },
+      clientY: { value: 320 },
+    });
+    second.dispatchEvent(secondEnter);
+    assert.equal(tooltip.innerHTML, "Second component");
+    assert.equal(tooltip.style.display, "block");
+
+    second.dispatchEvent(new Event("mouseleave"));
+    assert.equal(tooltip.style.display, "none");
+  } finally {
+    globalThis.window = originalWindow;
+  }
 });

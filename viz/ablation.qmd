@@ -19,7 +19,7 @@ This page shows how each architectural component of ALIGATEHR-Gen contributes to
 ```{ojs}
 //| echo: false
 
-import { bindHighlightGroups } from "./chart-highlighting.js"
+import { bindHighlightGroups, bindSingleMarkTooltip } from "./chart-highlighting.js"
 ```
 
 ```{ojs}
@@ -59,17 +59,13 @@ ablationChart = {
 
   const barMarks = filtered.map((row, index) =>
     Plot.barX([row], {
-      className: `chart-highlight-series ablation-series-${index}`,
       x: "delta",
       y: "variant",
       fill: "delta",
-      tip: true,
-      title: d => `${d.variant}\n${d.disease} · ${d.metric}\nFull model: ${d.full_model_value.toFixed(4)}\nVariant: ${d.value.toFixed(4)}\nΔ: ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`,
     })
   );
   const labelMarks = filtered.map((row, index) =>
     Plot.text([row], {
-      className: `chart-highlight-series ablation-series-${index}`,
       x: "delta",
       y: "variant",
       text: d => `${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`,
@@ -115,6 +111,21 @@ ablationChart = {
   container.appendChild(titleDiv);
   container.appendChild(chart);
 
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.style.cssText = "position:fixed;display:none;pointer-events:none;padding:8px 12px;border-radius:4px;font-size:0.85rem;line-height:1.4;z-index:1000;background:rgba(0,0,0,0.85);color:#fff;max-width:320px;white-space:nowrap;";
+  container.appendChild(tooltip);
+
+  const bars = [...chart.querySelectorAll('[aria-label="bar"] rect')];
+  const labels = [...chart.querySelectorAll('[aria-label="text"] text')];
+  if (bars.length !== filtered.length || labels.length !== filtered.length) {
+    throw new Error("Ablation chart marks do not match the filtered component data");
+  }
+  bindSingleMarkTooltip(bars, tooltip, index => {
+    const d = filtered[index];
+    return `<strong>${d.variant}</strong><br>${d.disease} · ${d.metric}<br>Full model: ${d.full_model_value.toFixed(4)}<br>Variant: ${d.value.toFixed(4)}<br>Δ: ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(4)}`;
+  });
+
   const hint = document.createElement("div");
   hint.className = "chart-highlight-hint";
   hint.textContent = "Hover or select a component to highlight it; select it again or press Esc to clear.";
@@ -123,7 +134,7 @@ ablationChart = {
   const variants = filtered.map(d => d.variant);
   const seriesNodes = new Map(variants.map((variant, index) => [
     variant,
-    [...chart.querySelectorAll(`.ablation-series-${index}`)],
+    [bars[index], labels[index]],
   ]));
   bindHighlightGroups({
     groupKeys: variants,

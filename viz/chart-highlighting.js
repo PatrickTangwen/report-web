@@ -35,6 +35,7 @@ export function createHighlightController(groupKeys, apply) {
     toggle(group) {
       validate(group);
       pinned = pinned === group ? null : group;
+      hovered = null;
       render();
     },
     select(group) {
@@ -89,6 +90,48 @@ export function bindHighlightTarget(element, group, controller, options = {}) {
     element.removeEventListener("blur", leave);
     element.removeEventListener("click", toggle);
     element.removeEventListener("keydown", keydown);
+  };
+}
+
+
+export function bindSingleMarkTooltip(targets, tooltip, htmlForIndex) {
+  const marks = [...targets];
+  let activeMark = null;
+
+  function position(event) {
+    const maxLeft = window.innerWidth - tooltip.offsetWidth - 8;
+    const maxTop = window.innerHeight - tooltip.offsetHeight - 8;
+    tooltip.style.left = `${Math.max(8, Math.min(event.clientX + 12, maxLeft))}px`;
+    tooltip.style.top = `${Math.max(8, Math.min(event.clientY + 12, maxTop))}px`;
+  }
+
+  const listeners = marks.map((mark, index) => {
+    const enter = (event) => {
+      activeMark = mark;
+      tooltip.innerHTML = htmlForIndex(index);
+      tooltip.style.display = "block";
+      position(event);
+    };
+    const move = (event) => {
+      if (activeMark === mark) position(event);
+    };
+    const leave = () => {
+      if (activeMark !== mark) return;
+      activeMark = null;
+      tooltip.style.display = "none";
+    };
+    mark.addEventListener("mouseenter", enter);
+    mark.addEventListener("mousemove", move);
+    mark.addEventListener("mouseleave", leave);
+    return { mark, enter, move, leave };
+  });
+
+  return () => {
+    listeners.forEach(({ mark, enter, move, leave }) => {
+      mark.removeEventListener("mouseenter", enter);
+      mark.removeEventListener("mousemove", move);
+      mark.removeEventListener("mouseleave", leave);
+    });
   };
 }
 

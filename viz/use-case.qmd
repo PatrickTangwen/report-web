@@ -170,6 +170,12 @@ fibroticEmbedding = {
 ```{ojs}
 //| echo: false
 
+import { bindSingleMarkTooltip } from "./chart-highlighting.js"
+```
+
+```{ojs}
+//| echo: false
+
 pathwayData = {
   const text = await FileAttachment("data/pathway_enrichment.csv").text();
   return d3.csvParse(text, d3.autoType);
@@ -245,24 +251,16 @@ pathwayChart = {
   const circles = chart.querySelectorAll("circle");
   circles.forEach((circle, i) => {
     circle.style.transition = "opacity 150ms ease";
-    circle.addEventListener("mouseenter", (e) => {
+    circle.addEventListener("mouseenter", () => {
       circles.forEach((c, j) => { c.style.opacity = j === i ? "1" : "0.2"; });
-      const d = withLogP[i];
-      if (d) {
-        tooltip.innerHTML = `<strong>${d.pathway}</strong><br>Source: ${d.source}<br>Gene Count: ${d.gene_count}<br>Enrichment Ratio: ${d.enrichment_ratio.toFixed(2)}<br>P-value: ${Number(d.p_value).toExponential(2)}<br>Adj. P-value: ${Number(d.p_adjusted).toExponential(2)}`;
-        tooltip.style.display = "block";
-      }
-    });
-    circle.addEventListener("mousemove", (e) => {
-      const x = Math.min(e.clientX + 12, window.innerWidth - tooltip.offsetWidth - 8);
-      const y = Math.min(e.clientY + 12, window.innerHeight - tooltip.offsetHeight - 8);
-      tooltip.style.left = x + "px";
-      tooltip.style.top = y + "px";
     });
     circle.addEventListener("mouseleave", () => {
       circles.forEach(c => { c.style.opacity = "1"; });
-      tooltip.style.display = "none";
     });
+  });
+  bindSingleMarkTooltip(circles, tooltip, index => {
+    const d = withLogP[index];
+    return `<strong>${d.pathway}</strong><br>Source: ${d.source}<br>Gene Count: ${d.gene_count}<br>Enrichment Ratio: ${d.enrichment_ratio.toFixed(2)}<br>P-value: ${Number(d.p_value).toExponential(2)}<br>Adj. P-value: ${Number(d.p_adjusted).toExponential(2)}`;
   });
 
   return container;
