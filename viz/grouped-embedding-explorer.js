@@ -30,28 +30,6 @@ export function groupAssignments(pointCount, groups) {
 }
 
 
-export function createEmbeddingPointInteraction(config) {
-  return {
-    pointover(index) {
-      const point = config.data[index];
-      if (!point) return;
-      config.renderTooltip(config.tooltip, point);
-      config.tooltip.classList.add("is-visible");
-    },
-    pointout() {
-      config.tooltip.classList.remove("is-visible");
-    },
-    select({ points: selected }) {
-      const pointIndex = selected?.[0];
-      if (pointIndex === undefined || config.assignments[pointIndex] === undefined) return;
-      const group = config.groups[config.assignments[pointIndex]];
-      config.groupHighlight.select(group.key);
-      config.scatterplot.deselect({ preventEvent: true });
-    },
-  };
-}
-
-
 export async function createGroupedEmbeddingExplorer(config) {
   const data = config.data;
   const groups = config.groups;
@@ -198,18 +176,21 @@ export async function createGroupedEmbeddingExplorer(config) {
     bindHighlightTarget(button, groupKey, groupHighlight, { persistent: true });
   });
 
-  const pointInteraction = createEmbeddingPointInteraction({
-    data,
-    assignments,
-    groups,
-    groupHighlight,
-    scatterplot,
-    tooltip,
-    renderTooltip: config.renderTooltip,
+  scatterplot.subscribe("pointover", (index) => {
+    const point = data[index];
+    if (!point) return;
+    config.renderTooltip(tooltip, point);
+    tooltip.classList.add("is-visible");
   });
-  scatterplot.subscribe("pointover", pointInteraction.pointover);
-  scatterplot.subscribe("pointout", pointInteraction.pointout);
-  scatterplot.subscribe("select", pointInteraction.select);
+  scatterplot.subscribe("pointout", () => {
+    tooltip.classList.remove("is-visible");
+  });
+  scatterplot.subscribe("select", ({ points: selected }) => {
+    const pointIndex = selected?.[0];
+    if (pointIndex === undefined || assignments[pointIndex] === undefined) return;
+    groupHighlight.select(groups[assignments[pointIndex]].key);
+    scatterplot.deselect({ preventEvent: true });
+  });
   canvas.addEventListener("mousemove", (event) => {
     if (!tooltip.classList.contains("is-visible")) return;
     const canvasRect = canvas.getBoundingClientRect();
