@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   createEmbeddingRenderer,
   createRendererQueue,
+  fitEmbeddingDimensions,
   fitEmbeddingWidth,
   normalizeCoordinates,
 } from "./embedding-renderer.js";
@@ -66,6 +67,34 @@ test("shared embedding width respects content, viewport, and minimum bounds", ()
   assert.equal(fitEmbeddingWidth(1000, documentAt(900, 1200)), 900);
   assert.equal(fitEmbeddingWidth(1000, documentAt(1200, 700)), 668);
   assert.equal(fitEmbeddingWidth(1000, documentAt(200, 300)), 320);
+});
+
+
+test("embedding dimensions preserve aspect ratio and fit below desktop navigation", () => {
+  function documentAt(mainWidth, viewportWidth, viewportHeight) {
+    return {
+      documentElement: {
+        clientWidth: viewportWidth,
+        clientHeight: viewportHeight,
+      },
+      querySelector: (selector) => (
+        selector === "main.content" ? { clientWidth: mainWidth } : null
+      ),
+    };
+  }
+
+  assert.deepEqual(
+    fitEmbeddingDimensions(1000, documentAt(1100, 1280, 720)),
+    { width: 822, height: 510 },
+  );
+  assert.deepEqual(
+    fitEmbeddingDimensions(1000, documentAt(1100, 1680, 1200)),
+    { width: 1000, height: 620 },
+  );
+  assert.deepEqual(
+    fitEmbeddingDimensions(1000, documentAt(300, 360, 600)),
+    { width: 320, height: 198 },
+  );
 });
 
 

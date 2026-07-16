@@ -15,17 +15,19 @@ export function createHighlightController(groupKeys, apply) {
   }
 
   function render() {
-    apply(hovered ?? pinned);
+    apply(pinned ?? hovered);
   }
 
   return {
     hover(group) {
       validate(group);
+      if (pinned !== null) return;
       hovered = group;
       render();
     },
     leave(group) {
       validate(group);
+      if (pinned !== null) return;
       if (hovered !== group) return;
       hovered = null;
       render();
@@ -47,7 +49,7 @@ export function createHighlightController(groupKeys, apply) {
       render();
     },
     active() {
-      return hovered ?? pinned;
+      return pinned ?? hovered;
     },
     pinned() {
       return pinned;
@@ -56,12 +58,13 @@ export function createHighlightController(groupKeys, apply) {
 }
 
 
-export function bindHighlightTarget(element, group, controller) {
+export function bindHighlightTarget(element, group, controller, options = {}) {
   const enter = () => controller.hover(group);
   const leave = () => controller.leave(group);
   const toggle = (event) => {
     event?.preventDefault?.();
-    controller.toggle(group);
+    if (options.persistent) controller.select(group);
+    else controller.toggle(group);
   };
   const keydown = (event) => {
     if (event.key === "Enter" || event.key === " ") {

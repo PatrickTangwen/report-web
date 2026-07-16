@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  bindHighlightTarget,
   bindHighlightGroups,
   createHighlightController,
   highlightOpacity,
@@ -30,7 +31,7 @@ class FakeElement extends EventTarget {
 }
 
 
-test("hover previews a group and restores the pinned selection on leave", () => {
+test("a pinned selection remains active while the pointer crosses other groups", () => {
   const states = [];
   const controller = createHighlightController(
     ["model-a", "model-b"],
@@ -41,8 +42,25 @@ test("hover previews a group and restores the pinned selection on leave", () => 
   controller.hover("model-b");
   controller.leave("model-b");
 
-  assert.deepEqual(states, ["model-a", "model-b", "model-a"]);
+  assert.deepEqual(states, ["model-a"]);
   assert.equal(controller.active(), "model-a");
+});
+
+
+test("persistent targets stay pinned until an explicit clear", () => {
+  const states = [];
+  const action = new FakeElement();
+  const controller = createHighlightController(
+    ["CKD"],
+    (active) => states.push(active),
+  );
+  bindHighlightTarget(action, "CKD", controller, { persistent: true });
+
+  action.dispatchEvent(new Event("click", { cancelable: true }));
+  action.dispatchEvent(new Event("click", { cancelable: true }));
+
+  assert.equal(controller.pinned(), "CKD");
+  assert.deepEqual(states, ["CKD", "CKD"]);
 });
 
 

@@ -312,6 +312,18 @@ figcaption {
   white-space: nowrap;
 }
 
+.embedding-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.embedding-reset-button {
+  white-space: nowrap;
+}
+
 .embedding-frame {
   position: relative;
   overflow: hidden;
@@ -768,5 +780,9 @@ figcaption {
   .embedding-heading code {
     display: inline-block;
     margin-top: 0.4rem;
+  }
+
+  .embedding-heading-actions {
+    justify-content: flex-start;
   }
 }

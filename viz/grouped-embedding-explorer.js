@@ -1,7 +1,7 @@
 import {
   createEmbeddingRenderer,
   createRendererQueue,
-  fitEmbeddingWidth,
+  fitEmbeddingDimensions,
 } from "./embedding-renderer.js";
 import {
   bindHighlightTarget,
@@ -29,6 +29,17 @@ export function groupAssignments(pointCount, groups) {
 }
 
 
+export async function resetEmbeddingExplorer(
+  groupHighlight,
+  rendererQueue,
+  renderer,
+  allIndices,
+) {
+  groupHighlight.clear();
+  await rendererQueue.run(() => renderer.zoomToPoints(allIndices, { padding: 0.08 }));
+}
+
+
 export async function createGroupedEmbeddingExplorer(config) {
   const data = config.data;
   const groups = config.groups;
@@ -39,8 +50,7 @@ export async function createGroupedEmbeddingExplorer(config) {
   }
   const assignments = groupAssignments(data.length, groups);
   const allIndices = data.map((_, index) => index);
-  const width = fitEmbeddingWidth(config.width || 1000);
-  const height = Math.max(380, Math.round(width * 0.62));
+  const { width, height } = fitEmbeddingDimensions(config.width || 1000);
 
   const shell = document.createElement("section");
   shell.className = ["embedding-explorer", config.className].filter(Boolean).join(" ");
@@ -48,10 +58,26 @@ export async function createGroupedEmbeddingExplorer(config) {
 
   const heading = document.createElement("div");
   heading.className = "embedding-heading";
-  heading.innerHTML =
-    `<div><strong>${config.title}</strong>` +
-    `<span>${config.subtitle}</span></div>` +
-    (config.datasetLabel ? `<code>${config.datasetLabel}</code>` : "");
+  const headingCopy = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = config.title;
+  const subtitle = document.createElement("span");
+  subtitle.textContent = config.subtitle;
+  headingCopy.append(title, subtitle);
+  const headingActions = document.createElement("div");
+  headingActions.className = "embedding-heading-actions";
+  if (config.datasetLabel) {
+    const datasetLabel = document.createElement("code");
+    datasetLabel.textContent = config.datasetLabel;
+    headingActions.appendChild(datasetLabel);
+  }
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "embedding-button embedding-reset-button";
+  resetButton.textContent = "Reset view";
+  resetButton.setAttribute("aria-label", "Reset embedding selection and view");
+  headingActions.appendChild(resetButton);
+  heading.append(headingCopy, headingActions);
   shell.appendChild(heading);
 
   const frame = document.createElement("div");
@@ -129,7 +155,7 @@ export async function createGroupedEmbeddingExplorer(config) {
     ));
   });
   legendButtons.forEach((button, groupKey) => {
-    bindHighlightTarget(button, groupKey, groupHighlight);
+    bindHighlightTarget(button, groupKey, groupHighlight, { persistent: true });
   });
 
   let hoveredPointGroup = null;
@@ -151,7 +177,7 @@ export async function createGroupedEmbeddingExplorer(config) {
   scatterplot.subscribe("select", ({ points: selected }) => {
     const pointIndex = selected?.[0];
     if (pointIndex === undefined || assignments[pointIndex] === undefined) return;
-    groupHighlight.toggle(groups[assignments[pointIndex]].key);
+    groupHighlight.select(groups[assignments[pointIndex]].key);
     scatterplot.deselect({ preventEvent: true });
   });
   canvas.addEventListener("mousemove", (event) => {
@@ -174,7 +200,10 @@ export async function createGroupedEmbeddingExplorer(config) {
   canvas.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     event.preventDefault();
-    groupHighlight.clear();
+    resetEmbeddingExplorer(groupHighlight, rendererQueue, renderer, allIndices);
+  });
+  resetButton.addEventListener("click", () => {
+    resetEmbeddingExplorer(groupHighlight, rendererQueue, renderer, allIndices);
   });
 
   await rendererQueue.run(async () => {
@@ -187,6 +216,9 @@ export async function createGroupedEmbeddingExplorer(config) {
     groupHighlight.select(groupKey);
     return true;
   };
+  shell.resetEmbedding = () => (
+    resetEmbeddingExplorer(groupHighlight, rendererQueue, renderer, allIndices)
+  );
   if (config.initialGroup !== undefined && config.initialGroup !== null) {
     shell.selectGroup(config.initialGroup);
   }

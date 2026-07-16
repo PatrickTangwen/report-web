@@ -16,7 +16,7 @@ This page demonstrates the clinical utility of ALIGATEHR-Gen through a focused c
 
 ## Patient Embeddings — 7 Fibrotic Diseases {#fibrotic-embedding}
 
-The plot below loads display-safe reference points from the current backend Dataset Release. Hover or select a disease label to highlight its points while keeping the full embedding in view. It contains no source participant IDs or individual clinical profiles.
+The plot below loads display-safe reference points from the current backend Dataset Release. Hover a disease label to preview its points, or click a label or point to keep that disease highlighted. Use **Reset view** to clear the selection and restore the full embedding. It contains no source participant IDs or individual clinical profiles.
 
 ```{ojs}
 //| echo: false

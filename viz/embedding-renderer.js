@@ -26,6 +26,17 @@ export function fitEmbeddingWidth(maxWidth, documentLike = document) {
 }
 
 
+export function fitEmbeddingDimensions(maxWidth, documentLike = document) {
+  const aspectRatio = 0.62;
+  const widthLimit = fitEmbeddingWidth(maxWidth, documentLike);
+  const viewportHeight = Number(documentLike.documentElement.clientHeight) || Infinity;
+  const heightLimit = Math.max(240, viewportHeight - 210);
+  const width = Math.floor(Math.min(widthLimit, heightLimit / aspectRatio));
+  const height = Math.round(width * aspectRatio);
+  return { width, height };
+}
+
+
 export function createRendererQueue() {
   let tail = Promise.resolve();
   return {
