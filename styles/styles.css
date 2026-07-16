@@ -210,8 +210,9 @@ figcaption {
   color: #a0a0a0;
 }
 
-/* Chatbot-driven fibrotic embedding walkthrough */
+/* Embedding explorers and remaining guided visualizations */
 .embedding-loader,
+.embedding-explorer,
 .embedding-walkthrough {
   width: 100%;
   max-width: 1000px;
@@ -223,20 +224,6 @@ figcaption {
 
 .cell-output:has(.patient-embedding-explorer) {
   overflow: visible;
-}
-
-.patient-embedding-explorer .embedding-controls {
-  position: relative;
-  z-index: 4;
-  margin: 0 0 0.75rem;
-  padding: 0.55rem 0 0.65rem;
-  border-bottom: 1px solid #d9e2ec;
-  background: #fff;
-}
-
-.patient-embedding-explorer.has-active-focus:hover .embedding-controls {
-  position: sticky;
-  top: 4.5rem;
 }
 
 .patient-embedding-legend {
@@ -283,6 +270,7 @@ figcaption {
   to { transform: rotate(360deg); }
 }
 
+.embedding-explorer,
 .embedding-walkthrough {
   padding: 0.9rem;
   border: 1px solid #d9e2ec;
@@ -667,14 +655,10 @@ figcaption {
   font-size: 0.78rem;
 }
 
+.quarto-dark .embedding-explorer,
 .quarto-dark .embedding-walkthrough,
 .quarto-dark .embedding-load-state {
   border-color: #495057;
-  background: #212529;
-}
-
-.quarto-dark .patient-embedding-explorer .embedding-controls {
-  border-bottom-color: #495057;
   background: #212529;
 }
 

@@ -45,7 +45,7 @@ export async function createEmbeddingScatter(config) {
   const height = Math.max(380, Math.round(width * 0.62));
 
   const shell = document.createElement("section");
-  shell.className = "embedding-walkthrough";
+  shell.className = "embedding-explorer";
   shell.setAttribute("aria-label", "Fibrotic disease embedding explorer");
 
   const heading = document.createElement("div");

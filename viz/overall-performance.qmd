@@ -34,42 +34,27 @@ createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).defa
 ```{ojs}
 //| echo: false
 
-import { createPatientWalkthrough } from "./patient-embedding-walkthrough.js"
+import { createPatientEmbeddingExplorer } from "./patient-embedding-explorer.js"
 ```
 
 ```{ojs}
 //| echo: false
 
 umapSex = {
-  const median = values => {
-    const sorted = [...values].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  };
   const buildGroup = (label, color, predicate) => {
     const indices = [];
-    const ages = [];
     patientData.forEach((d, i) => {
-      if (predicate(d)) { indices.push(i); ages.push(d.age); }
+      if (predicate(d)) indices.push(i);
     });
-    return {
-      label,
-      color,
-      indices,
-      stats: [
-        ["Median age", `${median(ages)} years`],
-        ["Age range", `${Math.min(...ages)}–${Math.max(...ages)} years`],
-      ],
-    };
+    return { label, color, indices };
   };
-  return createPatientWalkthrough({
+  return createPatientEmbeddingExplorer({
     data: patientData,
     xField: "umap_1",
     yField: "umap_2",
     title: "Patient Embeddings — Coloured by Sex",
     subtitle: "Pre-trained EHR Encoder · UMAP view",
     datasetLabel: `${patientData.length.toLocaleString()} patients`,
-    kicker: "Sex group spotlight",
     createScatterplot,
     groups: [
       buildGroup("Female", "#e07b39", d => d.sex_male === 0),
@@ -86,8 +71,7 @@ umapSex = {
 //| echo: false
 
 umapAge = {
-  // Age is continuous, so the walkthrough steps through quartile age bands
-  // (young → old), each highlighted in a viridis stop.
+  // Age is continuous, so the explorer groups patients into quartile bands.
   const bandColors = ["#440154", "#31688e", "#35b779", "#fde725"];
   const bandNames = ["Youngest quartile", "Lower-middle quartile", "Upper-middle quartile", "Oldest quartile"];
   const sortedAges = patientData.map(d => d.age).sort((a, b) => a - b);
@@ -112,18 +96,16 @@ umapAge = {
       label: `${bandNames[band]} · ${lo}–${hi} yrs`,
       color,
       indices,
-      stats: [["Age range", `${lo}–${hi} years`]],
     };
   });
 
-  return createPatientWalkthrough({
+  return createPatientEmbeddingExplorer({
     data: patientData,
     xField: "umap_1",
     yField: "umap_2",
     title: "Patient Embeddings — Coloured by Age",
     subtitle: "Pre-trained EHR Encoder · UMAP view",
     datasetLabel: `${patientData.length.toLocaleString()} patients`,
-    kicker: "Age band spotlight",
     createScatterplot,
     groups,
     tooltip: d => `<strong>ID: ${d.id}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
