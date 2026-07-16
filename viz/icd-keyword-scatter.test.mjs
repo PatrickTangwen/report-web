@@ -36,11 +36,10 @@ test("exact, prefix, and inclusive range selectors resolve tracked graph points"
 });
 
 
-test("ICD interaction highlights, explains, jumps, and resets without patient data", async () => {
+test("ICD interaction highlights, explains, and jumps without patient data", async () => {
   const calls = [];
   const renderer = {
     drawHighlighted: async (indices) => calls.push(["highlight", indices]),
-    drawOverview: async () => calls.push(["overview"]),
     zoomToPoints: async (indices, options) => calls.push(["zoom", indices, options]),
   };
   const interaction = createIcdInteraction({ data, renderer, reducedMotion: false });
@@ -52,7 +51,6 @@ test("ICD interaction highlights, explains, jumps, and resets without patient da
   };
 
   const result = await interaction.focus(request);
-  await interaction.reset();
 
   assert.deepEqual(result, {
     indices: [1, 2, 3, 4],
@@ -61,8 +59,6 @@ test("ICD interaction highlights, explains, jumps, and resets without patient da
   assert.deepEqual(calls, [
     ["highlight", [1, 2, 3, 4]],
     ["zoom", [1, 2, 3, 4], { padding: 0.3, transition: true, transitionDuration: 520 }],
-    ["overview"],
-    ["zoom", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], { padding: 0.08, transition: true, transitionDuration: 520 }],
   ]);
 });
 
@@ -74,7 +70,6 @@ test("reduced motion jumps directly to the final highlighted state", async () =>
     reducedMotion: true,
     renderer: {
       drawHighlighted: async () => calls.push("highlight"),
-      drawOverview: async () => calls.push("overview"),
       zoomToPoints: async (_indices, options) => calls.push(options),
     },
   });

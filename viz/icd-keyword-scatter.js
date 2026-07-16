@@ -1,7 +1,11 @@
 import {
   createEmbeddingRenderer,
-  fitEmbeddingWidth,
+  sizeEmbeddingCanvas,
 } from "./embedding-renderer.js";
+import {
+  bindHighlightTarget,
+  createHighlightController,
+} from "./chart-highlighting.js";
 
 
 function normalizeCode(value) {
@@ -48,8 +52,6 @@ function motionOptions(reducedMotion, padding) {
 
 
 export function createIcdInteraction(config) {
-  const allIndices = config.data.map((_, index) => index);
-
   return {
     async focus(request, animate = !config.reducedMotion) {
       const indices = resolveIcdIndices(config.data, request.selector);
@@ -70,14 +72,6 @@ export function createIcdInteraction(config) {
           "Navigation context only; this does not represent patient history, " +
           "diagnosis, or clinical similarity.",
       };
-    },
-
-    async reset(animate = !config.reducedMotion) {
-      await config.renderer.drawOverview();
-      await config.renderer.zoomToPoints(
-        allIndices,
-        motionOptions(config.reducedMotion || !animate, 0.08),
-      );
     },
   };
 }
@@ -118,12 +112,10 @@ export async function createIcdKeywordScatter(config) {
   const chapters = [...new Set(data.map((point) => point.chapter))];
   const chapterIndex = new Map(chapters.map((chapter, index) => [chapter, index]));
   const colors = config.colors;
-  const width = fitEmbeddingWidth(config.width || 1000);
-  const height = Math.max(380, Math.round(width * 0.62));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const shell = element("section", "embedding-walkthrough icd-keyword-walkthrough");
-  shell.setAttribute("aria-label", "ICD Keyword Match walkthrough");
+  const shell = element("section", "embedding-explorer icd-keyword-explorer");
+  shell.setAttribute("aria-label", "ICD-10 code embedding explorer");
 
   const heading = element("div", "embedding-heading");
   const title = document.createElement("div");
@@ -131,52 +123,49 @@ export async function createIcdKeywordScatter(config) {
     element("strong", "", "UMAP of ICD-10 Code Embeddings"),
     element("span", "", `${data.length.toLocaleString()} tracked codes · navigation context only`),
   );
+  const headingActions = element("div", "embedding-heading-actions");
   const vocabularyBadge = element("code", "", "Reviewed ICD vocabulary");
-  heading.append(title, vocabularyBadge);
+  const resetButton = element("button", "embedding-button embedding-reset-button", "Reset view");
+  resetButton.type = "button";
+  resetButton.setAttribute("aria-label", "Reset embedding selection and view");
+  const status = element(
+    "span",
+    "embedding-status visually-hidden",
+    "Overview · waiting for an ICD Keyword Match action",
+  );
+  status.setAttribute("aria-live", "polite");
+  headingActions.append(vocabularyBadge, resetButton, status);
+  heading.append(title, headingActions);
   shell.appendChild(heading);
 
   const frame = element("div", "embedding-frame");
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
   canvas.setAttribute("role", "img");
   canvas.setAttribute("aria-label", `${data.length.toLocaleString()} ICD code embedding points`);
   canvas.tabIndex = 0;
   frame.appendChild(canvas);
-  const tooltip = element("div", "embedding-tooltip");
-  frame.appendChild(tooltip);
   shell.appendChild(frame);
 
-  const controls = element("div", "embedding-controls");
-  const status = element("span", "embedding-status", "Overview · waiting for an ICD Keyword Match action");
-  status.setAttribute("aria-live", "polite");
-  const replayButton = element("button", "embedding-button", "Replay highlight");
-  replayButton.type = "button";
-  replayButton.hidden = true;
-  const resetButton = element("button", "embedding-button", "Reset view");
-  resetButton.type = "button";
-  controls.append(status, replayButton, resetButton);
-  shell.appendChild(controls);
-
-  const summary = element("aside", "embedding-summary icd-keyword-summary");
-  summary.setAttribute("role", "region");
-  summary.setAttribute("aria-label", "ICD Keyword Match explanation");
-  summary.setAttribute("aria-live", "polite");
-  summary.tabIndex = -1;
-  summary.hidden = true;
-  shell.appendChild(summary);
-
-  const legend = element("div", "embedding-legend");
+  const legend = element("div", "embedding-legend icd-embedding-legend");
+  const legendButtons = new Map();
   chapters.forEach((chapter, index) => {
-    const item = document.createElement("span");
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "embedding-legend-action";
+    item.setAttribute("aria-pressed", "false");
     const marker = document.createElement("i");
     marker.style.background = colors[index % colors.length];
     item.append(marker, document.createTextNode(chapter));
     legend.appendChild(item);
+    legendButtons.set(chapter, item);
   });
   shell.appendChild(legend);
+
+  const { width, height } = sizeEmbeddingCanvas(
+    shell,
+    canvas,
+    config.width || 1000,
+  );
 
   const renderer = createEmbeddingRenderer({
     data,
@@ -197,11 +186,12 @@ export async function createIcdKeywordScatter(config) {
     await renderer.drawOverview();
   }
 
-  async function drawHighlighted(indices) {
+  async function drawHighlighted(indices, color = "#2c5aa0") {
     await renderer.drawHighlighted(indices, {
-      pointColor: ["#aeb7c2", "#2c5aa0"],
+      pointColor: ["#aeb7c2", color],
       opacity: [0.1, 1],
-      pointSize: [2.3, 8],
+      pointSize: [2.5, 3],
+      select: false,
     });
   }
 
@@ -209,58 +199,65 @@ export async function createIcdKeywordScatter(config) {
     data,
     reducedMotion,
     renderer: {
-      drawOverview,
       drawHighlighted,
       zoomToPoints: renderer.zoomToPoints,
     },
   });
   const requestQueue = createIcdRequestQueue();
-  let activeRequest = config.request || null;
+  const chapterIndices = new Map(chapters.map((chapter) => [
+    chapter,
+    data
+      .map((point, index) => point.chapter === chapter ? index : null)
+      .filter((index) => index !== null),
+  ]));
+  const initialRequest = config.request || null;
   let motionActive = false;
+  let groupHighlight;
+
+  groupHighlight = createHighlightController(chapters, (activeChapter) => {
+    legendButtons.forEach((button, chapter) => {
+      const isActive = chapter === activeChapter;
+      button.classList.toggle("is-active", isActive);
+      button.classList.toggle("is-muted", activeChapter !== null && !isActive);
+      button.setAttribute("aria-pressed", String(groupHighlight.pinned() === chapter));
+    });
+    requestQueue.enqueue(async () => {
+      if (activeChapter === null) {
+        await drawOverview();
+        return;
+      }
+      await drawHighlighted(
+        chapterIndices.get(activeChapter),
+        colors[chapterIndex.get(activeChapter) % colors.length],
+      );
+    });
+  });
+  legendButtons.forEach((button, chapter) => {
+    bindHighlightTarget(button, chapter, groupHighlight, { persistent: true });
+  });
 
   function showExplanation(request, result) {
-    summary.replaceChildren();
-    summary.setAttribute("role", "region");
-    const kicker = element("div", "embedding-summary-kicker", "ICD Keyword Match");
-    const title = element("h3", "", `${request.display_label} (${request.selector_label})`);
-    const copy = element("p", "", result.explanation);
-    const note = element(
-      "p",
-      "embedding-summary-note",
-      "The selected points are code-embedding nodes. They are not a patient profile, diagnosis, or similarity result.",
-    );
-    summary.append(kicker, title, copy, note);
-    summary.hidden = false;
-    replayButton.hidden = false;
     vocabularyBadge.textContent = request.vocabulary_version;
-    const pointNoun = result.indices.length === 1 ? "point" : "points";
-    status.textContent = `${result.indices.length.toLocaleString()} ICD graph ${pointNoun} highlighted`;
-    summary.focus({ preventScroll: true });
+    status.textContent = result.explanation;
   }
 
   function setControlsBusy(busy) {
     resetButton.disabled = busy;
-    replayButton.disabled = busy;
   }
 
   function focus(request, animate = !reducedMotion) {
-    activeRequest = request;
+    groupHighlight.clear();
     status.textContent = `Highlighting ${request.display_label} (${request.selector_label})`;
     setControlsBusy(true);
     motionActive = true;
     return requestQueue.enqueue(async (isCurrent) => {
       try {
-        await interaction.reset(false);
-        if (!isCurrent()) return;
         const result = await interaction.focus(request, animate);
         if (!isCurrent()) return;
         showExplanation(request, result);
       } catch (error) {
         if (!isCurrent()) return;
-        summary.hidden = false;
-        summary.textContent = error.message;
-        summary.setAttribute("role", "alert");
-        status.textContent = "The ICD request could not be shown";
+        status.textContent = `The ICD request could not be shown: ${error.message}`;
       } finally {
         if (isCurrent()) {
           motionActive = false;
@@ -271,15 +268,16 @@ export async function createIcdKeywordScatter(config) {
   }
 
   function reset(message = "Overview · ICD Keyword Match reset", animate = !reducedMotion) {
+    groupHighlight.clear();
     setControlsBusy(true);
     motionActive = true;
     return requestQueue.enqueue(async (isCurrent) => {
       try {
-        await interaction.reset(animate);
+        await renderer.zoomToPoints(
+          allIndices,
+          motionOptions(reducedMotion || !animate, 0.08),
+        );
         if (!isCurrent()) return;
-        summary.hidden = true;
-        summary.setAttribute("role", "region");
-        replayButton.hidden = activeRequest === null;
         status.textContent = message;
       } finally {
         if (isCurrent()) {
@@ -290,21 +288,18 @@ export async function createIcdKeywordScatter(config) {
     });
   }
 
-  replayButton.addEventListener("click", () => {
-    if (activeRequest) focus(activeRequest);
-  });
   resetButton.addEventListener("click", () => reset());
-  scatterplot.subscribe("pointover", (index) => {
-    const point = data[index];
-    if (!point) return;
-    tooltip.textContent = `${point.code} · ${point.chapter}`;
-    tooltip.classList.add("is-visible");
+  scatterplot.subscribe("select", ({ points: selected }) => {
+    const pointIndex = selected?.[0];
+    const chapter = data[pointIndex]?.chapter;
+    if (!chapterIndex.has(chapter)) return;
+    groupHighlight.select(chapter);
+    scatterplot.deselect({ preventEvent: true });
   });
-  scatterplot.subscribe("pointout", () => tooltip.classList.remove("is-visible"));
-  canvas.addEventListener("mousemove", (event) => {
-    const rect = canvas.getBoundingClientRect();
-    tooltip.style.left = `${event.clientX - rect.left + 12}px`;
-    tooltip.style.top = `${event.clientY - rect.top + 12}px`;
+  canvas.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    reset();
   });
 
   function cancelForInteraction() {
@@ -329,7 +324,7 @@ export async function createIcdKeywordScatter(config) {
   await drawOverview();
   await scatterplot.zoomToPoints(allIndices, { padding: 0.08 });
 
-  if (!activeRequest && config.searchQuery) {
+  if (!initialRequest && config.searchQuery) {
     const query = config.searchQuery.toLowerCase();
     const searchIndices = data
       .map((point, index) => (
@@ -346,8 +341,8 @@ export async function createIcdKeywordScatter(config) {
     }
   }
 
-  if (activeRequest) {
-    window.setTimeout(() => focus(activeRequest, config.autoplay !== false), 80);
+  if (initialRequest) {
+    window.setTimeout(() => focus(initialRequest, config.autoplay !== false), 80);
   }
 
   function destroy() {

@@ -31,8 +31,5 @@ export function createPatientEmbeddingExplorer(config) {
       key: index,
     })),
     highlightOptions: (group) => patientHighlightOptions(group.color),
-    renderTooltip: (tooltip, point) => {
-      tooltip.innerHTML = config.tooltip(point);
-    },
   });
 }

@@ -1,8 +1,7 @@
 import {
   createEmbeddingRenderer,
   createRendererQueue,
-  fitEmbeddingDimensions,
-  fitEmbeddingWidth,
+  sizeEmbeddingCanvas,
 } from "./embedding-renderer.js";
 import {
   bindHighlightTarget,
@@ -105,31 +104,11 @@ export async function createGroupedEmbeddingExplorer(config) {
   });
   shell.appendChild(legend);
 
-  const measurementWidth = fitEmbeddingWidth(config.width || 1000);
-  shell.style.position = "absolute";
-  shell.style.left = "0";
-  shell.style.top = "0";
-  shell.style.visibility = "hidden";
-  shell.style.pointerEvents = "none";
-  shell.style.width = `${measurementWidth}px`;
-  shell.setAttribute("aria-hidden", "true");
-  canvas.hidden = true;
-  document.body.appendChild(shell);
-  const componentChromeHeight = Math.ceil(shell.getBoundingClientRect().height);
-  shell.remove();
-  canvas.hidden = false;
-  shell.removeAttribute("aria-hidden");
-  ["position", "left", "top", "visibility", "pointer-events", "width"]
-    .forEach((property) => shell.style.removeProperty(property));
-
-  const { width, height } = fitEmbeddingDimensions(
+  const { width, height } = sizeEmbeddingCanvas(
+    shell,
+    canvas,
     config.width || 1000,
-    componentChromeHeight,
   );
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
 
   const renderer = createEmbeddingRenderer({
     data,

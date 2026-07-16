@@ -40,6 +40,37 @@ export function fitEmbeddingDimensions(maxWidth, componentChromeHeight, document
 }
 
 
+export function sizeEmbeddingCanvas(shell, canvas, maxWidth = 1000, documentLike = document) {
+  const measurementWidth = fitEmbeddingWidth(maxWidth, documentLike);
+  shell.style.position = "absolute";
+  shell.style.left = "0";
+  shell.style.top = "0";
+  shell.style.visibility = "hidden";
+  shell.style.pointerEvents = "none";
+  shell.style.width = `${measurementWidth}px`;
+  shell.setAttribute("aria-hidden", "true");
+  canvas.hidden = true;
+  documentLike.body.appendChild(shell);
+  const componentChromeHeight = Math.ceil(shell.getBoundingClientRect().height);
+  shell.remove();
+  canvas.hidden = false;
+  shell.removeAttribute("aria-hidden");
+  ["position", "left", "top", "visibility", "pointer-events", "width"]
+    .forEach((property) => shell.style.removeProperty(property));
+
+  const dimensions = fitEmbeddingDimensions(
+    maxWidth,
+    componentChromeHeight,
+    documentLike,
+  );
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+  canvas.style.width = `${dimensions.width}px`;
+  canvas.style.height = `${dimensions.height}px`;
+  return dimensions;
+}
+
+
 export function createRendererQueue() {
   let tail = Promise.resolve();
   return {

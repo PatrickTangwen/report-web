@@ -60,7 +60,6 @@ umapSex = {
       buildGroup("Female", "#e07b39", d => d.sex_male === 0),
       buildGroup("Male", "#4a90d9", d => d.sex_male === 1),
     ],
-    tooltip: d => `<strong>ID: ${d.id}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
   });
 }
 ```
@@ -108,7 +107,6 @@ umapAge = {
     datasetLabel: `${patientData.length.toLocaleString()} patients`,
     createScatterplot,
     groups,
-    tooltip: d => `<strong>ID: ${d.id}</strong><br>Age: ${d.age} · Sex: ${d.sex_male === 1 ? "Male" : "Female"}`,
   });
 }
 ```

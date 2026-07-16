@@ -6,6 +6,8 @@ import {
   groupAssignments,
 } from "./grouped-embedding-explorer.js";
 import { createEmbeddingScatter } from "./embedding-scatter.js";
+import { createPatientEmbeddingExplorer } from "./patient-embedding-explorer.js";
+import { createIcdKeywordScatter } from "./icd-keyword-scatter.js";
 
 
 class FakeElement extends EventTarget {
@@ -15,6 +17,7 @@ class FakeElement extends EventTarget {
     this.children = [];
     this.attributes = new Map();
     this.parentNode = null;
+    this.rectHeight = 0;
     this.style = {
       removeProperty: (property) => delete this.style[property],
     };
@@ -56,16 +59,23 @@ class FakeElement extends EventTarget {
   }
 
   getBoundingClientRect() {
-    return { height: 0, left: 0, right: 1000, top: 0, bottom: 620 };
+    return { height: this.rectHeight, left: 0, right: 1000, top: 0, bottom: 620 };
   }
 }
 
 
-function fakeDocument() {
+function fakeDocument(options = {}) {
   return {
     body: new FakeElement("body"),
-    documentElement: { clientWidth: 1200, clientHeight: 900 },
-    createElement: (tagName) => new FakeElement(tagName),
+    documentElement: {
+      clientWidth: options.clientWidth || 1200,
+      clientHeight: options.clientHeight || 900,
+    },
+    createElement: (tagName) => {
+      const element = new FakeElement(tagName);
+      if (tagName === "section") element.rectHeight = options.shellHeight || 0;
+      return element;
+    },
     createTextNode: (text) => ({ textContent: text }),
     querySelector: () => null,
   };
@@ -169,5 +179,121 @@ test("fibrotic embedding does not register point-hover tooltips", async () => {
     assert.equal(frame.children.length, 1);
   } finally {
     globalThis.document = originalDocument;
+  }
+});
+
+
+test("sex and age embeddings use the fibrotic point interaction contract", async () => {
+  const originalDocument = globalThis.document;
+  const subscriptions = new Map();
+  globalThis.document = fakeDocument();
+
+  try {
+    const shell = await createPatientEmbeddingExplorer({
+      data: [{ umap_1: 0, umap_2: 0, sex_male: 0 }],
+      xField: "umap_1",
+      yField: "umap_2",
+      title: "Patient Embeddings — Coloured by Sex",
+      subtitle: "UMAP view",
+      groups: [{ label: "Female", color: "#e07b39", indices: [0] }],
+      createScatterplot: () => ({
+        subscribe: (eventName, handler) => subscriptions.set(eventName, handler),
+        set() {},
+        async draw() {},
+        deselect() {},
+        select() {},
+        async zoomToPoints() {},
+      }),
+    });
+
+    subscriptions.get("select")({ points: [0] });
+
+    const frame = shell.children[1];
+    const femaleLabel = shell.children[2].children[0];
+    assert.equal(subscriptions.has("pointover"), false);
+    assert.equal(subscriptions.has("pointout"), false);
+    assert.equal(frame.children.length, 1);
+    assert.equal(femaleLabel.classList.contains("is-active"), true);
+    assert.equal(femaleLabel.getAttribute("aria-pressed"), "true");
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+
+test("ICD embedding shares the fibrotic viewport and interactions while preserving search", async () => {
+  const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
+  const documentLike = fakeDocument({ clientHeight: 720, shellHeight: 130 });
+  const documentEvents = new EventTarget();
+  documentLike.addEventListener = documentEvents.addEventListener.bind(documentEvents);
+  documentLike.removeEventListener = documentEvents.removeEventListener.bind(documentEvents);
+  documentLike.hidden = false;
+  const windowEvents = new EventTarget();
+  globalThis.document = documentLike;
+  globalThis.window = {
+    addEventListener: windowEvents.addEventListener.bind(windowEvents),
+    removeEventListener: windowEvents.removeEventListener.bind(windowEvents),
+    matchMedia: () => ({ matches: false }),
+    setTimeout,
+  };
+
+  const fibroticSubscriptions = new Map();
+  const icdSubscriptions = new Map();
+  const fibroticRendererConfigs = [];
+  const icdRendererConfigs = [];
+  const icdDraws = [];
+  const scatterplot = (subscriptions, configs, draws = []) => (config) => {
+    configs.push(config);
+    return {
+      subscribe: (eventName, handler) => subscriptions.set(eventName, handler),
+      set() {},
+      draw: async (columns) => draws.push(columns),
+      deselect() {},
+      select() {},
+      async zoomToPoints() {},
+    };
+  };
+
+  try {
+    const fibroticShell = await createEmbeddingScatter({
+      data: [{ tsne_x: 0, tsne_y: 0, disease: "CKD" }],
+      colors: ["#4477aa"],
+      displayName: (value) => value,
+      datasetVersion: "test-release",
+      createScatterplot: scatterplot(fibroticSubscriptions, fibroticRendererConfigs),
+    });
+    const shell = await createIcdKeywordScatter({
+      data: [
+        { umap_1: 0, umap_2: 0, code: "N18", chapter: "Genitourinary" },
+        { umap_1: 1, umap_2: 1, code: "E11", chapter: "Endocrine" },
+      ],
+      colors: ["#1f77b4", "#ff7f0e"],
+      searchQuery: "N18",
+      createScatterplot: scatterplot(icdSubscriptions, icdRendererConfigs, icdDraws),
+    });
+
+    assert.deepEqual(
+      { width: icdRendererConfigs[0].width, height: icdRendererConfigs[0].height },
+      { width: fibroticRendererConfigs[0].width, height: fibroticRendererConfigs[0].height },
+    );
+    assert.equal(icdSubscriptions.has("select"), true);
+    assert.equal(icdSubscriptions.has("pointover"), false);
+    assert.equal(shell.children[1].children.length, 1);
+    assert.equal(shell.children.length, fibroticShell.children.length);
+    assert.deepEqual(icdDraws.at(-1).z, [1, 0]);
+
+    icdSubscriptions.get("select")({ points: [0] });
+    const genitourinaryLabel = shell.children[2].children[0];
+    assert.equal(genitourinaryLabel.classList.contains("is-active"), true);
+    assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "true");
+
+    const resetButton = shell.children[0].children[1].children[1];
+    resetButton.dispatchEvent(new Event("click"));
+    assert.equal(genitourinaryLabel.classList.contains("is-active"), false);
+    assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "false");
+  } finally {
+    globalThis.document = originalDocument;
+    globalThis.window = originalWindow;
   }
 });

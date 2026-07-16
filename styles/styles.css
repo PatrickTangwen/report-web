@@ -605,6 +605,21 @@ figcaption {
   opacity: 0.32;
 }
 
+.icd-embedding-legend {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.icd-embedding-legend::-webkit-scrollbar {
+  display: none;
+}
+
+.icd-embedding-legend .embedding-legend-action {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .embedding-legend i {
   width: 8px;
   height: 8px;
