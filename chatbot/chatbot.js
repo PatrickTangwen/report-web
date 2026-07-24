@@ -46,7 +46,7 @@
     {
       id: "performance",
       label: "Performance",
-      description: "See patient and ICD code embeddings alongside evaluation metrics across diseases.",
+      description: "See ICD code embeddings alongside evaluation metrics across diseases.",
       path: "/viz/overall-performance.html",
     },
     {

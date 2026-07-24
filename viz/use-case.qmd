@@ -27,7 +27,7 @@ import { createEmbeddingScatter } from "./embedding-scatter.js"
 ```{ojs}
 //| echo: false
 
-createFibroticScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).default
+createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).default
 ```
 
 ```{ojs}
@@ -133,7 +133,7 @@ fibroticEmbedding = {
       const chart = await createEmbeddingScatter({
         data: embedding.points,
         datasetVersion: embedding.dataset_version,
-        createScatterplot: createFibroticScatterplot,
+        createScatterplot,
         colors,
         displayName,
         initialDisease,
@@ -161,6 +161,104 @@ fibroticEmbedding = {
 
   load();
   return host;
+}
+```
+
+
+## Patient Embeddings — Sex and Age {#patient-embedding}
+
+The plot below covers the full pre-training cohort behind the encoder rather than the fibrotic subset above. Switch between the sex and age colourings, hover a group label to preview it, or click a label or point to keep that group highlighted.
+
+```{ojs}
+//| echo: false
+
+patientData = {
+  const text = await FileAttachment("data/patient_embeddings.csv").text();
+  return d3.csvParse(text, d3.autoType);
+}
+```
+
+```{ojs}
+//| echo: false
+
+import { createPatientEmbeddingExplorer } from "./patient-embedding-explorer.js"
+import { createPatientEmbeddingSwitcher } from "./patient-embedding-switcher.js"
+```
+
+```{ojs}
+//| echo: false
+
+patientEmbeddings = {
+  const buildGroup = (label, color, predicate) => {
+    const indices = [];
+    patientData.forEach((d, i) => {
+      if (predicate(d)) indices.push(i);
+    });
+    return { label, color, indices };
+  };
+  const createSexEmbedding = () => createPatientEmbeddingExplorer({
+    data: patientData,
+    xField: "umap_1",
+    yField: "umap_2",
+    title: "Patient Embeddings — Coloured by Sex",
+    subtitle: "Pre-trained EHR Encoder · UMAP view",
+    datasetLabel: `${patientData.length.toLocaleString()} patients`,
+    createScatterplot,
+    groups: [
+      buildGroup("Female", "#e07b39", d => d.sex_male === 0),
+      buildGroup("Male", "#4a90d9", d => d.sex_male === 1),
+    ],
+  });
+
+  const createAgeEmbedding = () => {
+    // Age is continuous, so the explorer groups patients into quartile bands.
+    const bandColors = ["#440154", "#31688e", "#35b779", "#fde725"];
+    const bandNames = ["Youngest quartile", "Lower-middle quartile", "Upper-middle quartile", "Oldest quartile"];
+    const sortedAges = patientData.map(d => d.age).sort((a, b) => a - b);
+    const quantile = q => sortedAges[Math.min(sortedAges.length - 1, Math.floor(q * sortedAges.length))];
+    const cuts = [quantile(0.25), quantile(0.5), quantile(0.75)];
+    const bandOf = age => {
+      if (age <= cuts[0]) return 0;
+      if (age <= cuts[1]) return 1;
+      if (age <= cuts[2]) return 2;
+      return 3;
+    };
+
+    const groups = bandColors.map((color, band) => {
+      const indices = [];
+      const ages = [];
+      patientData.forEach((d, i) => {
+        if (bandOf(d.age) === band) { indices.push(i); ages.push(d.age); }
+      });
+      const lo = Math.min(...ages);
+      const hi = Math.max(...ages);
+      return {
+        label: `${bandNames[band]} · ${lo}–${hi} yrs`,
+        color,
+        indices,
+      };
+    });
+
+    return createPatientEmbeddingExplorer({
+      data: patientData,
+      xField: "umap_1",
+      yField: "umap_2",
+      title: "Patient Embeddings — Coloured by Age",
+      subtitle: "Pre-trained EHR Encoder · UMAP view",
+      datasetLabel: `${patientData.length.toLocaleString()} patients`,
+      createScatterplot,
+      groups,
+    });
+  };
+
+  return createPatientEmbeddingSwitcher({
+    label: "Colour patient embeddings by",
+    initialKey: "sex",
+    options: [
+      { key: "sex", label: "Sex", create: createSexEmbedding },
+      { key: "age", label: "Age", create: createAgeEmbedding },
+    ],
+  });
 }
 ```
 

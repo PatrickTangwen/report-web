@@ -11,7 +11,7 @@ CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embe
 
 | File | Size | Used By | Data | Description |
 |------|------|---------|------|-------------|
-| `patient_embeddings.csv` | 8.2 MB | `overall-performance.qmd` | Real | 114K patient UMAP/t-SNE coordinates with age and sex |
+| `patient_embeddings.csv` | 8.2 MB | `use-case.qmd` | Real | 114K patient UMAP/t-SNE coordinates with age and sex |
 | `icd_code_embeddings.csv` | 738 KB | `overall-performance.qmd` | Real | 12K ICD-10 code UMAP/t-SNE coordinates by chapter |
 | `icd_code_reference.csv` | 908 KB | `overall-performance.qmd` | Real | Code titles and ICD hierarchy behind the embedding hover panel |
 | `fibrotic_patient_embeddings.csv` | 1.3 MB | `use-case.qmd` | Real | 6K fibrotic patient t-SNE coordinates with clinical features |

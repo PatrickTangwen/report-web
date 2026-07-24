@@ -10,7 +10,7 @@ A Quarto-based website for the ALIGATEHR-Gen research project — a graph attent
 - **Quarto**: Site generation framework (website project type)
 - **OJS (Observable JS)**: All interactive charts are OJS cells in `.qmd` files
 - **Observable Plot**: SVG-based charts (bar charts, dot plots, ICD UMAP, Fibrotic UMAP)
-- **regl-scatterplot**: WebGL point cloud renderer (Sex/Age UMAPs on Performance page)
+- **regl-scatterplot**: WebGL point cloud renderer (Sex/Age UMAPs on Use Case page)
 - **SCSS/CSS**: `styles/custom.scss` (theme variables, component rules) + `styles/styles.css` (layout, hero, cards, dark mode overrides)
 - **Nature CSL**: Citation style via `styles/nature.csl`
 - **Bibliography**: `references.bib` for all citations
@@ -28,9 +28,9 @@ report-web/
 │   ├── paper1.qmd         # Full paper content
 │   └── figures/           # Paper figures (PNG/JPEG)
 ├── viz/
-│   ├── overall-performance.qmd  # Page 1: Patient UMAP (sex/age), ICD UMAP, Eval Metrics
+│   ├── overall-performance.qmd  # Page 1: ICD UMAP, Eval Metrics
 │   ├── ablation.qmd             # Page 2: Ablation delta bar chart
-│   ├── use-case.qmd             # Page 3: Fibrotic UMAP, Risk Factors, Pathway Enrichment
+│   ├── use-case.qmd             # Page 3: Fibrotic UMAP, Patient UMAP (sex/age), Risk Factors, Pathway Enrichment
 │   └── data/                    # 7 mock CSV files
 ├── viz_planning/          # Design specs (to be archived after real data)
 │   ├── INTERACTIVE_VIZ_PLAN.md
