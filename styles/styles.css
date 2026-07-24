@@ -500,6 +500,175 @@ figcaption {
   display: block;
 }
 
+/* The ICD tooltip carries a code line and a chapter line. */
+.icd-embedding-tooltip {
+  max-width: 280px;
+  white-space: pre-line;
+  line-height: 1.35;
+}
+
+/* Hover panel listing the ICD category the hovered point belongs to. It sits
+   inside the plot frame rather than following the cursor, so its rows stay
+   clickable. */
+.icd-hierarchy-panel {
+  position: absolute;
+  z-index: 4;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: none;
+  flex-direction: column;
+  width: min(22rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 1.5rem);
+  border: 1px solid #d3dce6;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(26, 39, 52, 0.18);
+  font-size: 0.78rem;
+  /* A hover preview must not swallow the pointer: the visitor is still working
+     the canvas underneath it. Pinning the panel turns it into a control. */
+  pointer-events: none;
+}
+
+.icd-hierarchy-panel.is-visible {
+  display: flex;
+}
+
+.icd-hierarchy-panel.is-pinned {
+  pointer-events: auto;
+}
+
+.icd-hierarchy-panel.is-left {
+  right: auto;
+  left: 0.75rem;
+}
+
+.icd-hierarchy-head {
+  position: relative;
+  padding: 0.5rem 1.6rem 0.45rem 0.7rem;
+  border-bottom: 1px solid #e3e9f0;
+}
+
+.icd-hierarchy-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  color: #627d98;
+  font-size: 0.7rem;
+}
+
+.icd-hierarchy-sep {
+  color: #9fb3c8;
+}
+
+.icd-hierarchy-block {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2c5aa0;
+  font-size: 0.7rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.icd-hierarchy-block:hover,
+.icd-hierarchy-block:focus-visible {
+  text-decoration: underline;
+}
+
+.icd-hierarchy-title {
+  display: block;
+  margin-top: 0.15rem;
+  color: #1a2734;
+  font-size: 0.82rem;
+}
+
+.icd-hierarchy-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.4rem;
+  display: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: #627d98;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icd-hierarchy-panel.is-pinned .icd-hierarchy-close {
+  display: block;
+}
+
+.icd-hierarchy-close:hover,
+.icd-hierarchy-close:focus-visible {
+  background: #eef2f7;
+  color: #1a2734;
+}
+
+.icd-hierarchy-tree {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0.25rem 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.icd-hierarchy-row {
+  display: flex;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.18rem 0.6rem 0.18rem 0.5rem;
+  border: 0;
+  background: none;
+  color: #334e68;
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.icd-hierarchy-row:hover,
+.icd-hierarchy-row:focus-visible {
+  background: #eef4fb;
+}
+
+.icd-hierarchy-row.is-current {
+  background: #dfe9f7;
+  font-weight: 600;
+}
+
+/* Scoped through the row so this outranks Bootstrap's `li code:not(.sourceCode)`,
+   which would otherwise give every code a pale inline-code chip. */
+.icd-hierarchy-row .icd-hierarchy-code {
+  flex: 0 0 auto;
+  padding: 0;
+  background: none;
+  color: #2c5aa0;
+  font-size: 0.72rem;
+}
+
+/* Structural ancestors have no point of their own; selecting one highlights
+   every plotted code below it. */
+.icd-hierarchy-row.is-group .icd-hierarchy-code {
+  color: #627d98;
+}
+
+.icd-hierarchy-description {
+  flex: 1 1 auto;
+}
+
+.icd-hierarchy-hint {
+  margin: 0;
+  padding: 0.35rem 0.7rem;
+  border-top: 1px solid #e3e9f0;
+  color: #627d98;
+  font-size: 0.68rem;
+}
+
 .embedding-controls {
   display: flex;
   align-items: center;
@@ -760,6 +929,62 @@ figcaption {
 
 .quarto-dark .embedding-frame {
   background: #171a1d;
+}
+
+/* The panel renders inside an OJS cell, so these rules carry the
+   `.cell-output-display` prefix — and, for the buttons, the `!important` — that
+   the generic dark overrides above already use. Without both, those rules
+   repaint every panel row as a chrome button and erase the current-row
+   highlight. */
+.quarto-dark .icd-hierarchy-panel {
+  border-color: #495057;
+  background: #212529;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.quarto-dark .icd-hierarchy-head,
+.quarto-dark .icd-hierarchy-hint {
+  border-color: #495057;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-title {
+  color: #e5edf5;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-breadcrumb,
+.quarto-dark .cell-output-display .icd-hierarchy-breadcrumb span,
+.quarto-dark .cell-output-display .icd-hierarchy-hint,
+.quarto-dark .cell-output-display .icd-hierarchy-close,
+.quarto-dark .cell-output-display .icd-hierarchy-row.is-group .icd-hierarchy-code {
+  color: #a9bacb !important;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-row,
+.quarto-dark .cell-output-display .icd-hierarchy-block,
+.quarto-dark .cell-output-display .icd-hierarchy-close {
+  background: none !important;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-row {
+  color: #cbd6e2 !important;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-block,
+.quarto-dark .cell-output-display .icd-hierarchy-code {
+  color: #7fb0ea !important;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-row:hover,
+.quarto-dark .cell-output-display .icd-hierarchy-row:focus-visible,
+.quarto-dark .cell-output-display .icd-hierarchy-close:hover,
+.quarto-dark .cell-output-display .icd-hierarchy-close:focus-visible {
+  background: #2b3035 !important;
+  color: #e5edf5 !important;
+}
+
+.quarto-dark .cell-output-display .icd-hierarchy-row.is-current {
+  background: #34404d !important;
+  color: #e5edf5 !important;
 }
 
 .quarto-dark .embedding-heading strong,

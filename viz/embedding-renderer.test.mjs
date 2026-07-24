@@ -158,6 +158,50 @@ test("shared renderer owns overview, highlight, and zoom", async () => {
 });
 
 
+test("class drawing carries more than two point states in one pass", async () => {
+  const calls = [];
+  const scatterplot = {
+    set: (options) => calls.push(["set", options]),
+    draw: async (columns, options) => calls.push(["draw", columns, options]),
+    select: () => calls.push(["select"]),
+  };
+  const data = [
+    { x: 0, y: 0 },
+    { x: 1, y: 1 },
+    { x: 2, y: 2 },
+  ];
+  const renderer = createEmbeddingRenderer({
+    data,
+    xField: "x",
+    yField: "y",
+    zValues: [0, 0, 0],
+    canvas: {},
+    width: 600,
+    height: 400,
+    pointColor: ["#111"],
+    createScatterplot: () => scatterplot,
+  });
+
+  await renderer.drawClasses([0, 1, 2], {
+    pointColor: ["#aeb7c2", "#ff7f0e", "#ff2d95"],
+    opacity: [0.1, 1, 1],
+    pointSize: [2.5, 3, 9],
+  });
+
+  assert.deepEqual(calls[0][1], {
+    colorBy: "valueA",
+    opacityBy: "valueA",
+    sizeBy: "valueA",
+    pointColor: ["#aeb7c2", "#ff7f0e", "#ff2d95"],
+    opacity: [0.1, 1, 1],
+    pointSize: [2.5, 3, 9],
+  });
+  assert.deepEqual(calls[1][1].z, [0, 1, 2]);
+  assert.deepEqual(calls[1][2], { preventFilterReset: true });
+  assert.equal(calls.some(([operation]) => operation === "select"), false);
+});
+
+
 test("group hover can highlight at the normal point size without selection inflation", async () => {
   const calls = [];
   const scatterplot = {

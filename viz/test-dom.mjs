@@ -57,6 +57,31 @@ export class FakeElement extends EventTarget {
 }
 
 
+// Node has no MutationObserver, and the ICD scatter watches the body class to
+// follow the site theme. `trigger` stands in for the browser firing a record.
+export class FakeMutationObserver {
+  static instances = [];
+
+  constructor(callback) {
+    this.callback = callback;
+    this.targets = [];
+    FakeMutationObserver.instances.push(this);
+  }
+
+  observe(target) {
+    this.targets.push(target);
+  }
+
+  disconnect() {
+    this.targets = [];
+  }
+
+  trigger() {
+    this.callback([], this);
+  }
+}
+
+
 export function fakeDocument(options = {}) {
   return {
     body: new FakeElement("body"),

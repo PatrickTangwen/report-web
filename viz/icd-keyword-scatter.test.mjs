@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   createIcdInteraction,
   createIcdRequestQueue,
+  pickedPointColor,
   resolveIcdIndices,
 } from "./icd-keyword-scatter.js";
 
@@ -33,6 +34,16 @@ test("exact, prefix, and inclusive range selectors resolve tracked graph points"
     () => resolveIcdIndices(data, { type: "nearest", code: "E11" }),
     /unsupported ICD selector/,
   );
+});
+
+
+test("the picked code is drawn in ink against whichever site theme is active", () => {
+  const documentWith = (className) => ({
+    body: { classList: { contains: (name) => className.split(" ").includes(name) } },
+  });
+
+  assert.equal(pickedPointColor(documentWith("nav-fixed quarto-light")), "#1b2430");
+  assert.equal(pickedPointColor(documentWith("nav-fixed quarto-dark")), "#f1f5f9");
 });
 
 

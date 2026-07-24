@@ -13,6 +13,7 @@ CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embe
 |------|------|---------|------|-------------|
 | `patient_embeddings.csv` | 8.2 MB | `overall-performance.qmd` | Real | 114K patient UMAP/t-SNE coordinates with age and sex |
 | `icd_code_embeddings.csv` | 738 KB | `overall-performance.qmd` | Real | 12K ICD-10 code UMAP/t-SNE coordinates by chapter |
+| `icd_code_reference.csv` | 908 KB | `overall-performance.qmd` | Real | Code titles and ICD hierarchy behind the embedding hover panel |
 | `fibrotic_patient_embeddings.csv` | 1.3 MB | `use-case.qmd` | Real | 6K fibrotic patient t-SNE coordinates with clinical features |
 | `evaluation_metrics.csv` | 20 KB | `overall-performance.qmd` | Mock | Model comparison metrics (AUROC, AUPRC, F1, etc.) |
 | `ablation_results.csv` | 10 KB | `ablation.qmd` | Mock | Ablation deltas per variant/disease/metric |
@@ -26,6 +27,24 @@ CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embe
 
 ### icd_code_embeddings.csv (real)
 `code, chapter, umap_1, umap_2, tsne_1, tsne_2`
+
+### icd_code_reference.csv (real)
+`code, label, description, parent, kind, in_plot`
+
+Regenerate with `python scripts/build_icd_reference.py`. The script joins the
+code list in `icd_code_embeddings.csv` against two public code tables:
+
+- CMS ICD-10-CM FY2026 "Code Descriptions in Tabular Order"
+  (<https://www.cms.gov/files/zip/2026-code-descriptions-tabular-order.zip>),
+  which covers the ICD-10-CM specific codes in the embedding.
+- UK Biobank Data-Coding 19 / WHO ICD-10
+  (<https://biobank.ndph.ox.ac.uk/ukb/codown.cgi>, POST `id=19`), which covers
+  the WHO codes ICD-10-CM dropped or re-mapped and supplies the block grouping.
+
+Neither source alone describes every code; together they cover all 12,058. WHO
+wording wins on overlap because the embedding comes from UK Biobank records.
+Rows with `in_plot=0` are structural ancestors (blocks and parent categories)
+that exist so the hover panel can show a complete hierarchy.
 
 ### fibrotic_patient_embeddings.csv (real)
 `eid, label_int, disease, abbrev, tsne_x, tsne_y, purity_2d, purity_256d, group, purity_2d_k30, purity_2d_k50, age_recruit, sex, BMI, waist, hip, height, weight, DBP, SBP, creatinine, HbA1c, smoking_status, alcohol_freq, age_at_onset, n_rel1, n_rel2, n_rel3, n_affected_rel, has_affected_rel, p_true, p_max, correct, is_male, current_smoker`

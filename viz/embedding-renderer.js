@@ -112,22 +112,31 @@ export function createEmbeddingRenderer(config) {
     scatterplot.deselect({ preventEvent: true });
   }
 
-  async function drawHighlighted(indices, options = {}) {
-    const selected = new Set(indices);
+  // A point can be in more than the two states `drawHighlighted` covers: the ICD
+  // scatter draws surrounding context, the active chapter, and the point the
+  // visitor picked inside that chapter at the same time. `classes` holds one
+  // class index per point, and the option arrays are read by that index.
+  async function drawClasses(classes, options) {
     scatterplot.set({
       colorBy: "valueA",
       opacityBy: "valueA",
       sizeBy: "valueA",
-      pointColor: options.pointColor || ["#aeb7c2", "#1565c0"],
-      opacity: options.opacity || [0.14, 1],
-      pointSize: options.pointSize || [2.5, 8],
+      pointColor: options.pointColor,
+      opacity: options.opacity,
+      pointSize: options.pointSize,
     });
-    await scatterplot.draw(
+    await scatterplot.draw({ ...columns, z: classes }, { preventFilterReset: true });
+  }
+
+  async function drawHighlighted(indices, options = {}) {
+    const selected = new Set(indices);
+    await drawClasses(
+      config.data.map((_, index) => (selected.has(index) ? 1 : 0)),
       {
-        ...columns,
-        z: config.data.map((_, index) => (selected.has(index) ? 1 : 0)),
+        pointColor: options.pointColor || ["#aeb7c2", "#1565c0"],
+        opacity: options.opacity || [0.14, 1],
+        pointSize: options.pointSize || [2.5, 8],
       },
-      { preventFilterReset: true },
     );
     if (options.select !== false) {
       scatterplot.select(indices, { preventEvent: true });
@@ -140,6 +149,7 @@ export function createEmbeddingRenderer(config) {
     scatterplot,
     columns,
     drawOverview,
+    drawClasses,
     drawHighlighted,
     zoomToPoints: (indices, options) => scatterplot.zoomToPoints(indices, options),
   };

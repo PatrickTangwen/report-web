@@ -137,6 +137,17 @@ icdData = {
 ```{ojs}
 //| echo: false
 
+// Code titles and the ICD hierarchy behind the hover panel. Parsed without
+// autoType so every column stays a string.
+icdReference = {
+  const text = await FileAttachment("data/icd_code_reference.csv").text();
+  return d3.csvParse(text);
+}
+```
+
+```{ojs}
+//| echo: false
+
 viewof icdSearch = Inputs.text({ label: "Search ICD code or description", placeholder: "e.g. E11, diabetes, circulatory..." })
 ```
 
@@ -168,6 +179,7 @@ icdUmap = {
   const consumed = helper.consumeRequest(sessionStorage);
   chart = await createIcdKeywordScatter({
     data: icdData,
+    reference: icdReference,
     createScatterplot,
     colors: schemeCategory20,
     searchQuery: query,

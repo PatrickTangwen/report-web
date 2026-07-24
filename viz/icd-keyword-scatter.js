@@ -7,6 +7,27 @@ import {
   createHighlightController,
 } from "./chart-highlighting.js";
 import { bindEmbeddingTooltip } from "./grouped-embedding-explorer.js";
+import {
+  buildIcdIndex,
+  createIcdHierarchyPanel,
+} from "./icd-hierarchy-panel.js";
+
+
+const CONTEXT_POINT_COLOR = "#aeb7c2";
+// The picked code is drawn in ink rather than in another hue. The chapter
+// palette already spans the hue circle, so only the extremes of lightness stay
+// legible against whichever chapter sits underneath — which makes this the one
+// chart colour that has to follow the site theme.
+const PICKED_POINT_COLOR = { light: "#1b2430", dark: "#f1f5f9" };
+const PICKED_POINT_SIZE = 5;
+const CHAPTER_ZOOM_PADDING = 0.25;
+
+
+export function pickedPointColor(documentLike = document) {
+  return documentLike.body.classList.contains("quarto-dark")
+    ? PICKED_POINT_COLOR.dark
+    : PICKED_POINT_COLOR.light;
+}
 
 
 function normalizeCode(value) {
@@ -122,6 +143,7 @@ export async function createIcdKeywordScatter(config) {
   ]));
   const colors = config.colors;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const referenceIndex = buildIcdIndex(config.reference);
 
   const shell = element("section", "embedding-explorer icd-keyword-explorer");
   shell.setAttribute("aria-label", "ICD-10 code embedding explorer");
@@ -197,7 +219,7 @@ export async function createIcdKeywordScatter(config) {
 
   async function drawHighlighted(indices, color = "#2c5aa0") {
     await renderer.drawHighlighted(indices, {
-      pointColor: ["#aeb7c2", color],
+      pointColor: [CONTEXT_POINT_COLOR, color],
       opacity: [0.1, 1],
       pointSize: [2.5, 3],
       select: false,
@@ -222,6 +244,44 @@ export async function createIcdKeywordScatter(config) {
   const initialRequest = config.request || null;
   let motionActive = false;
   let groupHighlight;
+  // What the visitor picked inside the active chapter — a point on the canvas or
+  // a row in the hierarchy panel. It is drawn on its own colour class while the
+  // rest of the chapter keeps its own colour, so the pick stays findable without
+  // losing where it sits inside the chapter.
+  let picked = null;
+
+  async function drawChapter(chapter) {
+    const members = new Set(chapterIndices.get(chapter));
+    await renderer.drawClasses(
+      data.map((_, index) => {
+        if (picked?.indices.has(index)) return 2;
+        return members.has(index) ? 1 : 0;
+      }),
+      {
+        pointColor: [
+          CONTEXT_POINT_COLOR,
+          colors[chapterIndex.get(chapter) % colors.length],
+          pickedPointColor(),
+        ],
+        opacity: [0.1, 1, 1],
+        pointSize: [2.5, 3, PICKED_POINT_SIZE],
+      },
+    );
+  }
+
+  // Framing the chapter leaves every other code drawn, faintly, rather than
+  // filtered out: zooming back out still shows where the chapter sits in the
+  // full map.
+  function zoomToChapter(chapter, message) {
+    return requestQueue.enqueue(async (isCurrent) => {
+      await renderer.zoomToPoints(
+        chapterIndices.get(chapter),
+        motionOptions(reducedMotion, CHAPTER_ZOOM_PADDING),
+      );
+      if (!isCurrent()) return;
+      status.textContent = message;
+    });
+  }
 
   groupHighlight = createHighlightController(chapters, (activeChapter) => {
     legendButtons.forEach((button, chapter) => {
@@ -230,29 +290,94 @@ export async function createIcdKeywordScatter(config) {
       button.classList.toggle("is-muted", activeChapter !== null && !isActive);
       button.setAttribute("aria-pressed", String(groupHighlight.pinned() === chapter));
     });
+    // A pick only means something inside its own chapter, so moving to another
+    // chapter — or back to the overview — drops it.
+    if (picked && picked.chapter !== activeChapter) picked = null;
     requestQueue.enqueue(async () => {
       if (activeChapter === null) {
         await drawOverview();
         return;
       }
-      await drawHighlighted(
-        chapterIndices.get(activeChapter),
-        colors[chapterIndex.get(activeChapter) % colors.length],
-      );
+      await drawChapter(activeChapter);
     });
   });
   legendButtons.forEach((button, chapter) => {
     bindHighlightTarget(button, chapter, groupHighlight, { persistent: true });
+    // Keyboard activation of a button also raises `click`, so this covers both.
+    button.addEventListener("click", () => zoomToChapter(
+      chapter,
+      `${chapterLabels.get(chapter)} · view focused on this chapter. ` +
+      "Zoom out to see where it sits in the full map.",
+    ));
   });
-  bindEmbeddingTooltip(
+
+  // A hierarchy row can name a structural ancestor rather than a plotted code,
+  // so it hands over the selector and this resolves the points behind it. The
+  // chapter those points belong to stays coloured underneath the pick, and the
+  // view frames that chapter: the visitor is asking where the code sits, and a
+  // single point framed on its own carries no position at all.
+  function selectFromPanel(selection) {
+    const indices = resolveIcdIndices(data, selection.selector);
+    if (!indices.length) {
+      status.textContent = `${selection.label} matches no ICD graph points`;
+      return;
+    }
+    const chapter = data[indices[0]].chapter;
+    hierarchyPanel.showFor(selection.code, chapter);
+    hierarchyPanel.pin();
+    picked = { chapter, indices: new Set(indices) };
+    groupHighlight.select(chapter);
+    const pointNoun = indices.length === 1 ? "point" : "points";
+    zoomToChapter(
+      chapter,
+      `${selection.label} ${selection.description} · ` +
+      `${indices.length.toLocaleString()} ICD graph ${pointNoun} marked inside ` +
+      `${chapterLabels.get(chapter)}. Navigation context only; this does not ` +
+      "represent patient history, diagnosis, or clinical similarity.",
+    );
+  }
+
+  const hierarchyPanel = createIcdHierarchyPanel({
+    index: referenceIndex,
+    onSelect: selectFromPanel,
+  });
+
+  let pointerOnRightHalf = false;
+  canvas.addEventListener("mousemove", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    pointerOnRightHalf = event.clientX - rect.left > rect.width / 2;
+  });
+
+  const tooltip = bindEmbeddingTooltip(
     frame,
     canvas,
     scatterplot,
-    (index) => chapterLabels.get(data[index]?.chapter),
+    (index) => {
+      const point = data[index];
+      if (!point) return null;
+      const reference = referenceIndex.get(point.code);
+      const heading = reference ? `${reference.label} · ${reference.description}` : point.code;
+      return `${heading}\n${chapterLabels.get(point.chapter)}`;
+    },
+    {
+      onPointOver: (index) => {
+        const point = data[index];
+        // A pinned panel is the visitor's workspace; hovering other points must
+        // not rewrite the rows they are about to click.
+        if (!point || hierarchyPanel.isPinned()) return;
+        // Open the panel away from the pointer so it does not cover the point
+        // the visitor is inspecting.
+        hierarchyPanel.node.classList.toggle("is-left", pointerOnRightHalf);
+        hierarchyPanel.showFor(point.code, point.chapter);
+      },
+      onPointOut: () => hierarchyPanel.scheduleHide(),
+    },
   );
+  tooltip.classList.add("icd-embedding-tooltip");
+  frame.appendChild(hierarchyPanel.node);
 
   function showExplanation(request, result) {
-    vocabularyBadge.textContent = request.vocabulary_version;
+    if (request.vocabulary_version) vocabularyBadge.textContent = request.vocabulary_version;
     status.textContent = result.explanation;
   }
 
@@ -306,16 +431,34 @@ export async function createIcdKeywordScatter(config) {
   resetButton.addEventListener("click", () => reset());
   scatterplot.subscribe("select", ({ points: selected }) => {
     const pointIndex = selected?.[0];
-    const chapter = data[pointIndex]?.chapter;
-    if (!chapterIndex.has(chapter)) return;
-    groupHighlight.select(chapter);
+    const point = data[pointIndex];
+    if (!chapterIndex.has(point?.chapter)) return;
+    // Pinning keeps the panel open once the visitor commits to a point, so the
+    // rows stay clickable while the pointer travels away from the canvas.
+    hierarchyPanel.showFor(point.code, point.chapter);
+    hierarchyPanel.pin();
+    // The camera stays where it is: the visitor picked this point at the zoom
+    // level they chose, and reframing the whole chapter would lose it.
+    picked = { chapter: point.chapter, indices: new Set([pointIndex]) };
+    groupHighlight.select(point.chapter);
     scatterplot.deselect({ preventEvent: true });
   });
   canvas.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     event.preventDefault();
+    hierarchyPanel.hide();
     reset();
   });
+
+  // The picked colour is the only chart colour that depends on the site theme,
+  // so flipping the theme has to repaint whatever is on screen. Quarto carries
+  // the theme as a class on the body and exposes no event for the switch.
+  const themeObserver = new MutationObserver(() => {
+    const chapter = groupHighlight.active();
+    if (chapter === null) return;
+    requestQueue.enqueue(() => drawChapter(chapter));
+  });
+  themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
   function cancelForInteraction() {
     if (motionActive) reset("Walkthrough paused by visitor interaction", false);
@@ -362,6 +505,8 @@ export async function createIcdKeywordScatter(config) {
 
   function destroy() {
     requestQueue.cancel();
+    hierarchyPanel.hide();
+    themeObserver.disconnect();
     motionActive = false;
     document.removeEventListener("visibilitychange", cancelForVisibility);
     window.removeEventListener("pagehide", cancelForRouteChange);
