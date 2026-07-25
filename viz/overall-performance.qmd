@@ -24,6 +24,8 @@ createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).defa
 
 Use the chatbot to request a reviewed ICD Keyword Match, or search the tracked code nodes directly below. Keyword actions are navigation-only and remain separate from Demo Profile comparison.
 
+Hover a point for its code and title. Click one to open its ICD-10 category and browse the codes underneath it, or pick a chapter from the legend to focus the view on that chapter.
+
 ```{ojs}
 //| echo: false
 

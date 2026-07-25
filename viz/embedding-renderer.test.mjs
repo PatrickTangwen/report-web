@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  cameraDistanceFor,
   createEmbeddingRenderer,
   createRendererQueue,
   fitEmbeddingDimensions,
   fitEmbeddingWidth,
   normalizeCoordinates,
+  pointBounds,
 } from "./embedding-renderer.js";
 
 
@@ -102,6 +104,47 @@ test("embedding dimensions use measured navigation and component chrome", () => 
 });
 
 
+test("point bounds carry the centre and the extent of the chosen points", () => {
+  const points = [
+    { x: -1, y: 0.5 },
+    { x: 0.2, y: -0.3 },
+    { x: 0.6, y: 0.1 },
+  ];
+
+  assert.deepEqual(pointBounds(points, [1, 2]), {
+    x: 0.4,
+    y: -0.09999999999999999,
+    width: 0.39999999999999997,
+    height: 0.4,
+  });
+  assert.deepEqual(pointBounds(points, [2]), { x: 0.6, y: 0.1, width: 0, height: 0 });
+  assert.throws(() => pointBounds(points, []), /empty set of embedding points/);
+});
+
+
+test("wide bounds are framed at the distance the view actually needs", () => {
+  // The XXI Health Status chapter: wider than it is tall, which is the case
+  // regl-scatterplot's own `zoomToPoints` frames about twice too close.
+  const bounds = { x: 0, y: 0, width: 1.317, height: 0.532 };
+  const aspectRatio = 907 / 562;
+  const fieldOfView = 2 * Math.atan(1);
+  const libraryDistance =
+    bounds.width / 2 / Math.tan((fieldOfView * aspectRatio) / 2);
+  const distance = cameraDistanceFor(bounds, aspectRatio);
+
+  assert.ok(distance > libraryDistance * 1.9, "the library framed twice too close");
+  // The view spans 2 * distance vertically and 2 * distance * aspect across, so
+  // both edges of the bounds have to land inside it.
+  assert.ok(2 * distance * aspectRatio >= bounds.width);
+  assert.ok(2 * distance >= bounds.height);
+
+  // Taller than wide: the vertical fit decides, and padding widens both.
+  const tall = { x: 0, y: 0, width: 0.4, height: 1.2 };
+  assert.equal(cameraDistanceFor(tall, aspectRatio), 0.6);
+  assert.equal(cameraDistanceFor(tall, aspectRatio, 0.25), 0.75);
+});
+
+
 test("shared renderer owns overview, highlight, and zoom", async () => {
   const calls = [];
   const scatterplot = {
@@ -109,7 +152,10 @@ test("shared renderer owns overview, highlight, and zoom", async () => {
     draw: async (columns, options) => calls.push(["draw", columns, options]),
     select: (indices, options) => calls.push(["select", indices, options]),
     deselect: (options) => calls.push(["deselect", options]),
-    zoomToPoints: async (indices, options) => calls.push(["zoom", indices, options]),
+    get: (property) => (property === "cameraDistance" ? 0.7 : undefined),
+    zoomToLocation: async (target, distance, options) => (
+      calls.push(["zoom", target, distance, options])
+    ),
   };
   const data = [
     { x: 0, y: 0, group: 0 },
@@ -153,7 +199,8 @@ test("shared renderer owns overview, highlight, and zoom", async () => {
     }],
     ["draw", { x: [-0.95, 0.95], y: [-0.475, 0.475], z: [0, 1] }, { preventFilterReset: true }],
     ["select", [1], { preventEvent: true }],
-    ["zoom", [1], { transition: true }],
+    // One point has no extent, so it is centred at the current camera distance.
+    ["zoom", [0.95, 0.475], 0.7, { transition: true }],
   ]);
 });
 

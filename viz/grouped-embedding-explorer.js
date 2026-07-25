@@ -29,22 +29,18 @@ export function groupAssignments(pointCount, groups) {
 }
 
 
-// `hooks` lets a caller react to the same hover events without subscribing a
-// second handler to them.
-export function bindEmbeddingTooltip(frame, canvas, scatterplot, labelAt, hooks = {}) {
+export function bindEmbeddingTooltip(frame, canvas, scatterplot, labelAt) {
   const tooltip = document.createElement("div");
   tooltip.className = "embedding-tooltip";
   frame.appendChild(tooltip);
 
   scatterplot.subscribe("pointover", (index) => {
-    hooks.onPointOver?.(index);
     const label = labelAt(index);
     if (!label) return;
     tooltip.textContent = label;
     tooltip.classList.add("is-visible");
   });
   scatterplot.subscribe("pointout", () => {
-    hooks.onPointOut?.();
     tooltip.classList.remove("is-visible");
   });
   canvas.addEventListener("mousemove", (event) => {

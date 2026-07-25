@@ -178,30 +178,7 @@ test("a category without a block shows only the chapter breadcrumb", () => {
 });
 
 
-test("an unpinned panel closes after the hover grace period", async () => {
-  const documentLike = fakeDocument();
-  const panel = createIcdHierarchyPanel({
-    document: documentLike,
-    index: buildIcdIndex(reference),
-    hideDelay: 10,
-    ...selectionRecorder(),
-  });
-  panel.showFor("A692", "I  Infectious");
-
-  panel.scheduleHide();
-  assert.equal(panel.node.classList.contains("is-visible"), true, "the grace period keeps it open");
-
-  panel.cancelHide();
-  await new Promise((resolve) => setTimeout(resolve, 25));
-  assert.equal(panel.node.classList.contains("is-visible"), true, "moving into the panel cancels it");
-
-  panel.scheduleHide();
-  await new Promise((resolve) => setTimeout(resolve, 25));
-  assert.equal(panel.node.classList.contains("is-visible"), false);
-});
-
-
-test("pinning survives a hide request until it is closed", () => {
+test("the panel stays open until it is closed", () => {
   const documentLike = fakeDocument();
   const panel = createIcdHierarchyPanel({
     document: documentLike,
@@ -209,20 +186,21 @@ test("pinning survives a hide request until it is closed", () => {
     ...selectionRecorder(),
   });
 
-  assert.equal(panel.pin(), false, "there is nothing to pin before a code is shown");
   panel.showFor("A692", "I  Infectious");
-  assert.equal(panel.node.children[2].textContent, "Click the point to browse these codes");
-
-  assert.equal(panel.pin(), true);
-  assert.equal(panel.isPinned(), true);
+  assert.equal(panel.node.classList.contains("is-visible"), true);
+  assert.equal(panel.node.getAttribute("aria-hidden"), "false");
+  assert.equal(panel.currentCode(), "A692");
   assert.equal(panel.node.children[2].textContent, "Select a code to move the plot to it");
 
-  panel.scheduleHide();
+  // Showing another code replaces the rows without closing the panel.
+  panel.showFor("E11", "IV Endocrine/Metabolic");
+  assert.equal(panel.currentCode(), "E11");
   assert.equal(panel.node.classList.contains("is-visible"), true);
 
-  panel.hide();
-  assert.equal(panel.isPinned(), false);
+  // The close button is the visitor's way out; the plot calls `hide` for Escape
+  // and for a chapter chosen from the legend.
+  panel.node.children[0].children[2].dispatchEvent(new Event("click"));
   assert.equal(panel.currentCode(), null);
   assert.equal(panel.node.classList.contains("is-visible"), false);
-  assert.equal(panel.node.children[2].textContent, "Click the point to browse these codes");
+  assert.equal(panel.node.getAttribute("aria-hidden"), "true");
 });

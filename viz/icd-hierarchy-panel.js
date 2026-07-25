@@ -1,19 +1,17 @@
 // Hierarchy panel for the ICD-10 code embedding scatter plot.
 //
-// Hovering a point opens a panel listing the whole ICD category the point
+// Clicking a point opens a panel listing the whole ICD category the point
 // belongs to (A69 -> A69.1, A69.2, ...), the way a tabular ICD reference does.
 // Every row is a navigation target: selecting one moves the plot to that code.
 //
-// While hovering, the panel is a preview and ignores the pointer: the route
-// from a point to the panel crosses other points, and letting those rewrite the
-// panel mid-journey would move the row out from under the cursor. Clicking a
-// point pins the panel, which makes the rows clickable and stops hover from
-// changing them.
+// The panel is only ever a workspace, never a hover preview. Hovering points is
+// served by the tooltip alone: the pointer's route from a point to the panel
+// crosses other points, and letting those rewrite the panel mid-journey would
+// pull the row out from under the cursor.
 
 
 const CATEGORY_LENGTH = 3;
-const PREVIEW_HINT = "Click the point to browse these codes";
-const PINNED_HINT = "Select a code to move the plot to it";
+const HINT = "Select a code to move the plot to it";
 
 
 export function buildIcdIndex(rows) {
@@ -80,7 +78,6 @@ function element(documentLike, tag, className, text) {
 export function createIcdHierarchyPanel(config) {
   const documentLike = config.document || document;
   const index = config.index;
-  const hideDelay = config.hideDelay ?? 260;
 
   const panel = element(documentLike, "aside", "icd-hierarchy-panel");
   panel.setAttribute("aria-label", "ICD-10 code hierarchy");
@@ -95,32 +92,15 @@ export function createIcdHierarchyPanel(config) {
   head.append(breadcrumb, title, closeButton);
 
   const tree = element(documentLike, "ul", "icd-hierarchy-tree");
-  const hint = element(documentLike, "p", "icd-hierarchy-hint", PREVIEW_HINT);
+  const hint = element(documentLike, "p", "icd-hierarchy-hint", HINT);
   panel.append(head, tree, hint);
 
-  let hideTimer = null;
-  let pinned = false;
   let currentCode = null;
 
-  function clearHideTimer() {
-    if (hideTimer === null) return;
-    clearTimeout(hideTimer);
-    hideTimer = null;
-  }
-
   function hide() {
-    clearHideTimer();
-    pinned = false;
     currentCode = null;
-    hint.textContent = PREVIEW_HINT;
-    panel.classList.remove("is-visible", "is-pinned");
+    panel.classList.remove("is-visible");
     panel.setAttribute("aria-hidden", "true");
-  }
-
-  function scheduleHide() {
-    if (pinned) return;
-    clearHideTimer();
-    hideTimer = setTimeout(hide, hideDelay);
   }
 
   function renderBreadcrumb(node, chapter) {
@@ -196,7 +176,6 @@ export function createIcdHierarchyPanel(config) {
     const root = index.get(rootCode);
     if (!root) return false;
 
-    clearHideTimer();
     currentCode = code;
     title.textContent = `ICD-10 codes ${rootCode}-*`;
     renderBreadcrumb(root, chapter);
@@ -208,27 +187,12 @@ export function createIcdHierarchyPanel(config) {
     return true;
   }
 
-  function pin() {
-    if (!currentCode) return false;
-    clearHideTimer();
-    pinned = true;
-    hint.textContent = PINNED_HINT;
-    panel.classList.add("is-pinned");
-    return true;
-  }
-
-  panel.addEventListener("mouseenter", clearHideTimer);
-  panel.addEventListener("mouseleave", scheduleHide);
   closeButton.addEventListener("click", hide);
 
   return {
     node: panel,
     showFor,
-    pin,
     hide,
-    scheduleHide,
-    cancelHide: clearHideTimer,
-    isPinned: () => pinned,
     currentCode: () => currentCode,
   };
 }

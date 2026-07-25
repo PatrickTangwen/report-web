@@ -10,9 +10,10 @@ export class FakeElement extends EventTarget {
       removeProperty: (property) => delete this.style[property],
     };
     const classes = new Set();
+    // `add` and `remove` take any number of names, the way the DOM does.
     this.classList = {
-      add: (name) => classes.add(name),
-      remove: (name) => classes.delete(name),
+      add: (...names) => names.forEach((name) => classes.add(name)),
+      remove: (...names) => names.forEach((name) => classes.delete(name)),
       contains: (name) => classes.has(name),
       toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name),
     };

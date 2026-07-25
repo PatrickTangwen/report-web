@@ -71,6 +71,45 @@ export function sizeEmbeddingCanvas(shell, canvas, maxWidth = 1000, documentLike
 }
 
 
+export function pointBounds(points, indices) {
+  if (!indices.length) {
+    throw new Error("Cannot frame an empty set of embedding points");
+  }
+  let left = Infinity;
+  let right = -Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  indices.forEach((index) => {
+    const point = points[index];
+    left = Math.min(left, point.x);
+    right = Math.max(right, point.x);
+    top = Math.min(top, point.y);
+    bottom = Math.max(bottom, point.y);
+  });
+  return {
+    x: (left + right) / 2,
+    y: (top + bottom) / 2,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+
+// The camera shows `2 * distance` vertically and `2 * distance * aspectRatio`
+// horizontally, so this is the distance at which the bounds just fit.
+//
+// regl-scatterplot's own `zoomToPoints` derives the distance for wide bounds
+// from `width / 2 / tan(fov * aspectRatio / 2)`, which at these canvas
+// proportions lands about half the distance the view needs. Bounds wider than
+// they are tall — an ICD chapter scattered across the map, for instance — are
+// then framed twice too close, centred on the empty space between their own
+// clusters. Computing the distance here is what keeps the framing honest.
+export function cameraDistanceFor(bounds, aspectRatio, padding = 0) {
+  const fit = Math.max(bounds.height / 2, bounds.width / (2 * aspectRatio));
+  return fit * (1 + padding);
+}
+
+
 export function createRendererQueue() {
   let tail = Promise.resolve();
   return {
@@ -143,6 +182,22 @@ export function createEmbeddingRenderer(config) {
     }
   }
 
+  const aspectRatio = config.width / config.height;
+
+  // `zoomOutOnly` keeps the scale the visitor is looking at unless the bounds
+  // need more room, which is how a chosen point is centred without the view
+  // jumping. A single point has no extent of its own, so the current scale is
+  // kept for it either way.
+  function zoomToPoints(indices, options = {}) {
+    const bounds = pointBounds(points, indices);
+    const currentDistance = scatterplot.get("cameraDistance");
+    const required = cameraDistanceFor(bounds, aspectRatio, options.padding || 0);
+    const distance = options.zoomOutOnly
+      ? Math.max(required, currentDistance)
+      : required || currentDistance;
+    return scatterplot.zoomToLocation([bounds.x, bounds.y], distance, options);
+  }
+
   return {
     allIndices,
     points,
@@ -151,6 +206,6 @@ export function createEmbeddingRenderer(config) {
     drawOverview,
     drawClasses,
     drawHighlighted,
-    zoomToPoints: (indices, options) => scatterplot.zoomToPoints(indices, options),
+    zoomToPoints,
   };
 }

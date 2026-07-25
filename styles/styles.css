@@ -524,17 +524,10 @@ figcaption {
   background: #fff;
   box-shadow: 0 8px 24px rgba(26, 39, 52, 0.18);
   font-size: 0.78rem;
-  /* A hover preview must not swallow the pointer: the visitor is still working
-     the canvas underneath it. Pinning the panel turns it into a control. */
-  pointer-events: none;
 }
 
 .icd-hierarchy-panel.is-visible {
   display: flex;
-}
-
-.icd-hierarchy-panel.is-pinned {
-  pointer-events: auto;
 }
 
 .icd-hierarchy-panel.is-left {
@@ -587,7 +580,7 @@ figcaption {
   position: absolute;
   top: 0.35rem;
   right: 0.4rem;
-  display: none;
+  display: block;
   width: 1.3rem;
   height: 1.3rem;
   padding: 0;
@@ -598,10 +591,6 @@ figcaption {
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
-}
-
-.icd-hierarchy-panel.is-pinned .icd-hierarchy-close {
-  display: block;
 }
 
 .icd-hierarchy-close:hover,

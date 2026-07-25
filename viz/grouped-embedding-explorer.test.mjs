@@ -57,7 +57,8 @@ test("point hover shows a tooltip without activating its group label", async () 
         async draw() {},
         deselect() {},
         select() {},
-        async zoomToPoints() {},
+        get: () => 1,
+        async zoomToLocation() {},
       }),
       canvasLabel: () => "One patient embedding point",
       highlightOptions: () => ({ pointSize: [3, 3] }),
@@ -101,7 +102,8 @@ test("fibrotic embedding does not register point-hover tooltips", async () => {
         async draw() {},
         deselect() {},
         select() {},
-        async zoomToPoints() {},
+        get: () => 1,
+        async zoomToLocation() {},
       }),
     });
 
@@ -135,7 +137,8 @@ test("sex and age point hover shows only the group label without activating it",
         async draw() {},
         deselect() {},
         select() {},
-        async zoomToPoints() {},
+        get: () => 1,
+        async zoomToLocation() {},
       }),
     });
 
@@ -188,6 +191,7 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
   const sets = [];
   const draws = [];
   const zooms = [];
+  let cameraDistance = 2;
 
   try {
     const shell = await createIcdKeywordScatter({
@@ -208,7 +212,11 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
         draw: async (columns) => draws.push(columns),
         deselect() {},
         select() {},
-        zoomToPoints: async (indices, options) => zooms.push({ indices, options }),
+        get: (property) => (property === "cameraDistance" ? cameraDistance : undefined),
+        zoomToLocation: async (target, distance, options) => {
+          cameraDistance = distance;
+          zooms.push({ target, distance, options });
+        },
       }),
     });
     const themeObserver = FakeMutationObserver.instances.at(-1);
@@ -218,16 +226,19 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
     await flush();
 
     // Every other code stays drawn, faintly, so zooming out still places the
-    // chapter inside the full map.
+    // chapter inside the full map. The picked code carries the plain point size:
+    // colour alone marks it.
     assert.deepEqual(draws.at(-1).z, [0, 1, 1]);
     assert.deepEqual(sets.at(-1).pointColor, ["#aeb7c2", "#ff7f0e", "#1b2430"]);
     assert.deepEqual(sets.at(-1).opacity, [0.1, 1, 1]);
-    assert.deepEqual(sets.at(-1).pointSize, [2.5, 3, 5]);
-    assert.deepEqual(zooms.at(-1), {
-      indices: [1, 2],
-      options: { padding: 0.25, transition: true, transitionDuration: 520 },
-    });
+    assert.deepEqual(sets.at(-1).pointSize, [2.5, 3, 3]);
+    // The two Endocrine points span 0.95 in both directions, so the chapter is
+    // framed at half that plus the 0.25 padding, centred between them.
+    assert.deepEqual(zooms.at(-1).target, [0.475, 0]);
+    assert.equal(Number(zooms.at(-1).distance.toFixed(6)), 0.59375);
+    assert.deepEqual(zooms.at(-1).options.transitionDuration, 520);
 
+    const chapterDistance = zooms.at(-1).distance;
     const zoomCount = zooms.length;
     subscriptions.get("select")({ points: [1] });
     await flush();
@@ -238,8 +249,8 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
     assert.equal(zooms.length, zoomCount);
 
     // Picking a row in the pinned hierarchy panel marks that code the same way,
-    // keeps the rest of the chapter coloured, and reframes the chapter so the
-    // code can be placed inside it.
+    // keeps the rest of the chapter coloured, and centres on the code without
+    // changing the scale the visitor is reading.
     const panel = shell.children[1].children[2];
     const childRow = panel.children[1].children[1].children[0];
     assert.equal(childRow.children[0].textContent, "E11.0");
@@ -247,7 +258,8 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
     await flush();
 
     assert.deepEqual(draws.at(-1).z, [0, 1, 2]);
-    assert.deepEqual(zooms.at(-1).indices, [1, 2]);
+    assert.deepEqual(zooms.at(-1).target, [0.95, -0.475]);
+    assert.equal(zooms.at(-1).distance, chapterDistance);
     assert.match(
       shell.children[0].children[1].children[2].textContent,
       /^E11\.0 With coma · 1 ICD graph point marked inside Endocrine \(2\)\./,
@@ -261,13 +273,17 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
     assert.deepEqual(draws.at(-1).z, [0, 1, 2]);
     documentLike.body.classList.remove("quarto-dark");
 
+    // Choosing another chapter from the legend closes the panel and drops the
+    // pick, so the plot goes back to showing the chosen group.
+    assert.equal(panel.classList.contains("is-visible"), true);
     const genitourinaryLabel = shell.children[2].children[0];
     genitourinaryLabel.dispatchEvent(new Event("click"));
     await flush();
 
+    assert.equal(panel.classList.contains("is-visible"), false);
     assert.deepEqual(draws.at(-1).z, [1, 0, 0]);
     assert.deepEqual(sets.at(-1).pointColor, ["#aeb7c2", "#1f77b4", "#1b2430"]);
-    assert.deepEqual(zooms.at(-1).indices, [0]);
+    assert.deepEqual(zooms.at(-1).target, [-0.95, -0.475]);
   } finally {
     globalThis.document = originalDocument;
     globalThis.window = originalWindow;
@@ -308,7 +324,8 @@ test("ICD embedding shares the fibrotic viewport and interactions while preservi
       draw: async (columns) => draws.push(columns),
       deselect() {},
       select() {},
-      async zoomToPoints() {},
+      get: () => 1,
+      async zoomToLocation() {},
     };
   };
 
@@ -344,6 +361,7 @@ test("ICD embedding shares the fibrotic viewport and interactions while preservi
     assert.equal(shell.children.length, fibroticShell.children.length);
     assert.deepEqual(icdDraws.at(-1).z, [1, 0]);
 
+    // Hovering a point is the tooltip's job alone: the panel stays shut.
     icdSubscriptions.get("pointover")(0);
     const icdTooltip = shell.children[1].children[1];
     const icdPanel = shell.children[1].children[2];
@@ -352,18 +370,19 @@ test("ICD embedding shares the fibrotic viewport and interactions while preservi
     assert.equal(genitourinaryLabel.children[1].textContent, "Genitourinary (1)");
     assert.equal(icdTooltip.textContent, "N18 · Chronic kidney disease\nGenitourinary (1)");
     assert.equal(icdTooltip.classList.contains("is-visible"), true);
-    assert.equal(icdPanel.classList.contains("is-visible"), true);
-    assert.equal(icdPanel.children[0].children[1].textContent, "ICD-10 codes N18-*");
+    assert.equal(icdPanel.classList.contains("is-visible"), false);
     assert.equal(genitourinaryLabel.classList.contains("is-active"), false);
     assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "false");
 
+    // Clicking one opens it.
     icdSubscriptions.get("select")({ points: [0] });
     assert.equal(genitourinaryLabel.classList.contains("is-active"), true);
     assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "true");
-    assert.equal(icdPanel.classList.contains("is-pinned"), true);
+    assert.equal(icdPanel.classList.contains("is-visible"), true);
+    assert.equal(icdPanel.children[0].children[1].textContent, "ICD-10 codes N18-*");
 
-    // Hovering another point still refreshes the tooltip, but a pinned panel
-    // keeps the rows the visitor is about to click.
+    // Hovering another point still refreshes the tooltip and leaves the open
+    // panel's rows where the visitor is about to click them.
     icdSubscriptions.get("pointover")(1);
     assert.equal(icdTooltip.textContent, "E11 · Type 2 diabetes mellitus\nEndocrine (1)");
     assert.equal(icdPanel.children[0].children[1].textContent, "ICD-10 codes N18-*");
@@ -372,6 +391,7 @@ test("ICD embedding shares the fibrotic viewport and interactions while preservi
     resetButton.dispatchEvent(new Event("click"));
     assert.equal(genitourinaryLabel.classList.contains("is-active"), false);
     assert.equal(genitourinaryLabel.getAttribute("aria-pressed"), "false");
+    assert.equal(icdPanel.classList.contains("is-visible"), false);
   } finally {
     globalThis.document = originalDocument;
     globalThis.window = originalWindow;
