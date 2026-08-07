@@ -125,8 +125,16 @@ The versioned, researcher-reviewed set of supported disease keywords, synonyms, 
 _Avoid_: Complete ICD ontology, LLM-generated codebook
 
 **Visualization Request**:
-A handoff from the Guided Research Assistant to a full-page visualization. Selecting a Visualization Destination triggers it directly; a confirmed Demo Profile triggers it automatically only when comparison returns a Matched Reference Neighborhood. A request is never triggered by an unconfirmed Profile Draft or No Stable Neighborhood.
+A handoff from the Guided Research Assistant to a full-page visualization. Selecting a Visualization Destination triggers it directly; a confirmed Demo Profile triggers it automatically only when comparison returns a Matched Reference Neighborhood; an Answer Evidence entry may offer a Chart Preset link the visitor follows explicitly. A request is never triggered by an unconfirmed Profile Draft or No Stable Neighborhood, and the Assistant never navigates automatically from an answer.
 _Avoid_: Assistant result card, chatbot chart
+
+**Answer Evidence**:
+The structured, size-capped summary of the tool results a Paper Question answer is grounded in: tool name, resolved filters, and a bounded excerpt of the returned data (section names only for paper content). It is recorded per tool call and rendered as provenance with the answer, and it is the only source for any chart or action derived from an answer — never the answer's prose.
+_Avoid_: citation list, model attribution, parsed answer text
+
+**Chart Preset**:
+A shareable URL fragment state, such as a disease and metric selection, that a visualization page reads at load to preset its own controls. It configures view state only and carries no data; matched-comparison handoffs keep their dedicated request mechanism.
+_Avoid_: saved view, data payload, cross-tab session
 
 **Visualization Destination**:
 One of the full-page Performance, Ablation, or Use Case research experiences that a visitor can open from the Guided Research Assistant.
