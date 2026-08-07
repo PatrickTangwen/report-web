@@ -46,9 +46,9 @@ A layered-contract architecture that preserves ADR-0010 exactly:
 | `query_metrics` | Evaluation metrics lookup | `data_query.py` |
 | `query_ablation` | Ablation results by disease/metric | `data_query.py` |
 | `query_enrichment` | Pathway enrichment lookup | `data_query.py`, `followup.py` |
-| `summarize_fibrotic_cohort` | Cohort-level aggregates of the fibrotic release (counts, median age, sex distribution per category) — never raw point dumps | `fibrotic_release.py` |
+| `summarize_fibrotic_cohort` | Cohort-level aggregates of the fibrotic reference cohort (counts, embedding group breakdown, median age, sex distribution per Comparison Target) — never raw rows | `profile_matching.py` (release loader) + `fibrotic_release.py` |
 
-Each tool is a pure function over existing data modules with a Pydantic input/output schema and a carefully written description (the description is the prompt — a first-class artifact).
+Each tool is a pure function over existing data modules with a Pydantic input schema and a carefully written description (the description is the prompt — a first-class artifact); tool outputs are JSON payloads exercised by unit tests. Note on the fibrotic tool's source: median age and sex exist only in the private matching release, so the tool reads it through the same validated loader the wizard uses and exposes exclusively suppression-minimum-respecting aggregates — the same privacy class as the Matched Reference Summary. The profile/matching *flow* (endpoints, wizard, matching) remains excluded.
 
 ### MCP roster (7 tools = agent roster + 2)
 

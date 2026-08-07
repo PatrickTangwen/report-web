@@ -1,0 +1,7 @@
+---
+status: accepted
+---
+
+# Orchestrate tools with an in-task agent, not intent routing
+
+Within the Understand the Research task boundary, Paper Question answers are produced by a bounded function-calling agent: a framework-free loop (`chatbot-backend/agent.py`, DeepSeek's OpenAI-compatible function calling, `max_iterations = 6`, final iteration forced to run without tools so the loop always ends in a text answer) over typed research tools with Pydantic schemas (`agent_tools.py`). This is not a revival of intent classification: selection *between* Research Tasks remains explicit UI routing per ADR-0010, and the model only chooses which Study Evidence tools to consult *inside* an already-selected task. The tool roster is limited to Study Evidence — the published paper and published study result data, with fibrotic data exposed as cohort-level aggregates under the release's suppression minimum — and deliberately excludes the profile/matching flow (ADR-0008 keeps it a structured wizard) and ICD keyword lookup (owned by visualization pages). Malformed or unknown tool calls are returned to the model as explicit error payloads in a normal tool turn, not silently retried. We chose to own the ~100-line loop instead of adopting an agent framework because the loop is the product's core mechanism and must stay fully inspectable; the provider remains a config-level swap because the loop speaks the OpenAI-compatible protocol, a choice validated by a 10/10 function-calling smoke test recorded in issue #46.
