@@ -138,6 +138,51 @@ test("preset links derive only from successful evidence with resolved scope", ()
 });
 
 
+test("related questions derive from evidence, dedupe, and cap at three", () => {
+  const entries = [
+    {
+      tool: "query_ablation",
+      ok: true,
+      evidence: { filters: { disease: "CKD", metric: "AUROC" }, total_rows: 5, rows: [] },
+    },
+    {
+      tool: "query_enrichment",
+      ok: true,
+      evidence: { disease: "NASH", pathways: [] },
+    },
+  ];
+  const questions = evidence.relatedQuestionsFor(entries, "irrelevant");
+  assert.equal(questions.length, 3);
+  assert.match(questions[0], /Type 2 Diabetes most on AUROC/);
+  assert.match(questions[1], /CKD most on AUPRC/);
+
+  const askedAgain = evidence.relatedQuestionsFor(
+    entries,
+    "Which ablation variant hurts Type 2 Diabetes most on AUROC?"
+  );
+  assert.equal(askedAgain.length, 3);
+  assert.doesNotMatch(askedAgain[0], /Type 2 Diabetes most on AUROC\?/);
+
+  assert.deepEqual(evidence.relatedQuestionsFor([], "q"), []);
+  assert.deepEqual(
+    evidence.relatedQuestionsFor(
+      [{ tool: "query_metrics", ok: true, evidence: { matched: false } }],
+      "q"
+    ),
+    []
+  );
+});
+
+
+test("enrichment follow-ups use the glossary display name for NASH", () => {
+  const questions = evidence.relatedQuestionsFor(
+    [{ tool: "query_enrichment", ok: true, evidence: { disease: "NASH", pathways: [] } }],
+    "q"
+  );
+  assert.match(questions[0], /MASH and CKD share/);
+});
+
+
 test("errors and unmatched results render honestly", () => {
   const error = { tool: "query_enrichment", ok: false, evidence: { error: "Invalid tool arguments: ..." } };
   assert.equal(evidence.chipFor(error).error, true);

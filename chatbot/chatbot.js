@@ -729,7 +729,12 @@
     renderAnswerCharts(paperMessagesEl, evidenceEntries);
     renderAnswerEvidence(paperMessagesEl, evidenceEntries);
     renderChartPresetLinks(paperMessagesEl, evidenceEntries);
-    renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
+    var evidenceApi = window.ALIGATEHR_ANSWER_EVIDENCE;
+    var related = evidenceApi && evidenceApi.relatedQuestionsFor
+      ? evidenceApi.relatedQuestionsFor(evidenceEntries || [], justAsked)
+      : [];
+    if (!related.length) related = pickRelatedQuestions(justAsked);
+    renderQuestionChips(paperMessagesEl, "Related Questions", related);
   }
 
   function sendNonStreaming(payload, typing, coldStartNotice, justAsked) {

@@ -196,10 +196,99 @@
     return null;
   }
 
+  // Deterministic related-question templates (issue #59): follow-ups are
+  // derived from what the evidence shows was actually consulted — reviewed
+  // phrasing, no extra LLM calls. Falls back to the example bank upstream
+  // when nothing was consulted.
+
+  var CONTRAST_DISEASES = ["Type 2 Diabetes", "CKD", "COPD"];
+  var CONTRAST_METRICS = ["AUROC", "AUPRC", "F1"];
+  var CONTRAST_ENRICHMENT = ["CKD", "NASH", "IPF"];
+  var DISPLAY_DISEASE = { NASH: "MASH" };
+
+  function displayDisease(name) {
+    return DISPLAY_DISEASE[name] || name;
+  }
+
+  function firstOther(list, current) {
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] !== current) return list[i];
+    }
+    return list[0];
+  }
+
+  function questionsForEntry(entry) {
+    var evidence = entry.evidence || {};
+    if (!entry.ok || evidence.error || evidence.matched === false) return [];
+    var filters = evidence.filters || {};
+    if (entry.tool === "query_ablation") {
+      var ablationDisease = filters.disease || "CKD";
+      var ablationMetric = filters.metric || "AUROC";
+      return [
+        "Which ablation variant hurts " +
+          displayDisease(firstOther(CONTRAST_DISEASES, ablationDisease)) +
+          " most on " + ablationMetric + "?",
+        "Which ablation variant hurts " + displayDisease(ablationDisease) +
+          " most on " + firstOther(CONTRAST_METRICS, ablationMetric) + "?",
+        "Does the ablation pattern align with the paper's claims about genetic data?",
+      ];
+    }
+    if (entry.tool === "query_metrics") {
+      var metricsMetric = filters.metric || "AUROC";
+      var metricsDisease = filters.disease;
+      return [
+        "For which disease does ALIGATEHR-Gen achieve its highest " + metricsMetric + "?",
+        "Compare ALIGATEHR-Gen and the best baseline on " +
+          displayDisease(firstOther(CONTRAST_DISEASES, metricsDisease)) +
+          " " + metricsMetric + ".",
+        metricsDisease
+          ? "Which ablation variant hurts " + displayDisease(metricsDisease) +
+            " most on " + metricsMetric + "?"
+          : "Which model is the strongest baseline overall?",
+      ];
+    }
+    if (entry.tool === "query_enrichment") {
+      var enrichmentDisease = evidence.disease || "CKD";
+      return [
+        "Which top pathways do " + displayDisease(enrichmentDisease) + " and " +
+          displayDisease(firstOther(CONTRAST_ENRICHMENT, enrichmentDisease)) +
+          " share?",
+        "How does the paper interpret the fibrotic disease case study?",
+      ];
+    }
+    if (entry.tool === "summarize_fibrotic_cohort") {
+      var targets = evidence.targets || [];
+      var target = targets.length === 1 ? targets[0].label : null;
+      return [
+        target
+          ? "How does the " + target + " cohort compare with the other comparison targets?"
+          : "Which comparison target has the largest reference cohort?",
+        "How does the fibrotic reference cohort size compare with the paper's study population?",
+      ];
+    }
+    return [];
+  }
+
+  function relatedQuestionsFor(entries, justAsked) {
+    var normalizedAsked = String(justAsked || "").trim().toLowerCase();
+    var seen = {};
+    var questions = [];
+    (entries || []).forEach(function (entry) {
+      questionsForEntry(entry).forEach(function (question) {
+        var key = question.trim().toLowerCase();
+        if (seen[key] || key === normalizedAsked) return;
+        seen[key] = true;
+        questions.push(question);
+      });
+    });
+    return questions.slice(0, 3);
+  }
+
   return {
     TOOL_TITLES: TOOL_TITLES,
     chipFor: chipFor,
     tableFor: tableFor,
     presetLinkFor: presetLinkFor,
+    relatedQuestionsFor: relatedQuestionsFor,
   };
 });

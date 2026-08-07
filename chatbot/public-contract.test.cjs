@@ -257,9 +257,11 @@ test("reviewed example questions fill the composer but never submit automaticall
 });
 
 
-test("a paper answer offers reviewed related-question suggestions from the same bank", () => {
+test("a paper answer offers evidence-derived related questions with a reviewed-bank fallback", () => {
   const finishPaperAnswer = extractFunctionSource("finishPaperAnswer");
-  assert.match(finishPaperAnswer, /renderQuestionChips\(paperMessagesEl, "Related Questions", pickRelatedQuestions\(justAsked\)\)/);
+  assert.match(finishPaperAnswer, /relatedQuestionsFor\(evidenceEntries \|\| \[\], justAsked\)/);
+  assert.match(finishPaperAnswer, /if \(!related\.length\) related = pickRelatedQuestions\(justAsked\)/);
+  assert.match(finishPaperAnswer, /renderQuestionChips\(paperMessagesEl, "Related Questions", related\)/);
   const streaming = extractFunctionSource("sendViaStream");
   const nonStreaming = extractFunctionSource("sendNonStreaming");
   assert.match(streaming, /finishPaperAnswer\(reply, justAsked, evidenceEntries\)/);
