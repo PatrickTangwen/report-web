@@ -39,6 +39,8 @@ website:
         href: viz/ablation.qmd
       - text: "Use Case"
         href: viz/use-case.qmd
+      - text: "Engineering"
+        href: engineering.qmd
     right:
       - icon: github
         href: https://github.com/yourusername/EHR_website
@@ -56,6 +58,8 @@ format:
       light: [cosmo, styles/custom.scss]
       dark: [darkly, styles/custom.scss]
     css: styles/styles.css
+    mermaid:
+      theme: neutral
     include-after-body: chatbot/chatbot-include.html
     toc: true
     toc-depth: 3

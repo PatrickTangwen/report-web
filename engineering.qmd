@@ -1,0 +1,150 @@
+---
+title: "Engineering"
+subtitle: "The full-stack and AI-agent architecture behind this research site"
+toc: true
+---
+
+This site is more than rendered pages: the Guided Research Assistant is
+backed by a function-calling agent, a quantitative evaluation harness, and
+a public MCP research-data service. This page documents that engineering
+work — the architecture, the design decisions, and the measured results.
+
+## System architecture: layered contracts
+
+The core design principle is a **layered contract** (ADR-0010, ADR-0014):
+task selection is always an explicit visitor action — no LLM ever guesses
+which task was intended — while *within* the selected task boundary, a
+bounded agent autonomously orchestrates typed tools over **Study
+Evidence**: the published ALIGATEHR-Gen paper plus the published study
+result data.
+
+```{mermaid}
+flowchart TB
+    subgraph UX["Task routing layer — explicit, no intent classification"]
+        MENU["Research Task Menu"]
+        PQ["Understand the Research"]
+        VIZ["Explore Visualizations"]
+        WIZ["Build a Demo Profile"]
+    end
+    subgraph AGENT["In-task agent — bounded tool orchestration"]
+        LOOP["Function-calling loop<br/>max 6 iterations, final turn must be text"]
+    end
+    subgraph TOOLS["Typed Study Evidence tools (Pydantic-validated)"]
+        T1["get_paper_content"]
+        T2["query_metrics"]
+        T3["query_ablation"]
+        T4["query_enrichment"]
+        T5["summarize_fibrotic_cohort<br/>aggregates only"]
+    end
+    subgraph GOV["Data governance boundary"]
+        PUB["Display-safe release<br/>(public)"]
+        PRIV["Private matching artifact<br/>(never exposed;<br/>suppression-minimum aggregates only)"]
+    end
+    MENU --> PQ & VIZ & WIZ
+    PQ --> LOOP
+    VIZ -->|direct navigation| GOV
+    WIZ -->|structured /profile endpoints| PRIV
+    LOOP --> T1 & T2 & T3 & T4 & T5
+    T5 --> PRIV
+    T2 & T3 & T4 --> PUB
+    MCP["MCP clients<br/>(Claude Desktop, Cursor, ...)"] -->|/mcp Streamable HTTP| TOOLS
+```
+
+The agent loop is deliberately **framework-free** — roughly a hundred
+lines against DeepSeek's OpenAI-compatible function-calling API. Owning
+the loop keeps the product's core mechanism fully inspectable, and the
+provider remains a config-level swap. Malformed or unknown tool calls are
+returned to the model as explicit error payloads in a normal tool turn —
+general protocol handling, never a silent retry.
+
+Guardrails are **specified outputs, not keyword filters**: the system
+prompt defines a scope contract (research explanation and cohort-level
+statistics only; personal risk questions are refused and redirected to the
+structured Demo Profile task; questions outside Study Evidence receive an
+explicit scope limitation), and that behavior is *verified by adversarial
+evaluation items* rather than input filtering.
+
+## Evaluation: three generations, one golden set
+
+Every architecture generation was measured on the same 36-item golden set
+(single-tool, multi-tool compositional, adversarial, ambiguous — including
+questions about the in-progress Bio-E2R manuscript, which is deliberately
+*outside* the answering scope until published). The single-call baseline
+was captured **before** the agent cutover replaced it, and is preserved
+under the `paper-question-single-call` git tag.
+
+| Path | Overall | Single-tool | Multi-tool | Adversarial refusal | Mean LLM calls | Mean latency |
+|---|---|---|---|---|---|---|
+| Legacy intent router | 41.7% | 38.5% | 27.3% | 85.7% | 1.75 | 3.3s |
+| Single-call full-paper injection | 27.8% | 30.8% | **0.0%** | 71.4% | 1.0 | 2.3s |
+| **In-task agent (live)** | **94.4%** | **100%** | **100%** | **100%** | 2.22 | 6.4s |
+
+The headline: multi-tool compositional questions — "which ablation hurt
+CKD most, and does that align with the paper's claims?" — went from
+**structurally unanswerable (0%)** to **100%**. Tool selection is measured
+judge-free from recorded call traces: 91.7% exact match, 100% coverage.
+
+Methodology, honestly stated: correctness is graded by an LLM judge
+(DeepSeek, temperature 0, written rubric with per-item grading notes),
+which shares a model family with the system under test. Mitigations: 22%
+of agent verdicts were manually re-checked (zero disagreements), the
+tool-trace metric requires no judge at all, and all raw and graded results
+are committed in the repository (`chatbot-backend/eval/results/`). The
+residual weakness is also reported: on deliberately ambiguous questions
+the agent clarifies only 40% of the time, preferring answers with
+explicitly labeled assumptions.
+
+The latency cost of orchestration (2.3s → 6.4s mean) is a deliberate
+trade: correctness dominates in research Q&A, and the streaming endpoint
+(below) makes the work visible while it happens.
+
+## Streaming agent UX
+
+Answers stream over Server-Sent Events (`POST /paper/question/stream`)
+with four event types — `tool_call`, `tool_result`, `token`, `done` — so
+the widget shows *what the agent is consulting* ("Consulting ablation
+results… ✓") before the answer streams in token by token. The widget
+falls back to the non-streaming endpoint only on connection failure;
+mid-stream errors are terminal and never silently refetched. The frontend
+stays vanilla JS: the SSE client is a small, unit-tested UMD module.
+
+## MCP: the tools as a public research-data service
+
+The same tool registry is exposed over the Model Context Protocol
+(ADR-0015), so any MCP client can query the study directly. The transport
+is Streamable HTTP mounted at `/mcp` on the same FastAPI service — one
+container, one port — stateless with JSON responses. The MCP roster is a
+strict superset of the agent's: seven read-only tools, adding validated
+ICD keyword lookup and the raw display-safe embedding release. Every call
+routes through the same Pydantic validation layer the agent uses, so the
+two surfaces cannot drift.
+
+Connect from Claude Desktop (Settings → Connectors → Add custom
+connector):
+
+```json
+{
+  "mcpServers": {
+    "aligatehr-research": {
+      "type": "http",
+      "url": "https://aligatehr-gen-backend.onrender.com/mcp/"
+    }
+  }
+}
+```
+
+The governance boundary is absolute: the Demo Profile flow, the private
+matching artifact, and anything patient-level are not on this surface.
+Cohort statistics appear only as aggregates that respect the release's
+cell-suppression minimum — the same privacy class as the site's Matched
+Reference Summary.
+
+## Decision records
+
+The non-obvious choices are written down as ADRs in
+[`docs/adr/`](https://github.com/PatrickTangwen/report-web/tree/main/docs/adr):
+grounding Paper Question Mode in Study Evidence (0013, partially
+superseding the paper-only contract), in-task agent orchestration instead
+of intent routing (0014), and the MCP exposure with its governance
+boundary (0015) — on top of the earlier Guided Research Assistant
+redesign records (0008–0012).
