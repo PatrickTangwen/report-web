@@ -242,6 +242,78 @@
   font-style: normal;
 }
 
+.chatbot-evidence {
+  align-self: flex-start;
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.78rem;
+}
+
+.chatbot-evidence-heading {
+  color: #5a6472;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  margin: 0.2rem 0 0.15rem;
+}
+
+.chatbot-evidence-item {
+  border: 1px solid #d7dee6;
+  border-radius: 6px;
+  margin: 0.15rem 0;
+  background: #f7f9fb;
+}
+
+.chatbot-evidence-item.is-error {
+  border-color: #d9a0a0;
+  background: #fbf3f3;
+}
+
+.chatbot-evidence-chip {
+  cursor: pointer;
+  padding: 0.3rem 0.55rem;
+  list-style-position: inside;
+}
+
+.chatbot-evidence-title {
+  font-weight: 600;
+  color: #2c5aa0;
+}
+
+.chatbot-evidence-detail {
+  color: #5a6472;
+  margin-left: 0.4rem;
+}
+
+.chatbot-evidence-body {
+  padding: 0.3rem 0.55rem 0.5rem;
+  overflow-x: auto;
+}
+
+.chatbot-evidence-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.chatbot-evidence-table th,
+.chatbot-evidence-table td {
+  border: 1px solid #d7dee6;
+  padding: 0.15rem 0.35rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.chatbot-evidence-table th {
+  background: #eef2f6;
+  color: #3b4754;
+}
+
+.chatbot-evidence-note {
+  color: #5a6472;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
 .chatbot-msg-assistant p {
   margin: 0 0 0.4rem;
 }
@@ -1119,6 +1191,36 @@
 .quarto-dark .chatbot-activity.is-done {
   color: #8fc79d;
   border-left-color: #5d8a6a;
+}
+
+.quarto-dark .chatbot-evidence-heading,
+.quarto-dark .chatbot-evidence-detail,
+.quarto-dark .chatbot-evidence-note {
+  color: #9aa7b5;
+}
+
+.quarto-dark .chatbot-evidence-item {
+  border-color: #45525f;
+  background: #262c33;
+}
+
+.quarto-dark .chatbot-evidence-item.is-error {
+  border-color: #8a5a5a;
+  background: #322627;
+}
+
+.quarto-dark .chatbot-evidence-title {
+  color: #7ea7e0;
+}
+
+.quarto-dark .chatbot-evidence-table th,
+.quarto-dark .chatbot-evidence-table td {
+  border-color: #45525f;
+}
+
+.quarto-dark .chatbot-evidence-table th {
+  background: #2e353d;
+  color: #cdd6e0;
 }
 
 .quarto-dark .chatbot-input {

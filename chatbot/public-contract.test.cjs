@@ -262,8 +262,8 @@ test("a paper answer offers reviewed related-question suggestions from the same 
   assert.match(finishPaperAnswer, /renderQuestionChips\(paperMessagesEl, "Related Questions", pickRelatedQuestions\(justAsked\)\)/);
   const streaming = extractFunctionSource("sendViaStream");
   const nonStreaming = extractFunctionSource("sendNonStreaming");
-  assert.match(streaming, /finishPaperAnswer\(reply, justAsked\)/);
-  assert.match(nonStreaming, /finishPaperAnswer\(reply, justAsked\)/);
+  assert.match(streaming, /finishPaperAnswer\(reply, justAsked, evidenceEntries\)/);
+  assert.match(nonStreaming, /finishPaperAnswer\(reply, justAsked, data\.tool_trace \|\| \[\]\)/);
   const pickRelatedQuestions = extractFunctionSource("pickRelatedQuestions");
   assert.match(pickRelatedQuestions, /PAPER_EXAMPLE_QUESTIONS/);
 });

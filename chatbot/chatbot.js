@@ -624,8 +624,64 @@
     return line;
   }
 
-  function finishPaperAnswer(reply, justAsked) {
+  function renderAnswerEvidence(container, entries) {
+    var api = window.ALIGATEHR_ANSWER_EVIDENCE;
+    if (!api || !entries || !entries.length) return;
+    var wrap = createEl("div", "chatbot-evidence");
+    var heading = createEl("div", "chatbot-evidence-heading");
+    heading.textContent = "Answer evidence";
+    wrap.appendChild(heading);
+    entries.forEach(function (entry) {
+      var chip = api.chipFor(entry);
+      var item = createEl("details", "chatbot-evidence-item" + (chip.error ? " is-error" : ""));
+      var summary = createEl("summary", "chatbot-evidence-chip");
+      var title = createEl("span", "chatbot-evidence-title");
+      title.textContent = chip.title;
+      summary.appendChild(title);
+      if (chip.detail) {
+        var detail = createEl("span", "chatbot-evidence-detail");
+        detail.textContent = chip.detail;
+        summary.appendChild(detail);
+      }
+      item.appendChild(summary);
+      var body = createEl("div", "chatbot-evidence-body");
+      var content = api.tableFor(entry);
+      if (content.kind === "table") {
+        var table = createEl("table", "chatbot-evidence-table");
+        var head = createEl("tr");
+        content.columns.forEach(function (column) {
+          var th = createEl("th");
+          th.textContent = column;
+          head.appendChild(th);
+        });
+        table.appendChild(head);
+        content.rows.forEach(function (cells) {
+          var tr = createEl("tr");
+          cells.forEach(function (cell) {
+            var td = createEl("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+          });
+          table.appendChild(tr);
+        });
+        body.appendChild(table);
+        if (content.note) {
+          var note = createEl("div", "chatbot-evidence-note");
+          note.textContent = content.note;
+          body.appendChild(note);
+        }
+      } else {
+        body.textContent = content.text;
+      }
+      item.appendChild(body);
+      wrap.appendChild(item);
+    });
+    addRawElement(container, wrap);
+  }
+
+  function finishPaperAnswer(reply, justAsked, evidenceEntries) {
     paperHistory.push({ role: "assistant", content: reply });
+    renderAnswerEvidence(paperMessagesEl, evidenceEntries);
     renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
   }
 
@@ -644,13 +700,14 @@
       typing.remove();
       var reply = data.reply || "Sorry, I could not generate a response.";
       addMessage(paperMessagesEl, "assistant", reply);
-      finishPaperAnswer(reply, justAsked);
+      finishPaperAnswer(reply, justAsked, data.tool_trace || []);
     });
   }
 
   function sendViaStream(payload, typing, coldStartNotice, justAsked) {
     var answerEl = null;
     var activityLines = [];
+    var evidenceEntries = [];
     var started = false;
 
     function ensureStarted() {
@@ -671,7 +728,8 @@
             appendActivityLine(paperMessagesEl, data.label || data.tool)
           );
         },
-        onToolResult: function () {
+        onToolResult: function (data) {
+          evidenceEntries.push(data);
           for (var i = activityLines.length - 1; i >= 0; i--) {
             if (!activityLines[i].classList.contains("is-done")) {
               activityLines[i].classList.add("is-done");
@@ -698,7 +756,7 @@
         } else {
           addMessage(paperMessagesEl, "assistant", reply);
         }
-        finishPaperAnswer(reply, justAsked);
+        finishPaperAnswer(reply, justAsked, evidenceEntries);
       },
       function (err) {
         if (!err || !err.connectionFailure) {
