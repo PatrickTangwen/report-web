@@ -32,6 +32,7 @@
   }
 
   function rowsCountText(evidence) {
+    if (evidence.total_rows == null) return "";
     if (evidence.truncated) {
       return "first " + evidence.rows.length + " of " + evidence.total_rows + " rows";
     }
@@ -52,7 +53,8 @@
       detail = evidence.section ? "section: " + evidence.section : "full paper";
     } else if (entry.tool === "query_metrics" || entry.tool === "query_ablation") {
       var scope = filtersText(evidence.filters);
-      detail = (scope ? scope + " · " : "") + rowsCountText(evidence);
+      var rowsText = rowsCountText(evidence);
+      detail = scope && rowsText ? scope + " · " + rowsText : scope || rowsText;
     } else if (entry.tool === "query_enrichment") {
       detail =
         (evidence.disease_label || evidence.disease || "") +

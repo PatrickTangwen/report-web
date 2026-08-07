@@ -183,6 +183,14 @@ test("enrichment follow-ups use the glossary display name for NASH", () => {
 });
 
 
+test("entries without an evidence payload degrade to a plain chip", () => {
+  const chip = evidence.chipFor({ tool: "query_metrics", ok: true });
+  assert.equal(chip.title, "Evaluation metrics");
+  assert.equal(chip.detail, "");
+  assert.doesNotMatch(chip.detail, /undefined/);
+});
+
+
 test("errors and unmatched results render honestly", () => {
   const error = { tool: "query_enrichment", ok: false, evidence: { error: "Invalid tool arguments: ..." } };
   assert.equal(evidence.chipFor(error).error, true);
