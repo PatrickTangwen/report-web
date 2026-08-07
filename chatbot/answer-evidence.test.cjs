@@ -100,6 +100,44 @@ test("cohort evidence respects suppression in the table", () => {
 });
 
 
+test("preset links derive only from successful evidence with resolved scope", () => {
+  const ablation = evidence.presetLinkFor({
+    tool: "query_ablation",
+    ok: true,
+    evidence: { filters: { disease: "CKD", metric: "AUROC" }, total_rows: 5, rows: [] },
+  });
+  assert.equal(ablation.path, "/viz/ablation.html");
+  assert.equal(ablation.query, "disease=CKD&metric=AUROC");
+  assert.equal(ablation.label, "Open in Ablation view (CKD · AUROC)");
+
+  const metrics = evidence.presetLinkFor({
+    tool: "query_metrics",
+    ok: true,
+    evidence: { filters: { metric: "AUPRC" }, total_rows: 70, rows: [] },
+  });
+  assert.equal(metrics.path, "/viz/overall-performance.html");
+  assert.equal(metrics.query, "metric=AUPRC");
+  assert.equal(metrics.anchor, "evaluation-metrics-comparison");
+
+  const enrichment = evidence.presetLinkFor({
+    tool: "query_enrichment",
+    ok: true,
+    evidence: { disease: "NASH", disease_label: "MASH", pathways: [] },
+  });
+  assert.equal(enrichment.query, "pathway_disease=NASH");
+  assert.match(enrichment.label, /MASH/);
+
+  assert.equal(
+    evidence.presetLinkFor({ tool: "query_metrics", ok: true, evidence: { matched: false } }),
+    null
+  );
+  assert.equal(
+    evidence.presetLinkFor({ tool: "get_paper_content", ok: true, evidence: {} }),
+    null
+  );
+});
+
+
 test("errors and unmatched results render honestly", () => {
   const error = { tool: "query_enrichment", ok: false, evidence: { error: "Invalid tool arguments: ..." } };
   assert.equal(evidence.chipFor(error).error, true);

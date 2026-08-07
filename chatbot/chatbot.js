@@ -679,9 +679,38 @@
     addRawElement(container, wrap);
   }
 
+  function renderChartPresetLinks(container, entries) {
+    var api = window.ALIGATEHR_ANSWER_EVIDENCE;
+    if (!api || !entries || !entries.length) return;
+    var seen = {};
+    var links = [];
+    entries.forEach(function (entry) {
+      var link = api.presetLinkFor(entry);
+      if (!link) return;
+      var key = link.path + "?" + link.query;
+      if (seen[key]) return;
+      seen[key] = true;
+      links.push(link);
+    });
+    if (!links.length) return;
+    var wrap = createEl("div", "chatbot-preset-links");
+    links.forEach(function (link) {
+      var url = new URL(
+        findVisualizationUrl(link.path, link.anchor),
+        window.location.href
+      );
+      url.search = link.query;
+      var chip = createEl("a", "chatbot-preset-link", { href: url.href });
+      chip.textContent = link.label;
+      wrap.appendChild(chip);
+    });
+    addRawElement(container, wrap);
+  }
+
   function finishPaperAnswer(reply, justAsked, evidenceEntries) {
     paperHistory.push({ role: "assistant", content: reply });
     renderAnswerEvidence(paperMessagesEl, evidenceEntries);
+    renderChartPresetLinks(paperMessagesEl, evidenceEntries);
     renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
   }
 

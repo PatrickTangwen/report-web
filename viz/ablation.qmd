@@ -41,13 +41,31 @@ ablationMetrics = [...new Set(ablationData.map(d => d.metric))]
 ```{ojs}
 //| echo: false
 
-viewof ablationDisease = Inputs.select(ablationDiseases, { label: "Disease", value: ablationDiseases[0] })
+// Chart Preset (ADR-0016): shareable ?disease=...&metric=... URL state,
+// validated against the data's own values; invalid values fall back.
+ablationPreset = new URLSearchParams(location.search)
 ```
 
 ```{ojs}
 //| echo: false
 
-viewof ablationMetric = Inputs.select(ablationMetrics, { label: "Metric", value: "AUROC" })
+viewof ablationDisease = Inputs.select(ablationDiseases, {
+  label: "Disease",
+  value: ablationDiseases.includes(ablationPreset.get("disease"))
+    ? ablationPreset.get("disease")
+    : ablationDiseases[0]
+})
+```
+
+```{ojs}
+//| echo: false
+
+viewof ablationMetric = Inputs.select(ablationMetrics, {
+  label: "Metric",
+  value: ablationMetrics.includes(ablationPreset.get("metric"))
+    ? ablationPreset.get("metric")
+    : "AUROC"
+})
 ```
 
 ```{ojs}

@@ -153,9 +153,53 @@
     return { kind: "text", text: JSON.stringify(evidence) };
   }
 
+  function presetLinkFor(entry) {
+    var evidence = entry.evidence || {};
+    if (!entry.ok || evidence.error || evidence.matched === false) return null;
+    if (entry.tool === "query_ablation") {
+      var ablationQuery = [];
+      var scope = [];
+      if (evidence.filters && evidence.filters.disease) {
+        ablationQuery.push("disease=" + encodeURIComponent(evidence.filters.disease));
+        scope.push(evidence.filters.disease);
+      }
+      if (evidence.filters && evidence.filters.metric) {
+        ablationQuery.push("metric=" + encodeURIComponent(evidence.filters.metric));
+        scope.push(evidence.filters.metric);
+      }
+      return {
+        path: "/viz/ablation.html",
+        query: ablationQuery.join("&"),
+        anchor: "",
+        label: "Open in Ablation view" + (scope.length ? " (" + scope.join(" · ") + ")" : ""),
+      };
+    }
+    if (entry.tool === "query_metrics") {
+      var metric = evidence.filters && evidence.filters.metric;
+      return {
+        path: "/viz/overall-performance.html",
+        query: metric ? "metric=" + encodeURIComponent(metric) : "",
+        anchor: "evaluation-metrics-comparison",
+        label: "Open in Performance view" + (metric ? " (" + metric + ")" : ""),
+      };
+    }
+    if (entry.tool === "query_enrichment") {
+      var disease = evidence.disease;
+      if (!disease) return null;
+      return {
+        path: "/viz/use-case.html",
+        query: "pathway_disease=" + encodeURIComponent(disease),
+        anchor: "pathway-enrichment-analysis",
+        label: "Open in Use Case view (" + (evidence.disease_label || disease) + ")",
+      };
+    }
+    return null;
+  }
+
   return {
     TOOL_TITLES: TOOL_TITLES,
     chipFor: chipFor,
     tableFor: tableFor,
+    presetLinkFor: presetLinkFor,
   };
 });

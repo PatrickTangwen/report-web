@@ -123,9 +123,21 @@ evalData = {
 ```{ojs}
 //| echo: false
 
+// Chart Preset (ADR-0016): shareable ?metric=... URL state.
+metricPreset = new URLSearchParams(location.search).get("metric")
+```
+
+```{ojs}
+//| echo: false
+
 viewof selectedMetric = Inputs.select(
   [...new Set(evalData.map(d => d.metric))],
-  { label: "Metric", value: "AUROC" }
+  {
+    label: "Metric",
+    value: [...new Set(evalData.map(d => d.metric))].includes(metricPreset)
+      ? metricPreset
+      : "AUROC"
+  }
 )
 ```
 

@@ -289,7 +289,17 @@ pathwayDiseaseList = [...new Set(pathwayData.map(d => d.disease))]
 ```{ojs}
 //| echo: false
 
-viewof pathwayDisease = Inputs.select(pathwayDiseaseList, { label: "Disease", value: pathwayDiseaseList[0] })
+// Chart Preset (ADR-0016): shareable ?pathway_disease=... URL state.
+pathwayPreset = new URLSearchParams(location.search).get("pathway_disease")
+```
+
+```{ojs}
+//| echo: false
+
+viewof pathwayDisease = Inputs.select(pathwayDiseaseList, {
+  label: "Disease",
+  value: pathwayDiseaseList.includes(pathwayPreset) ? pathwayPreset : pathwayDiseaseList[0]
+})
 ```
 
 ```{ojs}
