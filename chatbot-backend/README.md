@@ -23,6 +23,32 @@ Dataset. Deployment requires these environment settings:
 - Secret `HF_TOKEN`, scoped to read only that private Dataset
 - Secret `LLM_Key_Deepseek`
 
+## MCP research-data service
+
+The seven read-only research tools are also exposed over the Model
+Context Protocol (ADR-0015): the five Study Evidence tools the in-task
+agent uses, plus `search_icd_codes` (versioned ICD Keyword Vocabulary
+lookup) and `get_fibrotic_embedding` (raw display-safe release). The
+profile/matching flow and patient-level data are never exposed.
+
+Remote (Streamable HTTP, stateless), served by the same deployment:
+
+```json
+{
+  "mcpServers": {
+    "aligatehr-research": {
+      "type": "http",
+      "url": "https://aligatehr-gen-backend.onrender.com/mcp/"
+    }
+  }
+}
+```
+
+Claude Desktop: Settings → Connectors → Add custom connector → paste the
+URL above. Local development uses the same URL on
+`http://127.0.0.1:7860/mcp/`, or stdio via `python mcp_server.py` from
+this directory.
+
 ## Answer quality: three architecture generations, one golden set
 
 Paper Question Mode is served by a bounded function-calling agent

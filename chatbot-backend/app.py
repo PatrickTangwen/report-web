@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from agent import run_agent, stream_agent
+from mcp_server import research_mcp
 from paper_context import PAPER_TEXT, PAPER_QA_SYSTEM_PROMPT
 from data_query import (
     format_data_context,
@@ -215,7 +216,10 @@ async def lifespan(app):
     api_key = os.environ.get("LLM_Key_Deepseek")
     if api_key:
         client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-    yield
+    # A mounted MCP sub-app's own lifespan never runs, so its session
+    # manager must be driven by the host app's lifespan (ADR-0015).
+    async with research_mcp.session_manager.run():
+        yield
 
 
 app = FastAPI(title="ALIGATEHR-Gen Chatbot", lifespan=lifespan)
@@ -555,3 +559,8 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
 
     return ChatResponse(reply=reply, intent=intent)
+
+
+# MCP research-data service: Streamable HTTP transport mounted at /mcp.
+# Placed after all API routes; the mount only claims the /mcp subtree.
+app.mount("/mcp", research_mcp.streamable_http_app())
