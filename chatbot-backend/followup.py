@@ -3,7 +3,6 @@ import os
 import pandas as pd
 
 from data_query import _DISEASE_ALIASES, _normalize
-from fibrotic_release import load_fibrotic_release
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -17,15 +16,6 @@ DISEASE_DISPLAY_NAMES = {
     "Pulmonary Fibrosis": "Pulmonary Fibrosis",
     "SSc_Connective_Tissue": "Systemic Sclerosis (SSc)",
 }
-EMBED_DISEASE_MAP = {
-    "CKD": "CKD",
-    "NASH": "MASH",
-    "Pulmonary Fibrosis": "Pulmonary_fibrosis",
-    "SSc_Connective_Tissue": "SSc_Connective_Tissue",
-    "Crohns_Disease": "Crohns_Disease",
-    "Fibrosis_of_Skin": "Fibrosis_of_Skin",
-}
-
 _pathway_df = None
 
 
@@ -74,55 +64,4 @@ def get_pathway_enrichment(disease_query, top_n=10):
         "disease": canonical,
         "disease_label": DISEASE_DISPLAY_NAMES.get(canonical, canonical),
         "pathways": pathways,
-    }
-
-
-def _centroid(points):
-    return {
-        "x": round(sum(float(point["tsne_x"]) for point in points) / len(points), 2),
-        "y": round(sum(float(point["tsne_y"]) for point in points) / len(points), 2),
-    }
-
-
-def describe_embedding_context(disease_query):
-    embedding, _ = load_fibrotic_release()
-    points = embedding["points"]
-    display_diseases = {point["disease"] for point in points}
-    canonical = _resolve_disease(disease_query, set(EMBED_DISEASE_MAP))
-    if canonical is None:
-        return None
-
-    embed_disease = EMBED_DISEASE_MAP.get(canonical)
-    if embed_disease not in display_diseases:
-        return None
-    cohort = [point for point in points if point["disease"] == embed_disease]
-    total = len(cohort)
-
-    groups = {}
-    for group in ("pure", "intermediate", "overlap"):
-        count = sum(point["group"] == group for point in cohort)
-        groups[group] = {"count": count, "pct": round(100.0 * count / total, 1)}
-
-    centroid = _centroid(cohort)
-    neighbors = []
-    for other in sorted(display_diseases - {embed_disease}):
-        other_centroid = _centroid(
-            [point for point in points if point["disease"] == other]
-        )
-        distance = (
-            (centroid["x"] - other_centroid["x"]) ** 2
-            + (centroid["y"] - other_centroid["y"]) ** 2
-        ) ** 0.5
-        neighbors.append({"disease": other, "distance": round(distance, 2)})
-    neighbors.sort(key=lambda item: item["distance"])
-
-    return {
-        "disease": canonical,
-        "disease_label": DISEASE_DISPLAY_NAMES.get(canonical, canonical),
-        "embed_disease": embed_disease,
-        "dataset_version": embedding["dataset_version"],
-        "total_patients": total,
-        "centroid": centroid,
-        "groups": groups,
-        "nearest_clusters": neighbors[:3],
     }

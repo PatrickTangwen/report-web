@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """Golden-set evaluation runner and grader.
 
-Targets three answer paths (spec: docs/spec-agent-refactor-2026-08-07.md):
+Targets two live answer paths (spec: docs/spec-agent-refactor-2026-08-07.md):
 
-    router       POST /chat            (legacy intent router)
-    single_call  POST /paper/question  (full-paper single LLM call)
+    single_call  POST /paper/question  (full-paper single LLM call —
+                 only before the #48 cutover; preserved under the
+                 paper-question-single-call git tag)
     agent        agent.run_agent       (bounded tool-use loop)
+
+The legacy intent-router path (`POST /chat`) was deleted in #53; its
+baseline numbers live in the committed eval/results/router-*.json files
+captured before the deletion.
 
 Usage (from chatbot-backend/, with LLM_Key_Deepseek in the repo root .env):
 
-    python eval/run_eval.py run --path single_call
-    python eval/run_eval.py run --path router
     python eval/run_eval.py run --path agent
     python eval/run_eval.py grade eval/results/<run-file>.json
 
@@ -100,11 +103,7 @@ async def run_path(path_name, items):
         started = time.perf_counter()
         record = {"id": item["id"], "category": item["category"]}
         try:
-            if path_name == "router":
-                payload = await ask_http("/chat", item["question"])
-                record["reply"] = payload["reply"]
-                record["intent"] = payload.get("intent")
-            elif path_name == "single_call":
+            if path_name == "single_call":
                 payload = await ask_http("/paper/question", item["question"])
                 record["reply"] = payload["reply"]
             elif path_name == "agent":
@@ -298,7 +297,7 @@ def main():
 
     run_parser = sub.add_parser("run", help="Execute the golden set against a path")
     run_parser.add_argument(
-        "--path", required=True, choices=("router", "single_call", "agent")
+        "--path", required=True, choices=("single_call", "agent")
     )
     run_parser.add_argument("--golden", default=str(GOLDEN_PATH))
     run_parser.add_argument("--limit", type=int, default=None)

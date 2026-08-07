@@ -1,10 +1,11 @@
 # ALIGATEHR-Gen Research Website
 
-> **Current contract (2026-07-13):** the structure and feature inventory below
-> preserves the project's earlier state. Issue #29 removes the legacy clinical
-> risk flow, mock Top-10 ranking, and duplicate fibrotic CSV. Use
-> `docs/complete-experience-shipped-contract-2026-07-13.md` for the current
-> shipped boundary and deployment status.
+> **Current contract (2026-08-07):** the assistant is a task-routed Guided
+> Research Assistant backed by a bounded function-calling agent; the legacy
+> intent-router `/chat` path is deleted (#53). Governing docs:
+> `docs/spec-agent-refactor-2026-08-07.md` (agent, eval, MCP, streaming) and
+> `docs/complete-experience-shipped-contract-2026-07-13.md` (earlier shipped
+> boundary).
 
 A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attention network integrating EHR, genetic data, and medical ontology for disease risk prediction in the UK Biobank. Features interactive data visualization dashboards and an AI-powered research chatbot.
 
@@ -16,8 +17,10 @@ A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attent
 | Visualization | [Observable JS (OJS)](https://observablehq.com/@observablehq/observable-javascript) cells in `.qmd` |
 | Charts (SVG) | [Observable Plot](https://observablehq.com/plot/) |
 | Charts (WebGL) | [regl-scatterplot](https://github.com/flekschas/regl-scatterplot) for large point clouds |
-| Chatbot backend | [FastAPI](https://fastapi.tiangolo.com/) + [DeepSeek API](https://platform.deepseek.com/) (OpenAI-compatible) |
-| Chatbot frontend | Vanilla JS widget embedded via Quarto `include-after-body` |
+| Assistant backend | [FastAPI](https://fastapi.tiangolo.com/) + a bounded function-calling agent over [DeepSeek](https://platform.deepseek.com/)'s OpenAI-compatible API (framework-free loop, typed Pydantic tools) |
+| Assistant frontend | Vanilla JS Guided Research Assistant widget (task-routed shell, SSE streaming) via Quarto `include-after-body` |
+| Tool service | [MCP](https://modelcontextprotocol.io/) Streamable HTTP mounted at `/mcp` on the same FastAPI app |
+| Evaluation | Golden-set harness with LLM-as-judge + judge-free tool-trace metrics (`chatbot-backend/eval/`) |
 | Styling | SCSS (`styles/custom.scss`) + CSS (`styles/styles.css`) |
 | Themes | Light (cosmo) / Dark (darkly) with custom extensions |
 | Citations | BibTeX + Nature CSL |
@@ -43,13 +46,16 @@ report-web/
 │   ├── chatbot-include.html     # HTML injected into every page
 │   ├── chatbot.css              # Widget styles
 │   └── chatbot.js               # Client-side logic
-├── chatbot-backend/         # FastAPI chatbot service
-│   ├── app.py                   # Main API (intent classification, paper Q&A, data query, clinical)
-│   ├── paper_context.py         # Paper text for RAG context
-│   ├── data_query.py            # CSV data lookup handler
-│   ├── clinical_form.py         # Disease selection and dynamic form fields
-│   ├── risk_assessment.py       # Risk assessment with case-matching
-│   ├── followup.py              # Follow-up enrichment queries
+├── chatbot-backend/         # FastAPI assistant service
+│   ├── app.py                   # API: paper questions (agent), SSE stream, profile wizard, /mcp mount
+│   ├── agent.py                 # Bounded function-calling loop (run_agent / stream_agent)
+│   ├── agent_tools.py           # Typed Study Evidence tools (Pydantic schemas)
+│   ├── mcp_server.py            # MCP research-data service (Streamable HTTP + stdio)
+│   ├── paper_context.py         # Published paper text (full-document context grounding)
+│   ├── data_query.py            # Dataset loading and disease-name resolution
+│   ├── profile_matching.py      # Demo Profile coverage + cohort matching
+│   ├── followup.py              # Pathway enrichment lookups
+│   ├── eval/                    # Golden set, runner, committed results
 │   ├── data/                    # Backend CSV data copies
 │   ├── Dockerfile               # Container image (Python 3.11, port 7860)
 │   └── requirements.txt         # Python dependencies
@@ -73,16 +79,29 @@ report-web/
 - **Use Case** — Fibrotic patient UMAP (6K patients), risk factor bar chart, pathway enrichment dot plot
 - Dark mode support for all OJS charts (SVG + WebGL)
 
-### AI Research Chatbot
+### Guided Research Assistant
 
-A floating chatbot widget on every page, powered by an intent classifier that routes queries to specialized handlers:
+A floating assistant on every page with three explicit Research Tasks — no
+hidden intent routing (ADR-0010):
 
-- **Paper Q&A** — answers methodology/architecture questions using paper content as RAG context
-- **Data Query** — looks up metrics, ablation results, feature importance, and pathway enrichment from CSV data
-- **Clinical Risk Assessment** — guided flow: disease selection → dynamic clinical form → risk report with case-matching → follow-up enrichment queries
-- **General** — greetings and off-topic handling
+- **Understand the Research** — free-form Research Questions answered by a
+  bounded function-calling agent that orchestrates typed tools over Study
+  Evidence: the published paper (full-document context, not retrieval) plus
+  the published study data (metrics, ablation, enrichment, cohort
+  aggregates). Answers stream over SSE with visible tool-activity lines.
+- **Explore Visualizations** — direct navigation to the Performance,
+  Ablation, and Use Case pages.
+- **Build a Demo Profile** — a staged wizard with target-first selection,
+  coverage guidance, and explicit confirm-and-compare (ADR-0008).
 
-The backend runs as a FastAPI service (deployable via Docker or on HuggingFace Spaces).
+The same tool set is a public **MCP research-data service** (`/mcp`,
+Streamable HTTP) consumable from Claude Desktop and other MCP clients.
+Answer quality is measured, not asserted: see the three-generation
+comparison in `chatbot-backend/README.md` (agent: 94.4% overall, 100%
+multi-tool vs 0% for the pre-agent baseline) and the site's
+[Engineering page](https://patricktangwen.github.io/report-web/engineering.html).
+
+The backend runs as a FastAPI service (Docker; deployed on Render).
 
 ## Local Development
 
@@ -153,7 +172,7 @@ If `scripts/check_ojs_assets.py` fails, treat it as a deployment blocker. The mo
 **Feature Enhancements**
 - [ ] Cross-chart brushing/linking between UMAP and metrics
 - [ ] Mobile-responsive chart sizing
-- [ ] Replace pre-computed case matching with live ALIGATEHR-Gen model inference in chatbot
+- [ ] Replace pre-computed case matching with live ALIGATEHR-Gen model inference in the assistant
 
 ## License
 
