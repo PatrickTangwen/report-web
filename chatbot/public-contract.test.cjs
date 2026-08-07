@@ -258,8 +258,12 @@ test("reviewed example questions fill the composer but never submit automaticall
 
 
 test("a paper answer offers reviewed related-question suggestions from the same bank", () => {
-  const send = extractFunctionSource("send");
-  assert.match(send, /renderQuestionChips\(paperMessagesEl, "Related Questions", pickRelatedQuestions\(justAsked\)\)/);
+  const finishPaperAnswer = extractFunctionSource("finishPaperAnswer");
+  assert.match(finishPaperAnswer, /renderQuestionChips\(paperMessagesEl, "Related Questions", pickRelatedQuestions\(justAsked\)\)/);
+  const streaming = extractFunctionSource("sendViaStream");
+  const nonStreaming = extractFunctionSource("sendNonStreaming");
+  assert.match(streaming, /finishPaperAnswer\(reply, justAsked\)/);
+  assert.match(nonStreaming, /finishPaperAnswer\(reply, justAsked\)/);
   const pickRelatedQuestions = extractFunctionSource("pickRelatedQuestions");
   assert.match(pickRelatedQuestions, /PAPER_EXAMPLE_QUESTIONS/);
 });

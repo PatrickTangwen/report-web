@@ -337,6 +337,7 @@ def summarize_fibrotic_cohort(params):
 
 TOOLS = {
     "get_paper_content": {
+        "label": "Reading the published paper",
         "description": (
             "Fetch the published ALIGATEHR-Gen paper text: the full paper or a "
             "single named section. Use this to ground any claim about the "
@@ -346,6 +347,7 @@ TOOLS = {
         "handler": get_paper_content,
     },
     "query_metrics": {
+        "label": "Querying evaluation metrics",
         "description": (
             "Look up published evaluation metrics (AUROC, AUPRC, Precision, "
             "Recall, F1) for ALIGATEHR-Gen and baseline models, optionally "
@@ -356,6 +358,7 @@ TOOLS = {
         "handler": query_metrics,
     },
     "query_ablation": {
+        "label": "Consulting ablation results",
         "description": (
             "Look up published ablation results: how removing a model "
             "component (e.g. genetic data, ontology graph) changes a metric "
@@ -365,6 +368,7 @@ TOOLS = {
         "handler": query_ablation,
     },
     "query_enrichment": {
+        "label": "Looking up pathway enrichment",
         "description": (
             "Look up published pathway enrichment results for a disease: "
             "top-ranked enriched pathways with source (GO_BP/KEGG), gene "
@@ -374,6 +378,7 @@ TOOLS = {
         "handler": query_enrichment,
     },
     "summarize_fibrotic_cohort": {
+        "label": "Summarizing the fibrotic reference cohort",
         "description": (
             "Cohort-level aggregates of the fibrotic reference cohort per "
             "comparison target: reference counts, embedding group breakdown "

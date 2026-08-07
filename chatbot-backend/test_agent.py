@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agent import AGENT_SYSTEM_PROMPT, run_agent
+from agent import AGENT_SYSTEM_PROMPT, run_agent, stream_agent
 from agent_tools import TOOLS
 
 
@@ -137,3 +137,82 @@ def test_history_is_threaded_before_the_new_message():
     assert messages[1] == history[0]
     assert messages[2] == history[1]
     assert messages[3] == {"role": "user", "content": "Say it again?"}
+
+
+# --- stream_agent ---
+
+
+def _chunk(content=None, tool_fragments=None):
+    delta = MagicMock()
+    delta.content = content
+    delta.tool_calls = tool_fragments
+    chunk = MagicMock()
+    chunk.choices = [MagicMock(delta=delta)]
+    return chunk
+
+
+def _fragment(index, call_id=None, name=None, arguments=None):
+    fragment = MagicMock()
+    fragment.index = index
+    fragment.id = call_id
+    if name is None and arguments is None:
+        fragment.function = None
+    else:
+        fragment.function = MagicMock()
+        fragment.function.name = name
+        fragment.function.arguments = arguments
+    return fragment
+
+
+def _streaming_client(*streams):
+    client = MagicMock()
+    client.chat.completions.create.side_effect = [iter(s) for s in streams]
+    return client
+
+
+def test_stream_agent_streams_tokens_and_finishes_with_done():
+    client = _streaming_client([_chunk(content="The "), _chunk(content="answer.")])
+    events = list(stream_agent(client, "What is the average AUC?"))
+
+    assert events == [
+        {"event": "token", "data": {"text": "The "}},
+        {"event": "token", "data": {"text": "answer."}},
+        {"event": "done", "data": {"tool_trace": []}},
+    ]
+    assert client.chat.completions.create.call_args.kwargs["stream"] is True
+
+
+def test_stream_agent_emits_tool_activity_and_assembles_fragmented_arguments():
+    tool_turn = [
+        _chunk(tool_fragments=[_fragment(0, call_id="c1", name="query_metrics")]),
+        _chunk(tool_fragments=[_fragment(0, arguments='{"disease":')]),
+        _chunk(tool_fragments=[_fragment(0, arguments=' "CKD"}')]),
+    ]
+    answer_turn = [_chunk(content="CKD AUROC is 0.8755.")]
+    client = _streaming_client(tool_turn, answer_turn)
+
+    events = list(stream_agent(client, "What is the CKD AUROC?"))
+
+    kinds = [e["event"] for e in events]
+    assert kinds == ["tool_call", "tool_result", "token", "done"]
+    assert events[0]["data"] == {
+        "tool": "query_metrics",
+        "label": "Querying evaluation metrics",
+    }
+    assert events[1]["data"] == {"tool": "query_metrics", "ok": True}
+    assert events[3]["data"]["tool_trace"] == [
+        {"tool": "query_metrics", "arguments": '{"disease": "CKD"}', "ok": True}
+    ]
+    tool_turn_messages = client.chat.completions.create.call_args.kwargs["messages"]
+    assert tool_turn_messages[-1]["role"] == "tool"
+    assert json.loads(tool_turn_messages[-1]["content"])["filters"] == {
+        "disease": "CKD"
+    }
+
+
+def test_stream_agent_final_turn_violation_fails_loudly():
+    client = _streaming_client(
+        [_chunk(tool_fragments=[_fragment(0, call_id="c1", name="get_paper_content")])]
+    )
+    with pytest.raises(RuntimeError, match="final turn"):
+        list(stream_agent(client, "Explain everything.", max_iterations=1))

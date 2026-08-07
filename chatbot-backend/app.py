@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from contextlib import asynccontextmanager
@@ -6,9 +7,10 @@ from typing import Literal
 from openai import OpenAI, APIError
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from agent import run_agent
+from agent import run_agent, stream_agent
 from paper_context import PAPER_TEXT, PAPER_QA_SYSTEM_PROMPT
 from data_query import (
     format_data_context,
@@ -388,6 +390,37 @@ async def paper_question(req: PaperQuestionRequest):
 
     return PaperQuestionResponse(
         reply=outcome["reply"], tool_trace=outcome["tool_trace"]
+    )
+
+
+def _sse_line(event, data):
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+@app.post("/paper/question/stream")
+async def paper_question_stream(req: PaperQuestionRequest):
+    """SSE variant of /paper/question: tool-activity events plus streamed
+    answer tokens (event types: tool_call, tool_result, token, done, error).
+
+    The widget degrades to the non-streaming endpoint only on connection
+    failure; a mid-stream error event is terminal, never silently refetched.
+    """
+    if client is None:
+        raise HTTPException(status_code=503, detail="LLM API key not configured")
+
+    history = [{"role": m.role, "content": m.content} for m in req.history]
+
+    def events():
+        try:
+            for item in stream_agent(client, req.message, history=history):
+                yield _sse_line(item["event"], item["data"])
+        except (APIError, RuntimeError) as error:
+            yield _sse_line("error", {"detail": str(error)})
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 

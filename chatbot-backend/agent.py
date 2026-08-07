@@ -9,7 +9,7 @@ bound with a guaranteed final text answer.
 
 import json
 
-from agent_tools import execute_tool, openai_tool_specs
+from agent_tools import TOOLS, execute_tool, openai_tool_specs
 
 MAX_ITERATIONS = 6
 
@@ -106,6 +106,105 @@ def run_agent(
                 {
                     "role": "tool",
                     "tool_call_id": call.id,
+                    "content": json.dumps(result),
+                }
+            )
+
+    raise RuntimeError("Agent loop ended without a final text answer")
+
+
+def _assembled_calls(deltas):
+    ordered = [deltas[index] for index in sorted(deltas)]
+    return [call for call in ordered if call["name"]]
+
+
+def stream_agent(
+    client,
+    message,
+    history=None,
+    model="deepseek-chat",
+    max_iterations=MAX_ITERATIONS,
+    max_tokens=1024,
+):
+    """run_agent as an event generator for the SSE endpoint.
+
+    Yields {"event", "data"} dicts: "token" (answer text as it streams),
+    "tool_call" / "tool_result" (activity around each tool execution), and
+    a final "done" carrying the full tool trace. Same loop contract as
+    run_agent: hard iteration bound, tool-free final turn.
+    """
+    messages = [{"role": "system", "content": AGENT_SYSTEM_PROMPT}]
+    for turn in history or []:
+        messages.append({"role": turn["role"], "content": turn["content"]})
+    messages.append({"role": "user", "content": message})
+
+    specs = openai_tool_specs()
+    tool_trace = []
+    for iteration in range(max_iterations):
+        final_turn = iteration == max_iterations - 1
+        kwargs = {} if final_turn else {"tools": specs}
+        stream = client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=messages,
+            stream=True,
+            **kwargs,
+        )
+        content_parts = []
+        deltas = {}
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                content_parts.append(delta.content)
+                yield {"event": "token", "data": {"text": delta.content}}
+            for fragment in delta.tool_calls or []:
+                entry = deltas.setdefault(
+                    fragment.index, {"id": "", "name": "", "arguments": ""}
+                )
+                if fragment.id:
+                    entry["id"] = fragment.id
+                if fragment.function and fragment.function.name:
+                    entry["name"] = fragment.function.name
+                if fragment.function and fragment.function.arguments:
+                    entry["arguments"] += fragment.function.arguments
+
+        calls = _assembled_calls(deltas)
+        if not calls:
+            yield {"event": "done", "data": {"tool_trace": tool_trace}}
+            return
+        if final_turn:
+            raise RuntimeError("Model produced tool calls on the tool-free final turn")
+
+        messages.append(
+            {
+                "role": "assistant",
+                "content": "".join(content_parts),
+                "tool_calls": [
+                    {
+                        "id": call["id"],
+                        "type": "function",
+                        "function": {
+                            "name": call["name"],
+                            "arguments": call["arguments"],
+                        },
+                    }
+                    for call in calls
+                ],
+            }
+        )
+        for call in calls:
+            label = TOOLS[call["name"]]["label"] if call["name"] in TOOLS else call["name"]
+            yield {"event": "tool_call", "data": {"tool": call["name"], "label": label}}
+            result = execute_tool(call["name"], call["arguments"])
+            ok = "error" not in result
+            tool_trace.append(
+                {"tool": call["name"], "arguments": call["arguments"], "ok": ok}
+            )
+            yield {"event": "tool_result", "data": {"tool": call["name"], "ok": ok}}
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": call["id"],
                     "content": json.dumps(result),
                 }
             )

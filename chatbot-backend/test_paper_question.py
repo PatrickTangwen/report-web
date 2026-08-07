@@ -158,6 +158,39 @@ async def test_paper_question_surfaces_llm_errors(client):
         assert resp.status_code == 502
 
 
+def _stream_chunk(content=None, tool_fragments=None):
+    delta = MagicMock()
+    delta.content = content
+    delta.tool_calls = tool_fragments
+    chunk = MagicMock()
+    chunk.choices = [MagicMock(delta=delta)]
+    return chunk
+
+
+@pytest.mark.asyncio
+async def test_paper_question_stream_emits_sse_events(client, mock_openai):
+    mock_openai.chat.completions.create.side_effect = [
+        iter([_stream_chunk(content="The answer."), _stream_chunk()])
+    ]
+    resp = await client.post(
+        "/paper/question/stream", json={"message": "What is the average AUC?"}
+    )
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/event-stream")
+    assert 'event: token\ndata: {"text": "The answer."}' in resp.text
+    assert "event: done" in resp.text
+    assert mock_openai.chat.completions.create.call_args.kwargs["stream"] is True
+
+
+@pytest.mark.asyncio
+async def test_paper_question_stream_requires_llm_configured(client):
+    with patch("app.client", None):
+        resp = await client.post(
+            "/paper/question/stream", json={"message": "Hello"}
+        )
+        assert resp.status_code == 503
+
+
 def test_agent_prompt_carries_the_scope_contract():
     assert "Study Evidence" in AGENT_SYSTEM_PROMPT
     assert "Build a Demo Profile" in AGENT_SYSTEM_PROMPT

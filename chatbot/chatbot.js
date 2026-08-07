@@ -616,6 +616,102 @@
     send();
   }
 
+  function appendActivityLine(container, label) {
+    var line = createEl("div", "chatbot-activity");
+    line.textContent = label + "…";
+    container.appendChild(line);
+    container.scrollTop = container.scrollHeight;
+    return line;
+  }
+
+  function finishPaperAnswer(reply, justAsked) {
+    paperHistory.push({ role: "assistant", content: reply });
+    renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
+  }
+
+  function sendNonStreaming(payload, typing, coldStartNotice, justAsked) {
+    return DEMO.requestJson(
+      fetch,
+      API_URL + "/paper/question",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      30000,
+    ).then(function (data) {
+      clearTimeout(coldStartNotice);
+      typing.remove();
+      var reply = data.reply || "Sorry, I could not generate a response.";
+      addMessage(paperMessagesEl, "assistant", reply);
+      finishPaperAnswer(reply, justAsked);
+    });
+  }
+
+  function sendViaStream(payload, typing, coldStartNotice, justAsked) {
+    var answerEl = null;
+    var activityLines = [];
+    var started = false;
+
+    function ensureStarted() {
+      if (started) return;
+      started = true;
+      clearTimeout(coldStartNotice);
+      typing.remove();
+    }
+
+    return window.ALIGATEHR_PAPER_STREAM.streamPaperQuestion(
+      fetch.bind(window),
+      API_URL + "/paper/question/stream",
+      payload,
+      {
+        onToolCall: function (data) {
+          ensureStarted();
+          activityLines.push(
+            appendActivityLine(paperMessagesEl, data.label || data.tool)
+          );
+        },
+        onToolResult: function () {
+          for (var i = activityLines.length - 1; i >= 0; i--) {
+            if (!activityLines[i].classList.contains("is-done")) {
+              activityLines[i].classList.add("is-done");
+              break;
+            }
+          }
+        },
+        onToken: function (chunk, full) {
+          ensureStarted();
+          if (!answerEl) {
+            answerEl = createEl("div", "chatbot-msg chatbot-msg-assistant");
+            paperMessagesEl.appendChild(answerEl);
+          }
+          answerEl.innerHTML = renderMarkdown(full);
+          paperMessagesEl.scrollTop = paperMessagesEl.scrollHeight;
+        },
+      }
+    ).then(
+      function (result) {
+        ensureStarted();
+        var reply = result.reply || "Sorry, I could not generate a response.";
+        if (answerEl) {
+          answerEl.innerHTML = renderMarkdown(reply);
+        } else {
+          addMessage(paperMessagesEl, "assistant", reply);
+        }
+        finishPaperAnswer(reply, justAsked);
+      },
+      function (err) {
+        if (!err || !err.connectionFailure) {
+          // Terminal mid-stream failure: clear the partial rendering so the
+          // retry card reflects the actual (empty) conversation state.
+          activityLines.forEach(function (line) { line.remove(); });
+          if (answerEl) answerEl.remove();
+        }
+        throw err;
+      }
+    );
+  }
+
   function send() {
     var text = input.value.trim();
     if (!text || busy) return;
@@ -634,29 +730,31 @@
     }, 4000);
 
     var justAsked = text;
-    DEMO.requestJson(
-      fetch,
-      API_URL + "/paper/question",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: text,
-          history: paperHistory
-            .slice(0, -1)
-            .map(function (item) { return { role: item.role, content: item.content }; }),
-        }),
-      },
-      30000,
-    )
-      .then(function (data) {
-        clearTimeout(coldStartNotice);
-        typing.remove();
-        var reply = data.reply || "Sorry, I could not generate a response.";
-        addMessage(paperMessagesEl, "assistant", reply);
-        paperHistory.push({ role: "assistant", content: reply });
-        renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
-      })
+    var payload = {
+      message: text,
+      history: paperHistory
+        .slice(0, -1)
+        .map(function (item) { return { role: item.role, content: item.content }; }),
+    };
+    var canStream = !!(
+      window.ALIGATEHR_PAPER_STREAM &&
+      window.TextDecoder &&
+      window.ReadableStream
+    );
+
+    var request = canStream
+      ? sendViaStream(payload, typing, coldStartNotice, justAsked).catch(function (err) {
+          if (err && err.connectionFailure) {
+            // Connection-level fallback only: the stream never opened, so the
+            // non-streaming endpoint answers instead. Mid-stream errors are
+            // terminal and rethrow past this handler.
+            return sendNonStreaming(payload, typing, coldStartNotice, justAsked);
+          }
+          throw err;
+        })
+      : sendNonStreaming(payload, typing, coldStartNotice, justAsked);
+
+    request
       .catch(function (err) {
         clearTimeout(coldStartNotice);
         typing.remove();
