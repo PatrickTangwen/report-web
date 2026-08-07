@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from agent import run_agent
 from paper_context import PAPER_TEXT, PAPER_QA_SYSTEM_PROMPT
 from data_query import (
     format_data_context,
@@ -116,8 +117,15 @@ class PaperQuestionRequest(BaseModel):
     history: list[Message] = []
 
 
+class ToolTraceEntry(BaseModel):
+    tool: str
+    arguments: str
+    ok: bool
+
+
 class PaperQuestionResponse(BaseModel):
     reply: str
+    tool_trace: list[ToolTraceEntry] = []
 
 
 class FeatureCandidate(BaseModel):
@@ -359,30 +367,28 @@ async def synthetic_example_profile(target: str):
 
 @app.post("/paper/question", response_model=PaperQuestionResponse)
 async def paper_question(req: PaperQuestionRequest):
-    """Explicit paper-only contract for Paper Question Mode.
+    """Paper Question Mode: bounded in-task agent over Study Evidence.
 
-    Unlike /chat, this bypasses intent classification, ICD keyword
-    matching, and data-query routing entirely: every request is
-    answered from PAPER_QA_SYSTEM_PROMPT alone.
+    Task selection stays explicit (ADR-0010); within this task the agent
+    orchestrates the Study Evidence tools (ADR-0013, ADR-0014). Unlike
+    /chat, no intent classification or keyword routing runs here. The
+    response contract is unchanged; tool_trace is additive metadata the
+    widget ignores.
     """
     if client is None:
         raise HTTPException(status_code=503, detail="LLM API key not configured")
 
-    messages = [{"role": "system", "content": PAPER_QA_SYSTEM_PROMPT}]
-    messages.extend({"role": m.role, "content": m.content} for m in req.history)
-    messages.append({"role": "user", "content": req.message})
-
+    history = [{"role": m.role, "content": m.content} for m in req.history]
     try:
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            max_tokens=1024,
-            messages=messages,
-        )
-        reply = response.choices[0].message.content
+        outcome = run_agent(client, req.message, history=history)
     except APIError as e:
         raise HTTPException(status_code=502, detail=f"LLM API error: {e.message}")
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
-    return PaperQuestionResponse(reply=reply)
+    return PaperQuestionResponse(
+        reply=outcome["reply"], tool_trace=outcome["tool_trace"]
+    )
 
 
 @app.post("/chat", response_model=ChatResponse)

@@ -7,15 +7,26 @@ from httpx import ASGITransport, AsyncClient
 
 os.environ["LLM_Key_Deepseek"] = "test-key"
 
-from app import app, PAPER_QA_SYSTEM_PROMPT
+from agent import AGENT_SYSTEM_PROMPT
+from agent_tools import TOOLS
+from app import app
 
 
-def _mock_response(content):
+def _mock_response(content, tool_calls=None):
     msg = MagicMock()
     msg.message.content = content
+    msg.message.tool_calls = tool_calls
     resp = MagicMock()
     resp.choices = [msg]
     return resp
+
+
+def _tool_call(call_id, name, arguments):
+    call = MagicMock()
+    call.id = call_id
+    call.function.name = name
+    call.function.arguments = arguments
+    return call
 
 
 @pytest.fixture
@@ -35,22 +46,46 @@ async def client():
 
 
 @pytest.mark.asyncio
-async def test_paper_question_answers_from_the_paper_only_prompt(client, mock_openai):
+async def test_paper_question_answers_via_the_agent_prompt(client, mock_openai):
     resp = await client.post(
         "/paper/question", json={"message": "What is the average AUC?"}
     )
     assert resp.status_code == 200
-    assert resp.json() == {"reply": "The model achieves an average AUC of 0.76."}
+    assert resp.json() == {
+        "reply": "The model achieves an average AUC of 0.76.",
+        "tool_trace": [],
+    }
 
     mock_openai.chat.completions.create.assert_called_once()
     call = mock_openai.chat.completions.create.call_args
     assert call.kwargs["messages"][0] == {
         "role": "system",
-        "content": PAPER_QA_SYSTEM_PROMPT,
+        "content": AGENT_SYSTEM_PROMPT,
     }
     assert call.kwargs["messages"][-1] == {
         "role": "user",
         "content": "What is the average AUC?",
+    }
+    assert {spec["function"]["name"] for spec in call.kwargs["tools"]} == set(TOOLS)
+
+
+@pytest.mark.asyncio
+async def test_paper_question_tool_calls_populate_the_trace(client, mock_openai):
+    mock_openai.chat.completions.create.side_effect = [
+        _mock_response(
+            "", [_tool_call("c1", "query_metrics", '{"disease": "CKD"}')]
+        ),
+        _mock_response("CKD AUROC is 0.8755."),
+    ]
+    resp = await client.post(
+        "/paper/question", json={"message": "What is the CKD AUROC?"}
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "reply": "CKD AUROC is 0.8755.",
+        "tool_trace": [
+            {"tool": "query_metrics", "arguments": '{"disease": "CKD"}', "ok": True}
+        ],
     }
 
 
@@ -79,8 +114,9 @@ async def test_paper_question_bypasses_intent_classification_and_icd_routing(
     client, mock_openai
 ):
     """A message that /chat would route to ICD keyword matching (no LLM call at
-    all) must still reach the paper-only LLM prompt exactly once here — this is
-    the explicit bypass of generic intent classification issue #38 requires."""
+    all) must still reach the in-task agent exactly once here — the explicit
+    bypass of generic intent classification that issue #38 required, preserved
+    across the #48 agent cutover."""
     resp = await client.post(
         "/paper/question",
         json={"message": "Show me tuberculosis on the ICD graph"},
@@ -88,7 +124,7 @@ async def test_paper_question_bypasses_intent_classification_and_icd_routing(
     assert resp.status_code == 200
     mock_openai.chat.completions.create.assert_called_once()
     call = mock_openai.chat.completions.create.call_args
-    assert call.kwargs["messages"][0]["content"] == PAPER_QA_SYSTEM_PROMPT
+    assert call.kwargs["messages"][0]["content"] == AGENT_SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio
@@ -122,6 +158,9 @@ async def test_paper_question_surfaces_llm_errors(client):
         assert resp.status_code == 502
 
 
-def test_system_prompt_forbids_external_sources_and_section_links():
-    assert "external sources" in PAPER_QA_SYSTEM_PROMPT
-    assert "section" in PAPER_QA_SYSTEM_PROMPT
+def test_agent_prompt_carries_the_scope_contract():
+    assert "Study Evidence" in AGENT_SYSTEM_PROMPT
+    assert "Build a Demo Profile" in AGENT_SYSTEM_PROMPT
+    assert "Bio-E2R" in AGENT_SYSTEM_PROMPT
+    assert "clarifying question" in AGENT_SYSTEM_PROMPT
+    assert "never invent numbered citations" in AGENT_SYSTEM_PROMPT
