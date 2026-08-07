@@ -42,6 +42,7 @@ class ToolTraceEntry(BaseModel):
     tool: str
     arguments: str
     ok: bool
+    evidence: dict | None = None
 
 
 class PaperQuestionResponse(BaseModel):

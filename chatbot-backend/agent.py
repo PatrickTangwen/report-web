@@ -9,7 +9,7 @@ bound with a guaranteed final text answer.
 
 import json
 
-from agent_tools import TOOLS, execute_tool, openai_tool_specs
+from agent_tools import TOOLS, execute_tool, openai_tool_specs, summarize_evidence
 
 MAX_ITERATIONS = 6
 
@@ -100,6 +100,7 @@ def run_agent(
                     "tool": call.function.name,
                     "arguments": call.function.arguments,
                     "ok": "error" not in result,
+                    "evidence": summarize_evidence(call.function.name, result),
                 }
             )
             messages.append(
@@ -197,10 +198,19 @@ def stream_agent(
             yield {"event": "tool_call", "data": {"tool": call["name"], "label": label}}
             result = execute_tool(call["name"], call["arguments"])
             ok = "error" not in result
+            evidence = summarize_evidence(call["name"], result)
             tool_trace.append(
-                {"tool": call["name"], "arguments": call["arguments"], "ok": ok}
+                {
+                    "tool": call["name"],
+                    "arguments": call["arguments"],
+                    "ok": ok,
+                    "evidence": evidence,
+                }
             )
-            yield {"event": "tool_result", "data": {"tool": call["name"], "ok": ok}}
+            yield {
+                "event": "tool_result",
+                "data": {"tool": call["name"], "ok": ok, "evidence": evidence},
+            }
             messages.append(
                 {
                     "role": "tool",

@@ -1,0 +1,7 @@
+---
+status: accepted
+---
+
+# Derive answer actions deterministically from tool traces
+
+Everything the Guided Research Assistant renders around an answer — provenance chips, chart links, inline charts, and related-question suggestions — derives from **Answer Evidence**: a structured, size-capped summary of each tool call's actual result that rides in the tool trace and the SSE `tool_result` events. The model never emits UI actions, chart data, or links, and consumers never parse the answer's prose, because an answer's text can be wrong while its recorded evidence cannot. Caps are visible by design: tabular evidence carries at most 20 rows alongside the true `total_rows` and a `truncated` flag, and the paper tool contributes section names only — never document text — so evidence stays render-safe and cheap on the stream. Chart links are **Chart Presets**: plain URL hash fragments (e.g. `#disease=CKD&metric=AUROC`) that a visualization page validates against its own available values at load, which makes preset chart states shareable URLs for free and keeps all chart interaction owned by the visualization pages (ADR-0012); the Assistant offers such links for the visitor to follow explicitly and never navigates automatically from an answer. The sessionStorage request mechanism remains reserved for the data-coupled matched-comparison handoff. We chose deterministic derivation over LLM-generated actions because it adds zero new hallucination surface, costs no extra model calls, and is unit-testable end to end.

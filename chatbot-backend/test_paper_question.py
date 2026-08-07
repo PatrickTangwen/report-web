@@ -81,12 +81,15 @@ async def test_paper_question_tool_calls_populate_the_trace(client, mock_openai)
         "/paper/question", json={"message": "What is the CKD AUROC?"}
     )
     assert resp.status_code == 200
-    assert resp.json() == {
-        "reply": "CKD AUROC is 0.8755.",
-        "tool_trace": [
-            {"tool": "query_metrics", "arguments": '{"disease": "CKD"}', "ok": True}
-        ],
-    }
+    body = resp.json()
+    assert body["reply"] == "CKD AUROC is 0.8755."
+    assert len(body["tool_trace"]) == 1
+    entry = body["tool_trace"][0]
+    assert entry["tool"] == "query_metrics"
+    assert entry["arguments"] == '{"disease": "CKD"}'
+    assert entry["ok"] is True
+    assert entry["evidence"]["filters"] == {"disease": "CKD"}
+    assert entry["evidence"]["truncated"] is True
 
 
 @pytest.mark.asyncio

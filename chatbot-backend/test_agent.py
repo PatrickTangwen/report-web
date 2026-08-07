@@ -62,9 +62,15 @@ def test_tool_call_is_executed_and_result_fed_back():
     result = run_agent(client, "What is the CKD AUROC?")
 
     assert result["reply"] == "CKD AUROC is 0.79."
-    assert result["tool_trace"] == [
-        {"tool": "query_metrics", "arguments": '{"disease": "CKD"}', "ok": True}
-    ]
+    assert len(result["tool_trace"]) == 1
+    entry = result["tool_trace"][0]
+    assert entry["tool"] == "query_metrics"
+    assert entry["arguments"] == '{"disease": "CKD"}'
+    assert entry["ok"] is True
+    assert entry["evidence"]["filters"] == {"disease": "CKD"}
+    assert entry["evidence"]["total_rows"] == 50
+    assert len(entry["evidence"]["rows"]) == 20
+    assert entry["evidence"]["truncated"] is True
     second_call = client.chat.completions.create.call_args_list[1]
     messages = second_call.kwargs["messages"]
     assert messages[-2]["tool_calls"][0]["function"]["name"] == "query_metrics"
@@ -199,10 +205,12 @@ def test_stream_agent_emits_tool_activity_and_assembles_fragmented_arguments():
         "tool": "query_metrics",
         "label": "Querying evaluation metrics",
     }
-    assert events[1]["data"] == {"tool": "query_metrics", "ok": True}
-    assert events[3]["data"]["tool_trace"] == [
-        {"tool": "query_metrics", "arguments": '{"disease": "CKD"}', "ok": True}
-    ]
+    assert events[1]["data"]["tool"] == "query_metrics"
+    assert events[1]["data"]["ok"] is True
+    assert events[1]["data"]["evidence"]["filters"] == {"disease": "CKD"}
+    done_entry = events[3]["data"]["tool_trace"][0]
+    assert done_entry["tool"] == "query_metrics"
+    assert done_entry["evidence"] == events[1]["data"]["evidence"]
     tool_turn_messages = client.chat.completions.create.call_args.kwargs["messages"]
     assert tool_turn_messages[-1]["role"] == "tool"
     assert json.loads(tool_turn_messages[-1]["content"])["filters"] == {

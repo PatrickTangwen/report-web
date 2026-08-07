@@ -3,11 +3,13 @@ import json
 import pytest
 
 from agent_tools import (
+    EVIDENCE_ROW_CAP,
     TOOLS,
     _age_summary,
     _sex_distribution,
     execute_tool,
     openai_tool_specs,
+    summarize_evidence,
 )
 
 
@@ -186,3 +188,55 @@ def test_execute_tool_malformed_json_arguments_is_an_error_payload():
 def test_execute_tool_accepts_json_string_arguments():
     result = execute_tool("query_metrics", json.dumps({"disease": "CKD"}))
     assert result["filters"]["disease"] == "CKD"
+
+
+# --- Answer Evidence (ADR-0016) ---
+
+
+def test_tabular_evidence_caps_rows_and_states_the_total():
+    result = execute_tool("query_ablation", {})
+    evidence = summarize_evidence("query_ablation", result)
+    assert evidence["total_rows"] == 175
+    assert len(evidence["rows"]) == EVIDENCE_ROW_CAP
+    assert evidence["truncated"] is True
+
+    small = execute_tool(
+        "query_ablation", {"disease": "CKD", "metric": "AUROC"}
+    )
+    small_evidence = summarize_evidence("query_ablation", small)
+    assert small_evidence["total_rows"] == 5
+    assert len(small_evidence["rows"]) == 5
+    assert "truncated" not in small_evidence
+
+
+def test_paper_evidence_never_carries_content():
+    full = summarize_evidence(
+        "get_paper_content", execute_tool("get_paper_content", {})
+    )
+    assert "content" not in full
+    assert "Methods" in full["available_sections"]
+
+    section = summarize_evidence(
+        "get_paper_content", execute_tool("get_paper_content", {"section": "Methods"})
+    )
+    assert section == {"section": "Methods"}
+
+
+def test_unmatched_and_error_results_summarize_safely():
+    unmatched = summarize_evidence(
+        "query_metrics", execute_tool("query_metrics", {"disease": "influenza"})
+    )
+    assert unmatched["matched"] is False
+
+    error = summarize_evidence(
+        "query_enrichment", execute_tool("query_enrichment", {"disease": "CKD", "top_n": 99})
+    )
+    assert set(error) == {"error"}
+
+
+def test_cohort_and_enrichment_evidence_pass_through_bounded_payloads():
+    enrichment = execute_tool("query_enrichment", {"disease": "CKD", "top_n": 3})
+    assert summarize_evidence("query_enrichment", enrichment) == enrichment
+
+    cohort = execute_tool("summarize_fibrotic_cohort", {"disease": "CKD"})
+    assert summarize_evidence("summarize_fibrotic_cohort", cohort) == cohort

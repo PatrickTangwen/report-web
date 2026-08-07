@@ -391,6 +391,51 @@ TOOLS = {
 }
 
 
+# --- Answer Evidence (ADR-0016) ---
+
+EVIDENCE_ROW_CAP = 20
+
+
+def _tabular_evidence(result):
+    if "rows" not in result:
+        return dict(result)
+    evidence = {
+        "filters": result["filters"],
+        "total_rows": result["row_count"],
+        "rows": result["rows"][:EVIDENCE_ROW_CAP],
+    }
+    if result["row_count"] > EVIDENCE_ROW_CAP:
+        evidence["truncated"] = True
+    return evidence
+
+
+def _paper_evidence(result):
+    # Section names only — evidence must never carry paper text.
+    evidence = {}
+    if "section" in result:
+        evidence["section"] = result["section"]
+    if "available_sections" in result:
+        evidence["available_sections"] = result["available_sections"]
+    if "error" in result:
+        evidence["error"] = result["error"]
+    return evidence
+
+
+def summarize_evidence(name, result):
+    """Size-capped, render-safe summary of one tool result (Answer Evidence).
+
+    This is the only data source for provenance display and any UI derived
+    from an answer; consumers never parse the answer's prose.
+    """
+    if "error" in result and name != "get_paper_content":
+        return {"error": result["error"]}
+    if name == "get_paper_content":
+        return _paper_evidence(result)
+    if name in ("query_metrics", "query_ablation"):
+        return _tabular_evidence(result)
+    return dict(result)
+
+
 def openai_tool_specs():
     return [
         {
