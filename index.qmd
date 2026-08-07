@@ -1,5 +1,5 @@
 ---
-pagetitle: "ALIGATEHR-Gen"
+pagetitle: "Bio-ALIGATEHR"
 format:
   html:
     toc: false
@@ -8,7 +8,7 @@ format:
 
 ::: {.hero-section}
 
-[ALIGATEHR-Gen]{.hero-title}
+[Bio-ALIGATEHR]{.hero-title}
 
 [Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank]{.hero-subtitle}
 

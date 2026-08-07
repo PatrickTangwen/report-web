@@ -1,6 +1,6 @@
 ---
-title: "Bio-E2R: A Family-Aware, Ontology-Aware Longitudinal EHR Framework for Fibrotic Disease Prediction"
-description: "Bio-E2R integrates longitudinal ICD-coded EHRs, ICD ontology, temporally aligned relative histories, kinship structure, and static covariates to predict a spectrum of fibrotic diseases as a multiclass task in the UK Biobank."
+title: "Bio-ALIGATEHR: A Family-Aware, Ontology-Aware Longitudinal EHR Framework for Fibrotic Disease Prediction"
+description: "Bio-ALIGATEHR integrates longitudinal ICD-coded EHRs, ICD ontology, temporally aligned relative histories, kinship structure, and static covariates to predict a spectrum of fibrotic diseases as a multiclass task in the UK Biobank."
 # Add author entries back here when author metadata should be public again.
 author: []
 date: "2026-07-29"
@@ -8,7 +8,7 @@ categories: [longitudinal-EHR, graph-attention, ICD-ontology, family-history, ki
 ---
 
 ::: {.callout-note}
-This page reflects the current Bio-E2R manuscript draft. The framework and training
+This page reflects the current Bio-ALIGATEHR manuscript draft. The framework and training
 objectives are specified in full; experimental results are in preparation.
 :::
 
@@ -36,7 +36,7 @@ We evaluate the proposed framework in multiclass prediction across a spectrum of
 
 ### Problem Formulation
 
-We propose Bio-E2R, a family-aware, ontology-aware longitudinal EHR framework for disease prediction in UK Biobank. The model integrates a target patient's own longitudinal ICD history, genetically related relatives' EHR histories, kinship structure, pretrained ICD code embeddings, and static UKB features.
+We propose Bio-ALIGATEHR, a family-aware, ontology-aware longitudinal EHR framework for disease prediction in UK Biobank. The model integrates a target patient's own longitudinal ICD history, genetically related relatives' EHR histories, kinship structure, pretrained ICD code embeddings, and static UKB features.
 
 Let $\mathcal{D}=\{1,\dots,K\}$ denote the set of target disease classes. In the current Task 2 setting, $K=6$, corresponding to:
 
