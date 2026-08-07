@@ -314,6 +314,83 @@
   margin-top: 0.25rem;
 }
 
+.chatbot-chart {
+  align-self: flex-start;
+  width: 100%;
+  border: 1px solid #d7dee6;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0.4rem 0.55rem;
+  margin: 0.1rem 0;
+}
+
+.chatbot-chart-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #3b4754;
+  margin-bottom: 0.25rem;
+}
+
+.chatbot-chart-svg {
+  width: 100%;
+  height: auto;
+  font-size: 10px;
+}
+
+.chatbot-chart-label {
+  fill: #3b4754;
+}
+
+.chatbot-chart-value {
+  fill: #5a6472;
+}
+
+.chatbot-chart-bar {
+  fill: #9db4d0;
+}
+
+.chatbot-chart-bar-highlight {
+  fill: #2c5aa0;
+}
+
+.chatbot-chart-bar-neg {
+  fill: #c86b6b;
+}
+
+.chatbot-chart-bar-pos {
+  fill: #6fae7d;
+}
+
+.chatbot-chart-axis {
+  stroke: #8a97a5;
+  stroke-width: 1;
+}
+
+.quarto-dark .chatbot-chart {
+  border-color: #45525f;
+  background: #262c33;
+}
+
+.quarto-dark .chatbot-chart-title {
+  color: #cdd6e0;
+}
+
+.quarto-dark .chatbot-chart-label {
+  fill: #cdd6e0;
+}
+
+.quarto-dark .chatbot-chart-value {
+  fill: #9aa7b5;
+}
+
+.quarto-dark .chatbot-chart-bar {
+  fill: #55708f;
+}
+
+.quarto-dark .chatbot-chart-bar-highlight {
+  fill: #7ea7e0;
+}
+
 .chatbot-preset-links {
   align-self: flex-start;
   display: flex;

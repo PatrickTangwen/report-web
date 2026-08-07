@@ -5,6 +5,7 @@ project:
     - chatbot/chatbot.css
     - chatbot/embedding-demo.js
     - chatbot/icd-keyword.js
+    - chatbot/answer-charts.js
     - chatbot/answer-evidence.js
     - chatbot/paper-stream.js
     - chatbot/profile-session.js

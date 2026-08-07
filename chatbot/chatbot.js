@@ -707,8 +707,26 @@
     addRawElement(container, wrap);
   }
 
+  function renderAnswerCharts(container, entries) {
+    var api = window.ALIGATEHR_ANSWER_CHARTS;
+    if (!api || !entries || !entries.length) return;
+    entries.forEach(function (entry) {
+      var chart = api.chartFor(entry);
+      if (!chart) return;
+      var wrap = createEl("div", "chatbot-chart");
+      var caption = createEl("div", "chatbot-chart-title");
+      caption.textContent = chart.title;
+      wrap.appendChild(caption);
+      var holder = createEl("div", "chatbot-chart-holder");
+      holder.innerHTML = chart.svg;
+      wrap.appendChild(holder);
+      addRawElement(container, wrap);
+    });
+  }
+
   function finishPaperAnswer(reply, justAsked, evidenceEntries) {
     paperHistory.push({ role: "assistant", content: reply });
+    renderAnswerCharts(paperMessagesEl, evidenceEntries);
     renderAnswerEvidence(paperMessagesEl, evidenceEntries);
     renderChartPresetLinks(paperMessagesEl, evidenceEntries);
     renderQuestionChips(paperMessagesEl, "Related Questions", pickRelatedQuestions(justAsked));
