@@ -25,8 +25,12 @@ The entry point that organizes all supported activities into Understand the Rese
 _Avoid_: Empty chat, prompt starter
 
 **Paper Question Mode**:
-The Understand the Research task in which the visitor writes a free-form Research Question and the assistant answers only from the project paper. A question outside the paper must receive an explicit scope limitation rather than a guessed answer.
+The Understand the Research task in which the visitor writes a free-form Research Question and the assistant answers only from Study Evidence. A question outside Study Evidence must receive an explicit scope limitation rather than a guessed answer.
 _Avoid_: General chat, open-domain assistant
+
+**Study Evidence**:
+The reviewed set of published grounding sources a Paper Question answer may draw from: the published project paper and the published study result data (evaluation metrics, ablation results, pathway enrichment, and cohort-level fibrotic summaries). It excludes external knowledge, unpublished manuscripts, and patient-level records.
+_Avoid_: RAG, retrieval, open-domain knowledge
 
 **Paper Question Session**:
 The temporary, tab-scoped conversation within Paper Question Mode. It remains available while the visitor switches Research Tasks and ends when explicitly cleared or when the tab is closed.
