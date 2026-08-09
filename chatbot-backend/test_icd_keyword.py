@@ -6,16 +6,29 @@ import pytest
 from icd_keyword import load_icd_vocabulary, match_icd_keywords, validate_vocabulary
 
 
-ROOT = Path(__file__).resolve().parents[1]
+SITE_ROOT = Path(__file__).resolve().parents[1]
+EMBEDDING_PATH = SITE_ROOT / "viz" / "data" / "icd_code_embeddings.csv"
 
 
 def embedding_codes():
-    path = ROOT / "viz" / "data" / "icd_code_embeddings.csv"
-    with path.open(newline="", encoding="utf-8") as handle:
+    with EMBEDDING_PATH.open(newline="", encoding="utf-8") as handle:
         return [row["code"] for row in csv.DictReader(handle)]
 
 
-def test_reviewed_vocabulary_selectors_exist_in_the_tracked_icd_embedding():
+def representative_selector_codes(vocabulary):
+    codes = []
+    for entry in vocabulary["entries"]:
+        selector = entry["selector"]
+        if selector["type"] == "exact":
+            codes.append(selector["code"])
+        elif selector["type"] == "prefix":
+            codes.append(selector["prefix"])
+        else:
+            codes.append(selector["start"])
+    return codes
+
+
+def test_reviewed_vocabulary_declares_its_version_and_selector_types():
     vocabulary = load_icd_vocabulary()
 
     assert vocabulary["version"] == "2026-07-13.v1"
@@ -26,6 +39,15 @@ def test_reviewed_vocabulary_selectors_exist_in_the_tracked_icd_embedding():
         "prefix",
         "range",
     }
+
+
+@pytest.mark.skipif(
+    not EMBEDDING_PATH.is_file(),
+    reason="full-site ICD embedding contract is checked only in the website repository",
+)
+def test_reviewed_vocabulary_selectors_exist_in_the_tracked_icd_embedding():
+    vocabulary = load_icd_vocabulary()
+
     assert validate_vocabulary(vocabulary, embedding_codes()) == []
 
 
@@ -85,7 +107,7 @@ def test_ambiguous_and_unsupported_input_never_produce_actions():
         ],
     }
 
-    assert validate_vocabulary(ambiguous_vocabulary, embedding_codes()) == []
+    assert validate_vocabulary(ambiguous_vocabulary, ["A00", "A01"]) == []
     ambiguous = match_icd_keywords("shared term", ambiguous_vocabulary)
     unsupported = match_icd_keywords("eczema")
 
@@ -111,7 +133,10 @@ def test_unreviewed_duplicate_terms_remain_vocabulary_errors():
 
     assert any(
         "is also assigned" in error
-        for error in validate_vocabulary(vocabulary, embedding_codes())
+        for error in validate_vocabulary(
+            vocabulary,
+            representative_selector_codes(vocabulary),
+        )
     )
     with pytest.raises(ValueError, match="ambiguous without a reviewed declaration"):
         match_icd_keywords(vocabulary["entries"][0]["canonical_keyword"], vocabulary)
