@@ -2,6 +2,8 @@ import json
 
 import pytest
 
+import agent_tools
+
 from agent_tools import (
     EVIDENCE_ROW_CAP,
     TOOLS,
@@ -11,6 +13,15 @@ from agent_tools import (
     openai_tool_specs,
     summarize_evidence,
 )
+
+
+@pytest.fixture(autouse=True)
+def use_synthetic_matching_release(monkeypatch, synthetic_matching_release):
+    monkeypatch.setattr(
+        agent_tools,
+        "load_matching_release",
+        lambda: synthetic_matching_release,
+    )
 
 
 # --- get_paper_content ---

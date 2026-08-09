@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +10,7 @@ os.environ["LLM_Key_Deepseek"] = "test-key"
 
 from typing import get_args
 
+import app as app_module
 from app import app, ComparisonTarget
 from fibrotic_contract import TARGETS
 from paper_context import PAPER_TEXT
@@ -27,7 +28,12 @@ def _mock_response(content):
 
 
 @pytest_asyncio.fixture
-async def client():
+async def client(monkeypatch, synthetic_matching_release):
+    monkeypatch.setattr(
+        app_module,
+        "load_matching_release",
+        lambda: synthetic_matching_release,
+    )
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
