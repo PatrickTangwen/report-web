@@ -454,7 +454,7 @@
 
 .chatbot-task-menu-intro {
   margin: 0 0 0.2rem;
-  color: #6c757d;
+  color: #59636d;
   font-size: 0.8rem;
 }
 
@@ -678,7 +678,7 @@
 
 .chatbot-disclaimer {
   font-size: 0.72rem;
-  color: #999;
+  color: #5f6368;
   text-align: center;
   padding: 0 0.75rem 0.5rem;
   line-height: 1.35;
@@ -1353,7 +1353,7 @@
 }
 
 .quarto-dark .chatbot-disclaimer {
-  color: #777;
+  color: #adb5bd;
 }
 
 .quarto-dark .chatbot-profile-starter,

@@ -38,9 +38,9 @@ ALLOWED_MCP_HOSTS = [
 research_mcp = FastMCP(
     "aligatehr-research",
     instructions=(
-        "Read-only research-data service for the published ALIGATEHR-Gen "
-        "study: paper content, evaluation metrics, ablation results, "
-        "pathway enrichment, cohort-level fibrotic aggregates, validated "
+        "Read-only research-data service for ALIGATEHR-Gen: published paper "
+        "content, versioned demonstration metrics/ablation/pathway results "
+        "whose mock or published status is explicit, cohort-level fibrotic aggregates, validated "
         "ICD keyword lookup, and the display-safe fibrotic embedding "
         "release. Research demonstration only — no patient-level data, no "
         "medical advice."

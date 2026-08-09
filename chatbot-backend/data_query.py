@@ -1,9 +1,10 @@
-import os
 import pandas as pd
 
-_local = os.path.join(os.path.dirname(__file__), "data")
-_repo = os.path.join(os.path.dirname(__file__), "..", "viz", "data")
-DATA_DIR = _local if os.path.isdir(_local) else _repo
+from research_data_release import (
+    public_release_metadata,
+    research_data_path,
+    validate_release,
+)
 
 _datasets = {}
 
@@ -11,20 +12,27 @@ _datasets = {}
 def _load():
     if _datasets:
         return
+    validate_release()
     files = {
         "evaluation_metrics": "evaluation_metrics.csv",
         "ablation_results": "ablation_results.csv",
         "pathway_enrichment": "pathway_enrichment.csv",
     }
-    for key, fname in files.items():
-        path = os.path.join(DATA_DIR, fname)
-        if os.path.exists(path):
-            _datasets[key] = pd.read_csv(path)
+    for key in files:
+        _datasets[key] = pd.read_csv(research_data_path(key))
 
 
 def get_datasets():
     _load()
     return _datasets
+
+
+def research_release_context():
+    metadata = public_release_metadata()
+    return {
+        "dataset_version": metadata["dataset_version"],
+        "data_status": metadata["status"],
+    }
 
 
 # --- Disease matching ---
@@ -80,5 +88,3 @@ def match_disease(query):
                 best = d
                 best_score = len(token)
     return best
-
-

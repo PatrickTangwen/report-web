@@ -1,22 +1,19 @@
 (function (root, factory) {
-  var api = factory();
+  var network =
+    typeof module === "object" && module.exports
+      ? require("../frontend/dist/assistant-api.js")
+      : root && root.ALIGATEHR_ASSISTANT_API;
+  var api = factory(network);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.ALIGATEHR_EMBEDDING_DEMO = api;
-})(typeof window !== "undefined" ? window : globalThis, function () {
+})(typeof window !== "undefined" ? window : globalThis, function (NETWORK) {
   "use strict";
+
+  if (!NETWORK) throw new Error("The typed Assistant API runtime is unavailable");
 
   var REQUEST_KEY = "aligatehr-embedding-visualization-request";
   var REQUEST_EVENT = "aligatehr:embedding-visualization-request";
-  var LOCAL_API_URL = "http://127.0.0.1:7860";
-  var REMOTE_API_URL = "https://aligatehr-gen-backend.onrender.com";
-
-  function resolveApiUrl(locationLike, override) {
-    if (override) return override;
-    var hostname = locationLike && locationLike.hostname;
-    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
-      ? LOCAL_API_URL
-      : REMOTE_API_URL;
-  }
+  var resolveApiUrl = NETWORK.resolveApiUrl;
 
   function createPresetRequest(preset, createdAt) {
     if (
@@ -132,40 +129,7 @@
     };
   }
 
-  function requestJson(fetchImpl, url, options, timeoutMs) {
-    var requestOptions = Object.assign({}, options || {});
-    var externalSignal = requestOptions.signal;
-    var controller = new AbortController();
-    var timedOut = false;
-    var timeout = setTimeout(function () {
-      timedOut = true;
-      controller.abort(new Error("Backend request timed out"));
-    }, timeoutMs || 30000);
-    var cancelFromExternal = function () {
-      controller.abort(externalSignal.reason || new Error("Request cancelled"));
-    };
-    if (externalSignal) {
-      if (externalSignal.aborted) cancelFromExternal();
-      else externalSignal.addEventListener("abort", cancelFromExternal, { once: true });
-    }
-    requestOptions.signal = controller.signal;
-
-    return fetchImpl(url, requestOptions)
-      .then(function (response) {
-        if (!response.ok) throw new Error("Backend returned " + response.status);
-        return response.json();
-      })
-      .catch(function (error) {
-        if (timedOut) throw new Error("Backend request timed out. Retry when ready.");
-        throw error;
-      })
-      .finally(function () {
-        clearTimeout(timeout);
-        if (externalSignal) {
-          externalSignal.removeEventListener("abort", cancelFromExternal);
-        }
-      });
-  }
+  var requestJson = NETWORK.requestJson;
 
   function saveRequest(storage, request) {
     storage.setItem(REQUEST_KEY, JSON.stringify(request));

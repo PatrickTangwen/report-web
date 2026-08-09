@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "vitest/globals"],
+    "skipLibCheck": true
+  },
+  "include": [
+    "frontend/**/*.ts",
+    "frontend/**/*.d.ts",
+    "frontend/generated/client/**/*.ts",
+    "vite.config.mts",
+    "vitest.config.mts",
+    "playwright.config.ts",
+    "e2e/**/*.ts"
+  ]
+}

@@ -1,6 +1,5 @@
 import json
 import os
-import re
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -27,6 +26,8 @@ from profile_matching import (
 )
 from fibrotic_contract import TARGETS
 from synthetic_example_profiles import get_synthetic_example_profile
+from research_data_release import public_release_metadata
+from telemetry import RequestTelemetryMiddleware, configure_telemetry
 
 class Message(BaseModel):
     role: str
@@ -109,6 +110,20 @@ class SyntheticExampleProfileResponse(BaseModel):
     candidates: list[FeatureCandidate]
 
 
+class ResearchDatasetMetadata(BaseModel):
+    row_count: int
+    columns: list[str]
+
+
+class ResearchDataMetadataResponse(BaseModel):
+    schema_version: Literal["research-data-release-v1"]
+    dataset_version: str
+    released_on: str
+    status: Literal["mock", "published"]
+    description: str
+    datasets: dict[str, ResearchDatasetMetadata]
+
+
 client: OpenAI | None = None
 profile_rate_limiter = ProfileRateLimiter()
 
@@ -141,13 +156,14 @@ async def lifespan(app):
         yield
 
 
+configure_telemetry()
 app = FastAPI(title="ALIGATEHR-Gen Chatbot", lifespan=lifespan)
+app.add_middleware(RequestTelemetryMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://patricktangwen.github.io",
-        "https://patirckistc-report-web.hf.space",
     ],
     allow_origin_regex=r"^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$",
     allow_methods=["GET", "POST", "OPTIONS"],
@@ -155,27 +171,15 @@ app.add_middleware(
 )
 
 
-def classify_intent(user_message):
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        max_tokens=16,
-        temperature=0,
-        messages=[
-            {"role": "system", "content": INTENT_SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
-    )
-    raw = response.choices[0].message.content.strip().lower()
-    raw = re.sub(r"[^a-z_]", "", raw)
-    if raw in INTENT_LABELS:
-        return raw
-    return "paper_qa"
-
-
 @app.get("/health")
 async def health():
     get_profile_matching_release()
     return {"status": "ok"}
+
+
+@app.get("/research-data/metadata", response_model=ResearchDataMetadataResponse)
+async def research_data_metadata():
+    return public_release_metadata()
 
 
 def _release_headers(dataset_version):

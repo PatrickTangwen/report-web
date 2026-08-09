@@ -1,5 +1,13 @@
 # Visualization Data
 
+> **Current contract (2026-08-08):** the result tables are generated from the
+> backend authority declared by
+> `chatbot-backend/data/research_results_manifest.json`; their current status is
+> `mock`. `patient_embeddings.arrow` is a reproducible, uncompressed Arrow IPC
+> derivative of `patient_embeddings.csv`; its hashes and schema live in
+> `embedding_assets_manifest.json`. The inventory below predates these changes
+> and is retained as history.
+
 > **Current contract (2026-07-13):** this earlier inventory is retained for
 > audit history. The fibrotic patient copy and mock feature-importance file were
 > removed by issue #29. The backend Dataset Release is the sole fibrotic data

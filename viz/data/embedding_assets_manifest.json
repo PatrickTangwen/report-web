@@ -1,0 +1,21 @@
+{
+  "schema_version": "embedding-assets-v1",
+  "source": "patient_embeddings.csv",
+  "source_sha256": "96ed1b402f2afef6f07700afda70e5e79c0c947f7d4a3a14e1b79444722bf4de",
+  "asset": "patient_embeddings.arrow",
+  "asset_sha256": "d69854c269d98ef9b73790eabc46cb7056eec73ec5f86fc0b0a38bfe04cd791b",
+  "format": "Arrow IPC file, uncompressed",
+  "rows": 114285,
+  "columns": [
+    "id",
+    "age",
+    "sex_male",
+    "umap_1",
+    "umap_2",
+    "tsne_1",
+    "tsne_2"
+  ],
+  "source_bytes": 8751015,
+  "asset_bytes": 6748026,
+  "size_ratio": 0.7711
+}

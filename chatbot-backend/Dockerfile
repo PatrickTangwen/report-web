@@ -1,11 +1,19 @@
 FROM python:3.11-slim
 
+COPY --from=ghcr.io/astral-sh/uv:0.12.3 /uv /uvx /bin/
+
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project
 
 COPY . .
+RUN uv sync --locked --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 7860
 

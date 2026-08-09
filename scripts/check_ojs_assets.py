@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from sync_research_data import main as sync_research_data_main
+
 
 ROOT = Path(__file__).resolve().parents[1]
 VIZ_DIR = ROOT / "viz"
@@ -23,6 +25,14 @@ def git_tracked_paths():
 
 
 def main():
+    original_argv = sys.argv
+    try:
+        sys.argv = ["sync_research_data.py", "--check"]
+        if sync_research_data_main() != 0:
+            return 1
+    finally:
+        sys.argv = original_argv
+
     tracked = git_tracked_paths()
     failures = []
 

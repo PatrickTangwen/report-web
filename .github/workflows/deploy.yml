@@ -20,7 +20,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
       - uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build local frontend modules
+        run: pnpm run build:frontend
+
+      - name: Check versioned data and paper context
+        run: pnpm run check:data
 
       - name: Check OJS assets
         run: python scripts/check_ojs_assets.py

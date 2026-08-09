@@ -1,11 +1,9 @@
-import os
-
 import pandas as pd
 
-from data_query import _DISEASE_ALIASES, _normalize
+from data_query import _DISEASE_ALIASES, _normalize, research_release_context
+from research_data_release import research_data_path
 
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 DISEASE_DISPLAY_NAMES = {
     "CKD": "Chronic Kidney Disease (CKD)",
     "Cardiac_Fibrosis": "Cardiac Fibrosis",
@@ -22,8 +20,7 @@ _pathway_df = None
 def _load_pathways():
     global _pathway_df
     if _pathway_df is None:
-        path = os.path.join(DATA_DIR, "pathway_enrichment.csv")
-        _pathway_df = pd.read_csv(path)
+        _pathway_df = pd.read_csv(research_data_path("pathway_enrichment"))
     return _pathway_df
 
 
@@ -61,6 +58,7 @@ def get_pathway_enrichment(disease_query, top_n=10):
         )
 
     return {
+        **research_release_context(),
         "disease": canonical,
         "disease_label": DISEASE_DISPLAY_NAMES.get(canonical, canonical),
         "pathways": pathways,

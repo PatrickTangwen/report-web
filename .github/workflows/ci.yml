@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install locked Python environment
+        run: uv sync --project chatbot-backend --locked
+      - name: Run backend tests
+        run: uv run --project chatbot-backend pytest chatbot-backend -q
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v7
+      - uses: quarto-dev/quarto-actions/setup@v2
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project chatbot-backend --locked
+      - name: Regenerate and verify API contract
+        run: pnpm run generate:api && git diff --exit-code -- frontend/generated
+      - name: Run frontend and contract tests
+        run: pnpm test
+      - name: Check versioned assets
+        run: pnpm run check:data && pnpm run check:embeddings && python scripts/check_ojs_assets.py
+      - name: Render site
+        run: quarto render
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: quarto-dev/quarto-actions/setup@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm run test:e2e

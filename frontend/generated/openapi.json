@@ -1,0 +1,821 @@
+{
+  "components": {
+    "schemas": {
+      "FeatureCandidate": {
+        "properties": {
+          "field": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Field",
+            "type": "string"
+          },
+          "operation": {
+            "default": "set",
+            "enum": [
+              "set",
+              "correct",
+              "remove"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "raw_unit": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Unit"
+          },
+          "raw_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Value"
+          },
+          "source_text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Source Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "raw_value",
+          "source_text"
+        ],
+        "title": "FeatureCandidate",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Message": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "Message",
+        "type": "object"
+      },
+      "PaperQuestionRequest": {
+        "properties": {
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "message": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "PaperQuestionRequest",
+        "type": "object"
+      },
+      "PaperQuestionResponse": {
+        "properties": {
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "tool_trace": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ToolTraceEntry"
+            },
+            "title": "Tool Trace",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "PaperQuestionResponse",
+        "type": "object"
+      },
+      "ProfileConfirmRequest": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/ProfileDraftInput"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "ProfileConfirmRequest",
+        "type": "object"
+      },
+      "ProfileCoverageRequest": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureCandidate"
+            },
+            "maxItems": 100,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "target": {
+            "enum": [
+              "CKD",
+              "Cardiac_Fibrosis",
+              "MASH",
+              "Pulmonary_fibrosis",
+              "SSc_Connective_Tissue",
+              "Crohns_Disease",
+              "Fibrosis_of_Skin"
+            ],
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidates",
+          "target"
+        ],
+        "title": "ProfileCoverageRequest",
+        "type": "object"
+      },
+      "ProfileDraftInput": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureCandidate"
+            },
+            "maxItems": 100,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "candidates"
+        ],
+        "title": "ProfileDraftInput",
+        "type": "object"
+      },
+      "ProfileExtractRequest": {
+        "properties": {
+          "message": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ProfileExtractRequest",
+        "type": "object"
+      },
+      "ProfileExtractResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidates"
+        ],
+        "title": "ProfileExtractResponse",
+        "type": "object"
+      },
+      "ProfileMatchRequest": {
+        "properties": {
+          "confirmed_profile": {
+            "$ref": "#/components/schemas/ProfileDraftInput"
+          },
+          "target": {
+            "enum": [
+              "CKD",
+              "Cardiac_Fibrosis",
+              "MASH",
+              "Pulmonary_fibrosis",
+              "SSc_Connective_Tissue",
+              "Crohns_Disease",
+              "Fibrosis_of_Skin"
+            ],
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirmed_profile",
+          "target"
+        ],
+        "title": "ProfileMatchRequest",
+        "type": "object"
+      },
+      "ProfileValidateRequest": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureCandidate"
+            },
+            "maxItems": 100,
+            "title": "Candidates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidates"
+        ],
+        "title": "ProfileValidateRequest",
+        "type": "object"
+      },
+      "ResearchDataMetadataResponse": {
+        "properties": {
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "datasets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ResearchDatasetMetadata"
+            },
+            "title": "Datasets",
+            "type": "object"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "released_on": {
+            "title": "Released On",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "research-data-release-v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "mock",
+              "published"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "dataset_version",
+          "released_on",
+          "status",
+          "description",
+          "datasets"
+        ],
+        "title": "ResearchDataMetadataResponse",
+        "type": "object"
+      },
+      "ResearchDatasetMetadata": {
+        "properties": {
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row_count",
+          "columns"
+        ],
+        "title": "ResearchDatasetMetadata",
+        "type": "object"
+      },
+      "SyntheticExampleProfileResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "review_status": {
+            "title": "Review Status",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "version",
+          "review_status",
+          "candidates"
+        ],
+        "title": "SyntheticExampleProfileResponse",
+        "type": "object"
+      },
+      "ToolTraceEntry": {
+        "properties": {
+          "arguments": {
+            "title": "Arguments",
+            "type": "string"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool",
+          "arguments",
+          "ok"
+        ],
+        "title": "ToolTraceEntry",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "ALIGATEHR-Gen Chatbot",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/embedding/fibrotic": {
+      "get": {
+        "operationId": "fibrotic_embedding_embedding_fibrotic_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Fibrotic Embedding"
+      }
+    },
+    "/embedding/fibrotic/preset": {
+      "get": {
+        "operationId": "fibrotic_preset_embedding_fibrotic_preset_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Fibrotic Preset"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/paper/question": {
+      "post": {
+        "description": "Paper Question Mode: bounded in-task agent over Study Evidence.\n\nTask selection stays explicit (ADR-0010); within this task the agent\norchestrates the Study Evidence tools (ADR-0013, ADR-0014). Unlike\n/chat, no intent classification or keyword routing runs here. The\nresponse contract is unchanged; tool_trace is additive metadata the\nwidget ignores.",
+        "operationId": "paper_question_paper_question_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperQuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperQuestionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Paper Question"
+      }
+    },
+    "/paper/question/stream": {
+      "post": {
+        "description": "SSE variant of /paper/question: tool-activity events plus streamed\nanswer tokens (event types: tool_call, tool_result, token, done, error).\n\nThe widget degrades to the non-streaming endpoint only on connection\nfailure; a mid-stream error event is terminal, never silently refetched.",
+        "operationId": "paper_question_stream_paper_question_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperQuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Paper Question Stream"
+      }
+    },
+    "/profile/confirm": {
+      "post": {
+        "operationId": "profile_confirm_profile_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Confirm"
+      }
+    },
+    "/profile/coverage": {
+      "post": {
+        "operationId": "profile_coverage_profile_coverage_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileCoverageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Coverage"
+      }
+    },
+    "/profile/extract": {
+      "post": {
+        "operationId": "profile_extract_profile_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileExtractResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Extract"
+      }
+    },
+    "/profile/match": {
+      "post": {
+        "operationId": "profile_match_profile_match_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Match"
+      }
+    },
+    "/profile/synthetic-example/{target}": {
+      "get": {
+        "operationId": "synthetic_example_profile_profile_synthetic_example__target__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "title": "Target",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyntheticExampleProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Synthetic Example Profile"
+      }
+    },
+    "/profile/validate": {
+      "post": {
+        "operationId": "profile_validate_profile_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Validate"
+      }
+    },
+    "/research-data/metadata": {
+      "get": {
+        "operationId": "research_data_metadata_research_data_metadata_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchDataMetadataResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Research Data Metadata"
+      }
+    }
+  }
+}
