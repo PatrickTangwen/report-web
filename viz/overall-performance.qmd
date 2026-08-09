@@ -17,7 +17,9 @@ This page presents the learned representations from the ALIGATEHR-Gen model and 
 ```{ojs}
 //| echo: false
 
-createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).default
+createScatterplot = (
+  await import(await FileAttachment("../frontend/dist/regl-scatterplot.js").url())
+).default
 ```
 
 ## ICD-10 Code Embedding UMAP {#icd-embedding}

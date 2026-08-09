@@ -1,0 +1,9 @@
+packages:
+  - "."
+
+allowBuilds:
+  esbuild: true
+
+peerDependencyRules:
+  allowedVersions:
+    "camera-2d-simple>gl-matrix": "3.4.4"

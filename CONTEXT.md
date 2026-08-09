@@ -1,5 +1,12 @@
 # ALIGATEHR-Gen Research Experience
 
+> **Current data-status amendment (2026-08-08):** references below to
+> "published study result data" describe the intended evidence class, but the
+> current evaluation, ablation, and pathway release is
+> `research-results-mock-v1`. The assistant and UI must label those values as
+> mock demonstration evidence until a reviewed manifest changes the release
+> status to `published`.
+
 This context defines the language used when the website relates a visitor's clinical profile to the research cohort and its embedding visualizations.
 
 ## Language

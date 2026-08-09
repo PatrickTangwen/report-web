@@ -39,6 +39,11 @@
     return evidence.total_rows + (evidence.total_rows === 1 ? " row" : " rows");
   }
 
+  function releaseText(evidence) {
+    if (!evidence || !evidence.dataset_version) return "";
+    return (evidence.data_status || "versioned") + " · " + evidence.dataset_version;
+  }
+
   function chipFor(entry) {
     var title = TOOL_TITLES[entry.tool] || entry.tool;
     var evidence = entry.evidence || {};
@@ -68,6 +73,8 @@
           ? targets[0].label
           : targets.length + " comparison targets";
     }
+    var release = releaseText(evidence);
+    if (release) detail = detail ? detail + " · " + release : release;
     return { title: title, detail: detail, error: false };
   }
 
@@ -100,6 +107,13 @@
     }
     if (entry.tool === "query_metrics" || entry.tool === "query_ablation") {
       var columns = TABLE_COLUMNS[entry.tool];
+      var notes = [];
+      if (evidence.truncated) {
+        notes.push("Showing the first " + evidence.rows.length + " of " + evidence.total_rows + " rows.");
+      }
+      if (releaseText(evidence)) {
+        notes.push("Data release: " + releaseText(evidence) + ".");
+      }
       return {
         kind: "table",
         columns: columns,
@@ -108,9 +122,7 @@
             return numberText(row[column]);
           });
         }),
-        note: evidence.truncated
-          ? "Showing the first " + evidence.rows.length + " of " + evidence.total_rows + " rows."
-          : null,
+        note: notes.length ? notes.join(" ") : null,
       };
     }
     if (entry.tool === "query_enrichment") {
@@ -126,7 +138,7 @@
             numberText(p.p_adjusted),
           ];
         }),
-        note: null,
+        note: releaseText(evidence) ? "Data release: " + releaseText(evidence) + "." : null,
       };
     }
     if (entry.tool === "summarize_fibrotic_cohort") {

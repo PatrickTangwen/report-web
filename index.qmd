@@ -72,7 +72,7 @@ Read the full paper with detailed methods, results, and discussion on ALIGATEHR-
 
 Explore interactive visualizations of model performance comparisons, patient subgroup analysis, and risk stratification results.
 
-[View Dashboard →](viz/dashboard.qmd){.btn .btn-primary}
+[View Dashboard →](viz/overall-performance.qmd){.btn .btn-primary}
 
 </div>
 

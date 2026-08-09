@@ -26,6 +26,7 @@ viz/data/**/*.json
 viz/data/**/*.parquet
 !viz/data/**/.gitkeep
 !viz/data/**/README.md
+!viz/data/embedding_assets_manifest.json
 
 # R
 .Rproj.user
@@ -53,3 +54,8 @@ Thumbs.db
 
 **/*.quarto_ipynb
 .env
+
+# Node/frontend build products
+node_modules/
+test-results/
+playwright-report/

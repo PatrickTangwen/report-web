@@ -101,6 +101,9 @@ export function createIcdHierarchyPanel(config) {
     currentCode = null;
     panel.classList.remove("is-visible");
     panel.setAttribute("aria-hidden", "true");
+    // The close button lives in here, so whoever owns the control that reopens
+    // the panel has to hear about it.
+    config.onHide?.();
   }
 
   function renderBreadcrumb(node, chapter) {

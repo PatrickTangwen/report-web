@@ -261,7 +261,7 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
     assert.deepEqual(zooms.at(-1).target, [0.95, -0.475]);
     assert.equal(zooms.at(-1).distance, chapterDistance);
     assert.match(
-      shell.children[0].children[1].children[2].textContent,
+      shell.children[0].children[1].children[3].textContent,
       /^E11\.0 With coma · 1 ICD graph point marked inside Endocrine \(2\)\./,
     );
 
@@ -284,6 +284,108 @@ test("choosing an ICD chapter frames it and a picked code keeps its own colour",
     assert.deepEqual(draws.at(-1).z, [1, 0, 0]);
     assert.deepEqual(sets.at(-1).pointColor, ["#aeb7c2", "#1f77b4", "#1b2430"]);
     assert.deepEqual(zooms.at(-1).target, [-0.95, -0.475]);
+  } finally {
+    globalThis.document = originalDocument;
+    globalThis.window = originalWindow;
+    globalThis.MutationObserver = originalObserver;
+  }
+});
+
+
+test("a narrow layout keeps the ICD panel behind its button", async () => {
+  const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
+  const originalObserver = globalThis.MutationObserver;
+  const documentLike = fakeDocument({ clientWidth: 420, clientHeight: 760, shellHeight: 130 });
+  const documentEvents = new EventTarget();
+  documentLike.addEventListener = documentEvents.addEventListener.bind(documentEvents);
+  documentLike.removeEventListener = documentEvents.removeEventListener.bind(documentEvents);
+  documentLike.hidden = false;
+  const windowEvents = new EventTarget();
+  globalThis.document = documentLike;
+  globalThis.MutationObserver = FakeMutationObserver;
+  globalThis.window = {
+    addEventListener: windowEvents.addEventListener.bind(windowEvents),
+    removeEventListener: windowEvents.removeEventListener.bind(windowEvents),
+    // Narrow viewport, no reduced-motion preference.
+    matchMedia: (query) => ({ matches: query === "(max-width: 768px)" }),
+    setTimeout,
+  };
+  const flush = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+
+  const subscriptions = new Map();
+  let cameraDistance = 2;
+
+  try {
+    const shell = await createIcdKeywordScatter({
+      data: [
+        { umap_1: 0, umap_2: 0, code: "N18", chapter: "Genitourinary" },
+        { umap_1: 1, umap_2: 1, code: "E11", chapter: "Endocrine" },
+      ],
+      reference: [
+        { code: "N18", label: "N18", description: "Chronic kidney disease", parent: "", kind: "category", in_plot: "1" },
+        { code: "E11", label: "E11", description: "Type 2 diabetes mellitus", parent: "", kind: "category", in_plot: "1" },
+      ],
+      colors: ["#1f77b4", "#ff7f0e"],
+      createScatterplot: () => ({
+        subscribe: (eventName, handler) => subscriptions.set(eventName, handler),
+        set() {},
+        async draw() {},
+        deselect() {},
+        select() {},
+        get: (property) => (property === "cameraDistance" ? cameraDistance : undefined),
+        zoomToLocation: async (_target, distance) => { cameraDistance = distance; },
+      }),
+    });
+    const headingActions = shell.children[0].children[1];
+    const panelButton = headingActions.children[2];
+    const panel = shell.children[1].children[2];
+    const status = headingActions.children[3];
+
+    // Nothing has been chosen, so the panel's control has nothing to open.
+    assert.equal(panelButton.textContent, "Show codes");
+    assert.equal(panelButton.hidden, true);
+
+    subscriptions.get("select")({ points: [0] });
+    await flush();
+
+    // The plot is not covered: the button appears instead.
+    assert.equal(panel.classList.contains("is-visible"), false);
+    assert.equal(panelButton.hidden, false);
+    assert.equal(panelButton.getAttribute("aria-expanded"), "false");
+    assert.equal(panelButton.getAttribute("aria-label"), "Show the ICD-10 codes around N18");
+    assert.equal(status.textContent, "N18 chosen · Show codes opens its ICD-10 category.");
+
+    panelButton.dispatchEvent(new Event("click"));
+    assert.equal(panel.classList.contains("is-visible"), true);
+    assert.equal(panelButton.textContent, "Hide codes");
+    assert.equal(panelButton.getAttribute("aria-expanded"), "true");
+
+    // While it is open, choosing another point moves it to that code.
+    subscriptions.get("select")({ points: [1] });
+    await flush();
+    assert.equal(panel.classList.contains("is-visible"), true);
+    assert.equal(panel.children[0].children[1].textContent, "ICD-10 codes E11-*");
+
+    panelButton.dispatchEvent(new Event("click"));
+    assert.equal(panel.classList.contains("is-visible"), false);
+    assert.equal(panelButton.textContent, "Show codes");
+    assert.equal(panelButton.hidden, false, "the chosen code can be reopened");
+
+    // The panel's own close button leaves the control in place too.
+    panelButton.dispatchEvent(new Event("click"));
+    panel.children[0].children[2].dispatchEvent(new Event("click"));
+    assert.equal(panel.classList.contains("is-visible"), false);
+    assert.equal(panelButton.hidden, false);
+    assert.equal(panelButton.textContent, "Show codes");
+
+    // Choosing a chapter from the legend drops the code, and with it the button.
+    shell.children[2].children[0].dispatchEvent(new Event("click"));
+    await flush();
+    assert.equal(panelButton.hidden, true);
   } finally {
     globalThis.document = originalDocument;
     globalThis.window = originalWindow;

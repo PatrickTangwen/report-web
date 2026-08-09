@@ -44,6 +44,8 @@ def test_query_metrics_resolves_disease_alias_and_filters():
         {"disease": "chronic kidney disease", "model": "ALIGATEHR-Gen", "metric": "AUROC"},
     )
     assert result["filters"]["disease"] == "CKD"
+    assert result["dataset_version"] == "research-results-mock-v1"
+    assert result["data_status"] == "mock"
     assert result["row_count"] == len(result["rows"]) == 1
     row = result["rows"][0]
     assert row["model"] == "ALIGATEHR-Gen"
@@ -197,6 +199,8 @@ def test_tabular_evidence_caps_rows_and_states_the_total():
     result = execute_tool("query_ablation", {})
     evidence = summarize_evidence("query_ablation", result)
     assert evidence["total_rows"] == 175
+    assert evidence["dataset_version"] == "research-results-mock-v1"
+    assert evidence["data_status"] == "mock"
     assert len(evidence["rows"]) == EVIDENCE_ROW_CAP
     assert evidence["truncated"] is True
 

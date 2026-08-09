@@ -31,6 +31,10 @@ agent uses, plus `search_icd_codes` (versioned ICD Keyword Vocabulary
 lookup) and `get_fibrotic_embedding` (raw display-safe release). The
 profile/matching flow and patient-level data are never exposed.
 
+The evaluation, ablation, and pathway tools currently read the versioned
+`research-results-mock-v1` demonstration release. The manifest status is
+returned in tool evidence and must not be described as a published finding.
+
 Remote (Streamable HTTP, stateless), served by the same deployment:
 
 ```json

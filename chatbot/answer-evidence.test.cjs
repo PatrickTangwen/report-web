@@ -55,6 +55,33 @@ test("small tabular evidence renders exact row count without truncation note", (
 });
 
 
+test("versioned mock evidence is disclosed in the chip and table", () => {
+  const entry = {
+    tool: "query_metrics",
+    ok: true,
+    evidence: {
+      dataset_version: "research-results-mock-v1",
+      data_status: "mock",
+      filters: { disease: "CKD" },
+      total_rows: 1,
+      rows: [{
+        model: "ALIGATEHR-Gen",
+        disease: "CKD",
+        metric: "AUROC",
+        value: 0.8755,
+        ci_lower: 0.8646,
+        ci_upper: 0.8777,
+      }],
+    },
+  };
+  assert.match(evidence.chipFor(entry).detail, /mock · research-results-mock-v1/);
+  assert.equal(
+    evidence.tableFor(entry).note,
+    "Data release: mock · research-results-mock-v1."
+  );
+});
+
+
 test("paper evidence never renders content, only section names", () => {
   const full = {
     tool: "get_paper_content",

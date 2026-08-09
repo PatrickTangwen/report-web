@@ -10,6 +10,7 @@ bound with a guaranteed final text answer.
 import json
 
 from agent_tools import TOOLS, execute_tool, openai_tool_specs, summarize_evidence
+from telemetry import get_tracer
 
 MAX_ITERATIONS = 6
 
@@ -17,9 +18,10 @@ AGENT_SYSTEM_PROMPT = (
     "You are the research assistant for the ALIGATEHR-Gen project, answering "
     "inside the Understand the Research task of the project website.\n\n"
     "Ground every factual claim in Study Evidence, fetched through the "
-    "provided tools: the published ALIGATEHR-Gen paper and the published "
-    "study result data (evaluation metrics, ablation results, pathway "
-    "enrichment, and cohort-level fibrotic summaries). Do not answer "
+    "provided tools: the published ALIGATEHR-Gen paper, the versioned "
+    "demonstration result release (whose mock/published status is explicit), "
+    "and cohort-level fibrotic summaries. Never present mock result values as "
+    "published experimental findings. Do not answer "
     "research questions from memory alone; call tools first.\n\n"
     "Scope contract:\n"
     "- Provide research explanation and cohort-level statistics only.\n"
@@ -30,11 +32,11 @@ AGENT_SYSTEM_PROMPT = (
     "- Questions outside Study Evidence — including the in-progress Bio-E2R "
     "manuscript, external literature, or general knowledge — receive an "
     "explicit scope limitation naming the published ALIGATEHR-Gen paper and "
-    "its published study data as the answering scope. Do not guess.\n"
+    "its versioned study-evidence releases as the answering scope. Do not guess.\n"
     "- If a question is ambiguous, ask one clarifying question instead of "
     "guessing.\n\n"
-    "Answer style: concise, scientifically precise, numbers exactly as "
-    "published. When helpful, name the paper section a claim comes from "
+    "Answer style: concise and scientifically precise. State when result "
+    "values come from a mock demonstration release. When helpful, name the paper section a claim comes from "
     "(e.g. Methods); never invent numbered citations, page numbers, or "
     "external references.\n\n"
     "This is a research prototype for demonstration purposes only; nothing "
@@ -82,9 +84,13 @@ def run_agent(
     for iteration in range(max_iterations):
         final_turn = iteration == max_iterations - 1
         kwargs = {} if final_turn else {"tools": specs}
-        response = client.chat.completions.create(
-            model=model, max_tokens=max_tokens, messages=messages, **kwargs
-        )
+        with get_tracer().start_as_current_span("research_agent.model_turn") as span:
+            span.set_attribute("agent.iteration", iteration)
+            span.set_attribute("agent.final_turn", final_turn)
+            span.set_attribute("gen_ai.request.model", model)
+            response = client.chat.completions.create(
+                model=model, max_tokens=max_tokens, messages=messages, **kwargs
+            )
         reply = response.choices[0].message
         calls = reply.tool_calls or []
         if not calls:
@@ -94,7 +100,10 @@ def run_agent(
 
         messages.append(_assistant_turn(reply))
         for call in calls:
-            result = execute_tool(call.function.name, call.function.arguments)
+            with get_tracer().start_as_current_span("research_agent.tool") as span:
+                span.set_attribute("agent.tool.name", call.function.name)
+                result = execute_tool(call.function.name, call.function.arguments)
+                span.set_attribute("agent.tool.ok", "error" not in result)
             tool_trace.append(
                 {
                     "tool": call.function.name,
@@ -144,13 +153,17 @@ def stream_agent(
     for iteration in range(max_iterations):
         final_turn = iteration == max_iterations - 1
         kwargs = {} if final_turn else {"tools": specs}
-        stream = client.chat.completions.create(
-            model=model,
-            max_tokens=max_tokens,
-            messages=messages,
-            stream=True,
-            **kwargs,
-        )
+        with get_tracer().start_as_current_span("research_agent.model_turn") as span:
+            span.set_attribute("agent.iteration", iteration)
+            span.set_attribute("agent.final_turn", final_turn)
+            span.set_attribute("gen_ai.request.model", model)
+            stream = client.chat.completions.create(
+                model=model,
+                max_tokens=max_tokens,
+                messages=messages,
+                stream=True,
+                **kwargs,
+            )
         content_parts = []
         deltas = {}
         for chunk in stream:
@@ -196,7 +209,10 @@ def stream_agent(
         for call in calls:
             label = TOOLS[call["name"]]["label"] if call["name"] in TOOLS else call["name"]
             yield {"event": "tool_call", "data": {"tool": call["name"], "label": label}}
-            result = execute_tool(call["name"], call["arguments"])
+            with get_tracer().start_as_current_span("research_agent.tool") as span:
+                span.set_attribute("agent.tool.name", call["name"])
+                result = execute_tool(call["name"], call["arguments"])
+                span.set_attribute("agent.tool.ok", "error" not in result)
             ok = "error" not in result
             evidence = summarize_evidence(call["name"], result)
             tool_trace.append(

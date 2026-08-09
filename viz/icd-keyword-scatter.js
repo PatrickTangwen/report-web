@@ -22,6 +22,13 @@ const PICKED_POINT_COLOR = { light: "#1b2430", dark: "#f1f5f9" };
 // Same size as every other code in the chapter — colour alone marks the pick.
 const PICKED_POINT_SIZE = 3;
 const CHAPTER_ZOOM_PADDING = 0.25;
+const SHOW_PANEL_LABEL = "Show codes";
+const HIDE_PANEL_LABEL = "Hide codes";
+// Below this width the panel is wider than the plot it sits on — the stylesheet
+// already reflows this chart's heading and legend at the same point — so opening
+// it on top of the point that was just chosen would hide the very thing the
+// visitor clicked. There it waits behind its button instead.
+const NARROW_LAYOUT_QUERY = "(max-width: 768px)";
 
 
 export function pickedPointColor(documentLike = document) {
@@ -149,6 +156,7 @@ export async function createIcdKeywordScatter(config) {
   // their own, and they came out black while their swatches said otherwise.
   const chapterColor = (chapter) => colors[chapterIndex.get(chapter) % colors.length];
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const narrowLayout = () => window.matchMedia(NARROW_LAYOUT_QUERY).matches;
   const referenceIndex = buildIcdIndex(config.reference);
 
   const shell = element("section", "embedding-explorer icd-keyword-explorer");
@@ -165,13 +173,18 @@ export async function createIcdKeywordScatter(config) {
   const resetButton = element("button", "embedding-button embedding-reset-button", "Reset view");
   resetButton.type = "button";
   resetButton.setAttribute("aria-label", "Reset embedding selection and view");
+  // The panel's own control. It appears once a code has been chosen, and on a
+  // narrow layout it is the only way the panel opens.
+  const panelButton = element("button", "embedding-button icd-panel-button", SHOW_PANEL_LABEL);
+  panelButton.type = "button";
+  panelButton.hidden = true;
   const status = element(
     "span",
     "embedding-status visually-hidden",
     "Overview · waiting for an ICD Keyword Match action",
   );
   status.setAttribute("aria-live", "polite");
-  headingActions.append(vocabularyBadge, resetButton, status);
+  headingActions.append(vocabularyBadge, resetButton, panelButton, status);
   heading.append(title, headingActions);
   shell.appendChild(heading);
 
@@ -321,7 +334,7 @@ export async function createIcdKeywordScatter(config) {
     // whatever code was open closes with it. Keyboard activation of a button
     // also raises `click`, so this covers both.
     button.addEventListener("click", () => {
-      hierarchyPanel.hide();
+      closePanel();
       zoomToChapter(
         chapter,
         `${chapterLabels.get(chapter)} · view focused on this chapter. ` +
@@ -343,7 +356,7 @@ export async function createIcdKeywordScatter(config) {
       return;
     }
     const chapter = data[indices[0]].chapter;
-    hierarchyPanel.showFor(selection.code, chapter);
+    openPanel(selection.code, chapter);
     stagedPick = { chapter, indices: new Set(indices) };
     groupHighlight.select(chapter);
     const pointNoun = indices.length === 1 ? "point" : "points";
@@ -360,6 +373,46 @@ export async function createIcdKeywordScatter(config) {
   const hierarchyPanel = createIcdHierarchyPanel({
     index: referenceIndex,
     onSelect: selectFromPanel,
+    onHide: () => syncPanelButton(),
+  });
+
+  // The code the panel button reopens. It outlives the panel being closed, and
+  // only a chapter choice or a reset clears it.
+  let panelTarget = null;
+
+  function syncPanelButton() {
+    const isOpen = hierarchyPanel.currentCode() !== null;
+    panelButton.hidden = panelTarget === null;
+    panelButton.textContent = isOpen ? HIDE_PANEL_LABEL : SHOW_PANEL_LABEL;
+    panelButton.setAttribute("aria-expanded", String(isOpen));
+    if (!panelTarget) return;
+    const label = referenceIndex.get(panelTarget.code)?.label || panelTarget.code;
+    panelButton.setAttribute(
+      "aria-label",
+      `${isOpen ? "Hide" : "Show"} the ICD-10 codes around ${label}`,
+    );
+  }
+
+  function openPanel(code, chapter) {
+    panelTarget = { code, chapter };
+    // Open the panel on the side away from the point, so it does not cover what
+    // the visitor just clicked.
+    hierarchyPanel.node.classList.toggle("is-left", pointerOnRightHalf);
+    hierarchyPanel.showFor(code, chapter);
+    syncPanelButton();
+  }
+
+  function closePanel() {
+    panelTarget = null;
+    hierarchyPanel.hide();
+  }
+
+  panelButton.addEventListener("click", () => {
+    if (hierarchyPanel.currentCode() !== null) {
+      hierarchyPanel.hide();
+      return;
+    }
+    if (panelTarget) openPanel(panelTarget.code, panelTarget.chapter);
   });
 
   let pointerOnRightHalf = false;
@@ -440,17 +493,24 @@ export async function createIcdKeywordScatter(config) {
   // Resetting drops the selection, so the panel of whatever code was open goes
   // with it — the same move the legend and Escape make.
   resetButton.addEventListener("click", () => {
-    hierarchyPanel.hide();
+    closePanel();
     reset();
   });
   scatterplot.subscribe("select", ({ points: selected }) => {
     const pointIndex = selected?.[0];
     const point = data[pointIndex];
     if (!chapterIndex.has(point?.chapter)) return;
-    // Open the panel on the side away from the point, so it does not cover what
-    // the visitor just clicked.
-    hierarchyPanel.node.classList.toggle("is-left", pointerOnRightHalf);
-    hierarchyPanel.showFor(point.code, point.chapter);
+    // On a narrow layout the panel stays behind its button rather than landing
+    // on the point that was just chosen. An already-open panel follows the pick
+    // either way.
+    if (!narrowLayout() || hierarchyPanel.currentCode() !== null) {
+      openPanel(point.code, point.chapter);
+    } else {
+      panelTarget = { code: point.code, chapter: point.chapter };
+      const label = referenceIndex.get(point.code)?.label || point.code;
+      status.textContent = `${label} chosen · Show codes opens its ICD-10 category.`;
+      syncPanelButton();
+    }
     // The camera stays where it is: the visitor picked this point at the zoom
     // level they chose, and reframing the whole chapter would lose it.
     stagedPick = { chapter: point.chapter, indices: new Set([pointIndex]) };
@@ -460,7 +520,7 @@ export async function createIcdKeywordScatter(config) {
   canvas.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     event.preventDefault();
-    hierarchyPanel.hide();
+    closePanel();
     reset();
   });
 
@@ -519,7 +579,7 @@ export async function createIcdKeywordScatter(config) {
 
   function destroy() {
     requestQueue.cancel();
-    hierarchyPanel.hide();
+    closePanel();
     themeObserver.disconnect();
     motionActive = false;
     document.removeEventListener("visibilitychange", cancelForVisibility);

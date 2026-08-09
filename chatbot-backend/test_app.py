@@ -1,4 +1,5 @@
 import os
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,6 +44,31 @@ async def test_health(client):
     resp = await client.get("/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_research_data_metadata_discloses_mock_release(client):
+    resp = await client.get("/research-data/metadata")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["dataset_version"] == "research-results-mock-v1"
+    assert payload["status"] == "mock"
+    assert payload["datasets"]["evaluation_metrics"]["row_count"] == 350
+    assert "sha256" not in payload
+
+
+@pytest.mark.asyncio
+async def test_request_log_excludes_query_and_body_content(client, caplog):
+    caplog.set_level(logging.INFO, logger="aligatehr.request")
+    secret = "private-profile-value"
+    resp = await client.post(f"/missing?note={secret}", json={"message": secret})
+
+    assert resp.status_code == 404
+    assert resp.headers["x-request-id"]
+    records = [record.message for record in caplog.records if "http_request" in record.message]
+    assert records
+    assert secret not in records[-1]
+    assert '"path":"/missing"' in records[-1]
 
 
 @pytest.mark.asyncio

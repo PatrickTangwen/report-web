@@ -369,7 +369,7 @@ figcaption {
 
 .embedding-heading span {
   margin-top: 0.15rem;
-  color: #627d98;
+  color: #526d82;
   font-size: 0.82rem;
 }
 
@@ -546,7 +546,7 @@ figcaption {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
-  color: #627d98;
+  color: #526d82;
   font-size: 0.7rem;
 }
 
@@ -587,7 +587,7 @@ figcaption {
   border: 0;
   border-radius: 4px;
   background: none;
-  color: #627d98;
+  color: #526d82;
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
@@ -643,7 +643,7 @@ figcaption {
 /* Structural ancestors have no point of their own; selecting one highlights
    every plotted code below it. */
 .icd-hierarchy-row.is-group .icd-hierarchy-code {
-  color: #627d98;
+  color: #526d82;
 }
 
 .icd-hierarchy-description {
@@ -654,7 +654,7 @@ figcaption {
   margin: 0;
   padding: 0.35rem 0.7rem;
   border-top: 1px solid #e3e9f0;
-  color: #627d98;
+  color: #526d82;
   font-size: 0.68rem;
 }
 
@@ -796,7 +796,7 @@ figcaption {
   flex-wrap: wrap;
   gap: 0.4rem 0.85rem;
   margin-top: 0.7rem;
-  color: #627d98;
+  color: #526d82;
   font-size: 0.72rem;
 }
 
@@ -905,7 +905,7 @@ figcaption {
 
 .chart-highlight-hint {
   margin-top: 0.55rem;
-  color: #627d98;
+  color: #526d82;
   font-size: 0.78rem;
 }
 

@@ -1,5 +1,12 @@
 # ALIGATEHR-Gen Research Website
 
+> **Current stack and data contract (2026-08-08):** frontend modules are built
+> with pnpm + TypeScript + Vite, backend environments are locked with uv, and
+> FastAPI OpenAPI generates the frontend API contract. Evaluation, ablation,
+> and pathway values currently come from the explicitly labelled
+> `research-results-mock-v1` release, not published experimental results. See
+> `docs/technical-stack-modernization-2026-08-08.md`.
+
 > **Current contract (2026-08-07):** the assistant is a task-routed Guided
 > Research Assistant backed by a bounded function-calling agent; the legacy
 > intent-router `/chat` path is deleted (#53). Governing docs:
@@ -17,10 +24,14 @@ A Quarto-based academic website for the ALIGATEHR-Gen project — a graph attent
 | Visualization | [Observable JS (OJS)](https://observablehq.com/@observablehq/observable-javascript) cells in `.qmd` |
 | Charts (SVG) | [Observable Plot](https://observablehq.com/plot/) |
 | Charts (WebGL) | [regl-scatterplot](https://github.com/flekschas/regl-scatterplot) for large point clouds |
+| Frontend build | pnpm + TypeScript + Vite; local UMD/ES bundles replace runtime CDN imports |
+| Data transport | CSV for small tables; generated uncompressed Arrow IPC for the 114K-point patient embedding |
 | Assistant backend | [FastAPI](https://fastapi.tiangolo.com/) + a bounded function-calling agent over [DeepSeek](https://platform.deepseek.com/)'s OpenAI-compatible API (framework-free loop, typed Pydantic tools) |
-| Assistant frontend | Vanilla JS Guided Research Assistant widget (task-routed shell, SSE streaming) via Quarto `include-after-body` |
+| Assistant frontend | Existing Vanilla JS widget backed by a typed Vite boundary and FastAPI-generated OpenAPI types |
 | Tool service | [MCP](https://modelcontextprotocol.io/) Streamable HTTP mounted at `/mcp` on the same FastAPI app |
 | Evaluation | Golden-set harness with LLM-as-judge + judge-free tool-trace metrics (`chatbot-backend/eval/`) |
+| Testing | pytest, Node test runner, Vitest, Playwright, and axe-core across desktop/mobile Chromium |
+| Observability | Privacy-safe OpenTelemetry OTLP spans plus structured request logs without bodies or query strings |
 | Styling | SCSS (`styles/custom.scss`) + CSS (`styles/styles.css`) |
 | Themes | Light (cosmo) / Dark (darkly) with custom extensions |
 | Citations | BibTeX + Nature CSL |
@@ -41,7 +52,9 @@ report-web/
 │   ├── overall-performance.qmd  # Page 1: UMAP + Metrics
 │   ├── ablation.qmd             # Page 2: Ablation delta chart
 │   ├── use-case.qmd             # Page 3: Fibrotic disease analysis
-│   └── data/                    # CSV data files (3 real + 4 mock)
+│   └── data/                    # Published visualization assets (CSV + generated Arrow)
+├── frontend/                # Typed source, generated OpenAPI client, Vite bundles
+├── e2e/                     # Playwright + axe browser acceptance
 ├── chatbot/                 # Frontend chatbot widget
 │   ├── chatbot-include.html     # HTML injected into every page
 │   ├── chatbot.css              # Widget styles
@@ -55,12 +68,18 @@ report-web/
 │   ├── data_query.py            # Dataset loading and disease-name resolution
 │   ├── profile_matching.py      # Demo Profile coverage + cohort matching
 │   ├── followup.py              # Pathway enrichment lookups
+│   ├── telemetry.py             # Privacy-safe tracing and request logs
+│   ├── research_data_release.py # Versioned result-data authority
 │   ├── eval/                    # Golden set, runner, committed results
 │   ├── data/                    # Backend CSV data copies
-│   ├── Dockerfile               # Container image (Python 3.11, port 7860)
-│   └── requirements.txt         # Python dependencies
+│   ├── pyproject.toml / uv.lock # Locked Python project
+│   ├── Dockerfile               # uv-based container image (Python 3.11)
+│   └── requirements.txt         # uv-generated pip compatibility export
 ├── scripts/
-│   └── check_ojs_assets.py      # Deployment-time OJS asset validator
+│   ├── check_ojs_assets.py      # Deployment-time OJS asset validator
+│   ├── sync_research_data.py    # Sync backend authority to published copies
+│   ├── generate_paper_context.py# Check published-paper assistant context
+│   └── build_embedding_assets.py# Reproducible CSV → Arrow build + benchmark
 ├── styles/
 │   ├── custom.scss              # SCSS theme variables + components
 │   ├── styles.css               # Layout, dark mode overrides
@@ -87,8 +106,9 @@ hidden intent routing (ADR-0010):
 - **Understand the Research** — free-form Research Questions answered by a
   bounded function-calling agent that orchestrates typed tools over Study
   Evidence: the published paper (full-document context, not retrieval) plus
-  the published study data (metrics, ablation, enrichment, cohort
-  aggregates). Answers stream over SSE with visible tool-activity lines.
+  the versioned research-result release (currently mock and visibly labelled)
+  plus cohort aggregates. Answers stream over SSE with visible tool-activity
+  lines.
 - **Explore Visualizations** — direct navigation to the Performance,
   Ablation, and Use Case pages.
 - **Build a Demo Profile** — a staged wizard with target-first selection,
@@ -108,23 +128,26 @@ The backend runs as a FastAPI service (Docker; deployed on Render).
 ### Prerequisites
 
 - [Quarto](https://quarto.org/docs/get-started/) (v1.4+)
-- Python 3.11+ (for backend and validation scripts)
+- Node.js 22+, [pnpm](https://pnpm.io/), and [uv](https://docs.astral.sh/uv/)
+- Python 3.11 or 3.12 (managed through uv)
 
 ### Site Preview
 
 ```bash
+pnpm install
+pnpm run build:frontend
 quarto preview              # Dev server at http://localhost:4200
-quarto render               # Full build to _site/
-quarto render viz/ablation.qmd  # Single page render
+pnpm test                   # frontend build + Node/Vitest/type checks
+pnpm run test:e2e           # desktop/mobile Chromium + axe
 ```
 
 ### Chatbot Backend
 
 ```bash
-cd chatbot-backend
-cp .env.example .env        # Set LLM_API_KEY
-pip install -r requirements.txt
-uvicorn app:app --port 7860
+cp chatbot-backend/.env.example chatbot-backend/.env  # Set LLM_Key_Deepseek
+uv sync --project chatbot-backend --locked
+uv run --project chatbot-backend uvicorn app:app --port 7860
+uv run --project chatbot-backend pytest chatbot-backend -q
 ```
 
 Or via Docker:
@@ -141,7 +164,8 @@ The site is deployed on GitHub Pages from `main` through `.github/workflows/depl
 
 Published URL: [patricktangwen.github.io/report-web](https://patricktangwen.github.io/report-web/)
 
-The chatbot backend is deployed separately (e.g., HuggingFace Spaces). The frontend widget connects to the backend URL configured in `chatbot/chatbot.js`.
+The chatbot backend is deployed separately on Render. The typed frontend API
+boundary owns the local/remote backend URL selection.
 
 ### Deployment Contract
 
@@ -154,8 +178,14 @@ The chatbot backend is deployed separately (e.g., HuggingFace Spaces). The front
 ### Deployment Validation
 
 ```bash
+pnpm install --frozen-lockfile
+pnpm run build:frontend
+pnpm run check:data
+pnpm run check:embeddings
+pnpm run check:api
 python scripts/check_ojs_assets.py
 quarto render
+pnpm run test:e2e
 ```
 
 If `scripts/check_ojs_assets.py` fails, treat it as a deployment blocker. The most common cause is adding or renaming a `FileAttachment(...)` target without committing the corresponding file under `viz/data/`.
@@ -166,7 +196,6 @@ If `scripts/check_ojs_assets.py` fails, treat it as a deployment blocker. The mo
 - [ ] Replace mock CSVs with real data for evaluation metrics, ablation results, feature importance, pathway enrichment
 
 **Content**
-- [ ] Update `site-url` and `repo-url` in `_quarto.yml` (currently placeholder `yourusername`)
 - [ ] Add proper citation information (BibTeX entry for the paper)
 
 **Feature Enhancements**

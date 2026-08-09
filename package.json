@@ -1,0 +1,34 @@
+{
+  "name": "aligatehr-gen-research-site",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "scripts": {
+    "build:frontend": "vite build --mode assistant && vite build --mode visualization",
+    "build:embeddings": "uv run --project chatbot-backend python scripts/build_embedding_assets.py --benchmark",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint frontend/src e2e *.config.mts",
+    "test:legacy": "node --test viz/*.test.mjs chatbot/*.test.cjs",
+    "test:unit": "vitest run",
+    "test": "pnpm run build:frontend && pnpm run lint && pnpm run test:legacy && pnpm run test:unit && pnpm run check:types",
+    "test:e2e": "playwright test",
+    "generate:api": "uv run --project chatbot-backend python scripts/export_openapi.py && openapi-ts -i frontend/generated/openapi.json -o frontend/generated/client",
+    "check:api": "uv run --project chatbot-backend python scripts/export_openapi.py --check && openapi-ts -i frontend/generated/openapi.json -o frontend/generated/client && git diff --exit-code -- frontend/generated",
+    "check:data": "python scripts/sync_research_data.py --check && python scripts/generate_paper_context.py --check",
+    "check:embeddings": "uv run --project chatbot-backend python scripts/build_embedding_assets.py --check"
+  },
+  "dependencies": {
+    "regl-scatterplot": "1.9.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@hey-api/openapi-ts": "0.99.0",
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.2.0",
+    "eslint": "10.8.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
+  }
+}

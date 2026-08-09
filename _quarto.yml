@@ -12,6 +12,8 @@ project:
     - chatbot/profile-wizard.js
     - chatbot/assistant-shell.js
     - chatbot/chatbot.js
+    - frontend/dist/assistant-api.js
+    - frontend/dist/regl-scatterplot.js
   preview:
     port: 4200
     browser: true
@@ -21,8 +23,8 @@ project:
 website:
   title: "Bio-ALIGATEHR"
   description: "Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank"
-  site-url: https://yourusername.github.io/EHR_website
-  repo-url: https://github.com/yourusername/EHR_website
+  site-url: https://patricktangwen.github.io/report-web
+  repo-url: https://github.com/PatrickTangwen/report-web
   repo-actions: [edit, issue]
 
   navbar:
@@ -41,18 +43,18 @@ website:
         href: viz/ablation.qmd
       - text: "Use Case"
         href: viz/use-case.qmd
-      - text: "Engineering"
-        href: engineering.qmd
     right:
       - icon: github
-        href: https://github.com/yourusername/EHR_website
+        href: https://github.com/PatrickTangwen/report-web
         aria-label: GitHub
 
   page-footer:
     left: "© 2026 EHR Research Project. Licensed under CC BY 4.0."
     right:
       - icon: github
-        href: https://github.com/yourusername/EHR_website
+        text: GitHub
+        href: https://github.com/PatrickTangwen/report-web
+        aria-label: GitHub
 
 format:
   html:

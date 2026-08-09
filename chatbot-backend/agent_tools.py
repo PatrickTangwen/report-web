@@ -5,8 +5,9 @@ input schema. Tool descriptions are first-class prompt artifacts: they are
 what the model reads when deciding which tool to call, so treat every edit
 to them as a behavior change (spec: docs/spec-agent-refactor-2026-08-07.md).
 
-The roster is intentionally limited to Study Evidence: the published paper
-and the published study result data. The profile/matching flow and ICD
+The roster is intentionally limited to Study Evidence: the published paper,
+the versioned demonstration result release, and approved cohort aggregates.
+The profile/matching flow and ICD
 keyword lookup are excluded by design (ADR-0014).
 """
 
@@ -18,7 +19,12 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
-from data_query import _normalize, get_datasets, match_disease
+from data_query import (
+    _normalize,
+    get_datasets,
+    match_disease,
+    research_release_context,
+)
 from fibrotic_release import load_fibrotic_release
 from followup import get_pathway_enrichment
 from paper_context import PAPER_TEXT
@@ -105,10 +111,15 @@ def _apply_filters(df, filters):
             continue
         subset, available = resolver(df, column, value)
         if subset is None:
-            return {"matched": False, f"available_{column}s": available}
+            return {
+                "matched": False,
+                **research_release_context(),
+                f"available_{column}s": available,
+            }
         applied[column] = subset[column].iloc[0]
         df = subset
     return {
+        **research_release_context(),
         "filters": applied,
         "row_count": len(df),
         "rows": df.to_dict(orient="records"),
@@ -349,10 +360,10 @@ TOOLS = {
     "query_metrics": {
         "label": "Querying evaluation metrics",
         "description": (
-            "Look up published evaluation metrics (AUROC, AUPRC, Precision, "
-            "Recall, F1) for ALIGATEHR-Gen and baseline models, optionally "
-            "filtered by disease, model, or metric. Returns exact published "
-            "values with confidence intervals."
+            "Look up versioned demonstration evaluation metrics (AUROC, AUPRC, "
+            "Precision, Recall, F1) for ALIGATEHR-Gen and baseline models, "
+            "optionally filtered by disease, model, or metric. The result "
+            "declares its dataset version and mock/published status."
         ),
         "input_model": MetricsInput,
         "handler": query_metrics,
@@ -360,7 +371,7 @@ TOOLS = {
     "query_ablation": {
         "label": "Consulting ablation results",
         "description": (
-            "Look up published ablation results: how removing a model "
+            "Look up versioned demonstration ablation results: how removing a model "
             "component (e.g. genetic data, ontology graph) changes a metric "
             "for a disease, including the delta against the full model."
         ),
@@ -370,7 +381,7 @@ TOOLS = {
     "query_enrichment": {
         "label": "Looking up pathway enrichment",
         "description": (
-            "Look up published pathway enrichment results for a disease: "
+            "Look up versioned demonstration pathway enrichment results for a disease: "
             "top-ranked enriched pathways with source (GO_BP/KEGG), gene "
             "counts, enrichment ratios, and adjusted p-values."
         ),
@@ -400,6 +411,8 @@ def _tabular_evidence(result):
     if "rows" not in result:
         return dict(result)
     evidence = {
+        "dataset_version": result.get("dataset_version"),
+        "data_status": result.get("data_status"),
         "filters": result["filters"],
         "total_rows": result["row_count"],
         "rows": result["rows"][:EVIDENCE_ROW_CAP],

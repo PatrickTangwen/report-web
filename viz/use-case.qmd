@@ -27,7 +27,9 @@ import { createEmbeddingScatter } from "./embedding-scatter.js"
 ```{ojs}
 //| echo: false
 
-createScatterplot = (await import("https://esm.sh/regl-scatterplot@1.9.1")).default
+createScatterplot = (
+  await import(await FileAttachment("../frontend/dist/regl-scatterplot.js").url())
+).default
 ```
 
 ```{ojs}
@@ -173,8 +175,8 @@ The plot below covers the full pre-training cohort behind the encoder rather tha
 //| echo: false
 
 patientData = {
-  const text = await FileAttachment("data/patient_embeddings.csv").text();
-  return d3.csvParse(text, d3.autoType);
+  const table = await FileAttachment("data/patient_embeddings.arrow").arrow();
+  return table.toArray();
 }
 ```
 

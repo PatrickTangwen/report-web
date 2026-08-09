@@ -1,0 +1,58 @@
+{
+  "schema_version": "research-data-release-v1",
+  "dataset_version": "research-results-mock-v1",
+  "released_on": "2026-06-23",
+  "status": "mock",
+  "authority": "chatbot-backend/data",
+  "description": "Synthetic research-result data for the visualization, Guided Research Assistant, and MCP demonstrations. These values are not published experimental results.",
+  "datasets": {
+    "evaluation_metrics": {
+      "filename": "evaluation_metrics.csv",
+      "published_copy": "viz/data/evaluation_metrics.csv",
+      "row_count": 350,
+      "columns": [
+        "model",
+        "disease",
+        "metric",
+        "value",
+        "ci_lower",
+        "ci_upper",
+        "is_proposed"
+      ],
+      "primary_key": ["model", "disease", "metric"],
+      "sha256": "c995802990e192c4978992e691c060ebfc070467bac480fd158fd90be86ae9b0"
+    },
+    "ablation_results": {
+      "filename": "ablation_results.csv",
+      "published_copy": "viz/data/ablation_results.csv",
+      "row_count": 175,
+      "columns": [
+        "variant",
+        "disease",
+        "metric",
+        "value",
+        "full_model_value",
+        "delta"
+      ],
+      "primary_key": ["variant", "disease", "metric"],
+      "sha256": "94cbaade6480f614d042488f99c02e72a75d7485e6b7c4d983f19e71043e7ba8"
+    },
+    "pathway_enrichment": {
+      "filename": "pathway_enrichment.csv",
+      "published_copy": "viz/data/pathway_enrichment.csv",
+      "row_count": 280,
+      "columns": [
+        "disease",
+        "pathway",
+        "source",
+        "gene_count",
+        "enrichment_ratio",
+        "p_value",
+        "p_adjusted",
+        "rank"
+      ],
+      "primary_key": ["disease", "rank"],
+      "sha256": "e45e16bc0ed0f22aad4e60d3fd9f4efd12e719f36289743df8d65ed0650987c5"
+    }
+  }
+}
