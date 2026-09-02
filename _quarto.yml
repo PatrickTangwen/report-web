@@ -26,6 +26,7 @@ website:
   site-url: https://patricktangwen.github.io/report-web
   repo-url: https://github.com/PatrickTangwen/report-web
   repo-actions: [edit, issue]
+  favicon: assets/logo/favicon.png
 
   navbar:
     background: primary
