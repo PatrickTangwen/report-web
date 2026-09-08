@@ -8,6 +8,9 @@ format:
 
 ::: {.hero-section}
 
+<img src="assets/logo/bioaligather-logo.svg" alt="Bioaligather logo" class="hero-logo hero-logo-light">
+<img src="assets/logo/bioaligather-logo-primary.svg" alt="Bioaligather logo" class="hero-logo hero-logo-dark">
+
 [Bio-ALIGATEHR]{.hero-title}
 
 [Multimodal Data Integration Improves Disease Risk Prediction in the UK Biobank]{.hero-subtitle}
