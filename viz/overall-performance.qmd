@@ -419,8 +419,13 @@ kdeTable = {
       cell(tr, env.find(d => d.code === selectedCode).auroc.toFixed(4), true);
     }
   });
+  // The wrapper scrolls horizontally on narrow screens, so it is a focusable
+  // region: keyboard users can reach it and scroll it.
   const wrapper = document.createElement("div");
   wrapper.className = "auroc-table-scroll";
+  wrapper.tabIndex = 0;
+  wrapper.setAttribute("role", "region");
+  wrapper.setAttribute("aria-label", "Per-model AUROC summary table");
   wrapper.appendChild(table);
   return wrapper;
 }
@@ -548,8 +553,13 @@ boxMatrix = {
   labelColumn.className = "auroc-box-labels";
   labelColumn.appendChild(labels);
   chart.classList.add("auroc-box-cells");
+  // The matrix scrolls horizontally, so it is a focusable region: keyboard
+  // users can reach it and scroll it with the arrow keys.
   const scroller = document.createElement("div");
   scroller.className = "auroc-box-matrix";
+  scroller.tabIndex = 0;
+  scroller.setAttribute("role", "region");
+  scroller.setAttribute("aria-label", `AUROC box plots for ${chapters.length} ICD-10 chapters and ${models.length} models, scroll horizontally to see every model`);
   scroller.append(labelColumn, chart);
   container.appendChild(scroller);
 

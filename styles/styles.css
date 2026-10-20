@@ -1160,6 +1160,12 @@ figcaption {
   background: #fff;
 }
 
+.auroc-box-matrix:focus-visible,
+.auroc-table-scroll:focus-visible {
+  outline: 3px solid rgba(44, 90, 160, 0.35);
+  outline-offset: 2px;
+}
+
 .auroc-box-matrix svg {
   flex: 0 0 auto;
   max-width: none;
