@@ -13,7 +13,7 @@
 > removed by issue #29. The backend Dataset Release is the sole fibrotic data
 > authority; see `docs/complete-experience-shipped-contract-2026-07-13.md`.
 
-CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embedding files contain **real data**; four remaining files are **mock data**.
+CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embedding files and the two per-code AUROC tables contain **real data**; the remaining result files are **mock data**.
 
 ## Files
 
@@ -22,6 +22,8 @@ CSV files consumed by OJS `FileAttachment(...)` in `viz/*.qmd` pages. Three embe
 | `patient_embeddings.csv` | 8.2 MB | `use-case.qmd` | Real | 114K patient UMAP/t-SNE coordinates with age and sex |
 | `icd_code_embeddings.csv` | 738 KB | `overall-performance.qmd` | Real | 12K ICD-10 code UMAP/t-SNE coordinates by chapter |
 | `icd_code_reference.csv` | 908 KB | `overall-performance.qmd` | Real | Code titles and ICD hierarchy behind the embedding hover panel |
+| `auroc_by_icd_baseline.csv` | 194 KB | `overall-performance.qmd` | Real | Test AUROC of 17 models on 1,632 ICD-10 codes, baseline inputs (wide: one column per model) |
+| `auroc_by_icd_plus_env.csv` | 194 KB | `overall-performance.qmd` | Real | Same codes and models with environmental features added |
 | `fibrotic_patient_embeddings.csv` | 1.3 MB | `use-case.qmd` | Real | 6K fibrotic patient t-SNE coordinates with clinical features |
 | `evaluation_metrics.csv` | 20 KB | `overall-performance.qmd` | Mock | Model comparison metrics (AUROC, AUPRC, F1, etc.) |
 | `ablation_results.csv` | 10 KB | `ablation.qmd` | Mock | Ablation deltas per variant/disease/metric |
@@ -53,6 +55,18 @@ Neither source alone describes every code; together they cover all 12,058. WHO
 wording wins on overlap because the embedding comes from UK Biobank records.
 Rows with `in_plot=0` are structural ancestors (blocks and parent categories)
 that exist so the hover panel can show a complete hierarchy.
+
+### auroc_by_icd_baseline.csv / auroc_by_icd_plus_env.csv (real)
+`icd, bilstm, delphi, dipole, elasticnet, foresight, gram, graphsage, gtn, han, healthgat, logit, lstm, retain, rgat, rnn, transformer, xgboost`
+
+One row per ICD-10 code (1,632 codes, identical order in both files); each
+model column is that model's test AUROC on the code. Column keys are the
+short model identifiers; `viz/model-naming.js` maps them to the display names
+and model families used in every chart, legend, tooltip and table, and
+`viz/auroc-distribution.js` resolves each code's WHO ICD-10 chapter from its
+three-character category. `viz/auroc-distribution.test.mjs` checks that this
+chapter mapping agrees with the `chapter` column of `icd_code_embeddings.csv`
+for every code.
 
 ### fibrotic_patient_embeddings.csv (real)
 `eid, label_int, disease, abbrev, tsne_x, tsne_y, purity_2d, purity_256d, group, purity_2d_k30, purity_2d_k50, age_recruit, sex, BMI, waist, hip, height, weight, DBP, SBP, creatinine, HbA1c, smoking_status, alcohol_freq, age_at_onset, n_rel1, n_rel2, n_rel3, n_affected_rel, has_affected_rel, p_true, p_max, correct, is_male, current_smoker`

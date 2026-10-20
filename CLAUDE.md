@@ -28,10 +28,10 @@ report-web/
 │   ├── paper1.qmd         # Full paper content
 │   └── figures/           # Paper figures (PNG/JPEG)
 ├── viz/
-│   ├── overall-performance.qmd  # Page 1: ICD UMAP, Eval Metrics
+│   ├── overall-performance.qmd  # Page 1: ICD UMAP, per-code AUROC KDE + chapter×model box matrix, Eval Metrics
 │   ├── ablation.qmd             # Page 2: Ablation delta bar chart
 │   ├── use-case.qmd             # Page 3: Fibrotic UMAP, Patient UMAP (sex/age), Risk Factors, Pathway Enrichment
-│   └── data/                    # CSV data files (3 real + 4 mock)
+│   └── data/                    # CSV data files (5 real + mock result tables)
 ├── viz_planning/          # Design specs (to be archived after real data)
 │   ├── INTERACTIVE_VIZ_PLAN.md
 │   └── PRD_INTERACTIVE_VIZ.md
@@ -49,7 +49,8 @@ report-web/
 - Dual theme support: light (cosmo) and dark (darkly), both extended by `custom.scss`.
 - Dark mode CSS uses `.quarto-dark` selector (NOT `[data-bs-theme="dark"]`).
 - Viz pages use wider layout: `body-width: 1100px` with `sidebar-width: 0px`.
-- All chart data lives in `viz/data/*.csv`. Three embedding files use real data (patient embeddings, ICD embeddings, fibrotic patient features); four files remain mock (evaluation metrics, ablation results, feature importance, pathway enrichment).
+- All chart data lives in `viz/data/*.csv`. Real data: patient embeddings, ICD embeddings, fibrotic patient features, and the two per-code AUROC tables (`auroc_by_icd_baseline.csv`, `auroc_by_icd_plus_env.csv`); the evaluation metrics, ablation results and pathway enrichment tables remain mock.
+- Model names are spelled once, in `viz/model-naming.js` (display name, full name, family, colour). Charts, legends, tooltips and tables resolve data-file spellings through it rather than hard-coding names.
 
 ## Build & Preview
 
