@@ -1,6 +1,6 @@
 ---
 title: "Overall Model Performance"
-subtitle: "Code Embeddings, Evaluation Metrics"
+subtitle: "Code Embeddings, Per-Code AUROC, Evaluation Metrics"
 date: last-modified
 format:
   html:
@@ -12,7 +12,7 @@ format:
       margin-width: 200px
 ---
 
-This page presents the learned representations from the ALIGATEHR-Gen model and its quantitative performance against baselines. Explore the ICD code embedding space, and compare evaluation metrics across diseases. The patient embeddings live on the [Use Case](use-case.qmd#patient-embedding) page.
+This page presents the learned representations from the ALIGATEHR-Gen model and its quantitative performance against baselines. Explore the ICD code embedding space, compare how 17 models distribute their test AUROC across 1,632 ICD-10 codes, break that distribution down by ICD-10 chapter, and compare evaluation metrics across diseases. The patient embeddings live on the [Use Case](use-case.qmd#patient-embedding) page.
 
 ```{ojs}
 //| echo: false
@@ -105,20 +105,561 @@ icdUmap = {
 }
 ```
 
-## Evaluation Metrics Comparison
+## Per-Code AUROC Across Models {#auroc-distribution}
+
+Every one of the 17 models was scored on the same 1,632 ICD-10 codes, once with the baseline inputs and once with environmental features added. The curves below are Gaussian kernel density estimates of each model's per-code test AUROC (Silverman bandwidth), so a curve further to the right means the model ranks more codes well. A single ICD code has exactly one AUROC per model, which cannot form a density; pick a code to mark where it falls on every curve instead.
 
 ```{ojs}
 //| echo: false
 
-import { bindHighlightGroups, bindSingleMarkTooltip, createChartTooltip } from "./chart-highlighting.js"
+import { bindHighlightGroups, bindHighlightTarget, bindSingleMarkTooltip, createChartTooltip, createHighlightController, highlightOpacity } from "./chart-highlighting.js"
+import { MODEL_FAMILIES, modelColor, modelDisplayName, modelFamily, modelFullName, orderModelsByFamily } from "./model-naming.js"
+import { ICD_CHAPTERS, chapterByKey, gaussianKde, kdeAt, boxStats, summariseCells, toLongAuroc } from "./auroc-distribution.js"
 ```
+
+```{ojs}
+//| echo: false
+
+aurocData = {
+  const sources = [
+    { key: "baseline", label: "Baseline", text: await FileAttachment("data/auroc_by_icd_baseline.csv").text() },
+    { key: "plus_env", label: "+ Environment", text: await FileAttachment("data/auroc_by_icd_plus_env.csv").text() },
+  ];
+  const datasets = new Map();
+  let models = null;
+  let codes = null;
+  sources.forEach((source) => {
+    const wide = d3.csvParse(source.text, d3.autoType);
+    const columns = wide.columns.filter((column) => column !== "icd");
+    const ordered = orderModelsByFamily(columns);
+    if (models && ordered.join() !== models.join()) {
+      throw new Error("The AUROC tables do not list the same models");
+    }
+    models = ordered;
+    const wideCodes = wide.map((row) => String(row.icd));
+    if (codes && wideCodes.join() !== codes.join()) {
+      throw new Error("The AUROC tables do not list the same ICD codes");
+    }
+    codes = wideCodes;
+    datasets.set(source.key, { key: source.key, label: source.label, rows: toLongAuroc(wide, ordered, source.key) });
+  });
+  const chapterCounts = d3.rollup(datasets.get("baseline").rows, v => new Set(v.map(d => d.code)).size, d => d.chapter);
+  const chapters = ICD_CHAPTERS.filter(c => chapterCounts.has(c.key)).map(c => ({ ...c, count: chapterCounts.get(c.key) }));
+  return { models, codes, datasets, chapters };
+}
+```
+
+```{ojs}
+//| echo: false
+
+aurocDatasetLabel = key => aurocData.datasets.get(key).label
+aurocChapterLabel = key => { const c = chapterByKey(key); return `${c.numeral}. ${c.short}`; }
+aurocCodeInfo = new Map(icdReference.map(row => [row.code, row]))
+aurocFormat = value => value.toFixed(3)
+```
+
+```{ojs}
+//| echo: false
+
+// Chart Preset (ADR-0016): shareable ?dataset=baseline|plus_env|both URL state.
+aurocPreset = new URLSearchParams(location.search).get("dataset")
+```
+
+::: {.auroc-controls}
+
+```{ojs}
+//| echo: false
+
+viewof kdeDataset = Inputs.radio(["baseline", "plus_env", "both"], {
+  label: "Inputs",
+  format: key => key === "both" ? "Both (compare)" : aurocDatasetLabel(key),
+  value: ["baseline", "plus_env", "both"].includes(aurocPreset) ? aurocPreset : "baseline",
+})
+```
+
+```{ojs}
+//| echo: false
+
+viewof kdeChapter = Inputs.select(["all", ...aurocData.chapters.map(c => c.key)], {
+  label: "ICD-10 chapter",
+  format: key => key === "all" ? `All chapters (${aurocData.codes.length} codes)` : `${aurocChapterLabel(key)} (${chapterByKey(key).range}, ${aurocData.chapters.find(c => c.key === key).count} codes)`,
+  value: "all",
+})
+```
+
+```{ojs}
+//| echo: false
+
+viewof kdeCode = Inputs.text({
+  label: "ICD-10 code",
+  placeholder: "e.g. I251",
+  datalist: aurocData.codes,
+})
+```
+
+:::
+
+```{ojs}
+//| echo: false
+
+viewof kdeModels = Inputs.checkbox(aurocData.models, {
+  label: "Models",
+  format: modelDisplayName,
+  value: aurocData.models,
+})
+```
+
+```{ojs}
+//| echo: false
+
+kdeSeries = {
+  const datasetKeys = kdeDataset === "both" ? ["baseline", "plus_env"] : [kdeDataset];
+  const code = kdeCode.trim().toUpperCase();
+  const selectedCode = aurocData.codes.includes(code) ? code : null;
+  const series = [];
+  datasetKeys.forEach((datasetKey) => {
+    const dataset = aurocData.datasets.get(datasetKey);
+    const rows = kdeChapter === "all" ? dataset.rows : dataset.rows.filter(d => d.chapter === kdeChapter);
+    kdeModels.forEach((model) => {
+      const modelRows = rows.filter(d => d.model === model);
+      const values = modelRows.map(d => d.auroc);
+      const stats = boxStats(values);
+      const kde = values.length >= 2 ? gaussianKde(values, { support: [0, 1], steps: 240 }) : null;
+      const codeRow = selectedCode ? modelRows.find(d => d.code === selectedCode) : null;
+      series.push({
+        key: `${model}|${datasetKey}`,
+        model,
+        dataset: datasetKey,
+        datasetLabel: dataset.label,
+        stats,
+        kde,
+        marker: codeRow && kde ? { ...codeRow, density: kdeAt(values, kde.bandwidth, codeRow.auroc) } : null,
+      });
+    });
+  });
+  return { series, selectedCode, datasetKeys };
+}
+```
+
+```{ojs}
+//| echo: false
+
+kdeChart = {
+  const { series, selectedCode, datasetKeys } = kdeSeries;
+  const container = document.createElement("div");
+  container.className = "auroc-section";
+
+  const scopeLabel = kdeChapter === "all" ? "all chapters" : `chapter ${aurocChapterLabel(kdeChapter)}`;
+  const codeInfo = selectedCode ? aurocCodeInfo.get(selectedCode) : null;
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">AUROC Distribution Across ICD-10 Codes</strong><br><span style="font-size:0.9rem;color:#6c757d;">${kdeModels.length} models · ${scopeLabel} · ${datasetKeys.map(aurocDatasetLabel).join(" vs ")}${codeInfo ? ` · marker: ${codeInfo.label} ${codeInfo.description}` : ""}</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+
+  if (kdeModels.length === 0) {
+    const note = document.createElement("p");
+    note.className = "chart-highlight-hint";
+    note.textContent = "Select at least one model to draw its AUROC distribution.";
+    container.appendChild(note);
+    return container;
+  }
+
+  const dash = datasetKey => (kdeDataset === "both" && datasetKey === "plus_env" ? "6,4" : null);
+  const lineSeries = series.filter(s => s.kde);
+  const markerSeries = series.filter(s => s.marker);
+  const lineMarks = lineSeries.map(s => Plot.lineY(s.kde.points, {
+    x: "x",
+    y: "density",
+    stroke: modelColor(s.model),
+    strokeWidth: 1.8,
+    strokeDasharray: dash(s.dataset),
+  }));
+  const markerMarks = markerSeries.map(s => Plot.dot([s.marker], {
+    x: "auroc",
+    y: "density",
+    r: 5.5,
+    fill: modelColor(s.model),
+    stroke: "#fff",
+    strokeWidth: 1.5,
+  }));
+
+  const chart = Plot.plot({
+    className: "auroc-chart",
+    width: Math.min(width, 1000),
+    height: 380,
+    marginLeft: 50,
+    marginRight: 20,
+    x: { label: "Test AUROC", domain: [0.2, 1], grid: true },
+    y: { label: "Density", grid: true },
+    marks: [
+      Plot.ruleX([0.5], { stroke: "#9aa5b1", strokeDasharray: "3,3" }),
+      ...lineMarks,
+      ...markerMarks,
+    ],
+  });
+  container.appendChild(chart);
+
+  const tooltip = createChartTooltip(container);
+  const lineGroups = [...chart.querySelectorAll('g[aria-label="line"]')];
+  const dotGroups = [...chart.querySelectorAll('g[aria-label="dot"]')];
+  if (lineGroups.length !== lineSeries.length || dotGroups.length !== markerSeries.length) {
+    throw new Error("AUROC density marks do not match the series data");
+  }
+  const paths = lineGroups.map(group => group.querySelector("path"));
+  bindSingleMarkTooltip(paths, tooltip, index => {
+    const s = lineSeries[index];
+    const st = s.stats;
+    return `<strong>${modelDisplayName(s.model)}</strong> · ${modelFamily(s.model).label}<br>${s.datasetLabel} · ${scopeLabel} · n = ${st.n} codes<br>Median ${aurocFormat(st.median)} · IQR [${aurocFormat(st.q1)}, ${aurocFormat(st.q3)}]<br>Mean ${aurocFormat(st.mean)} · bandwidth ${s.kde.bandwidth.toFixed(4)}`;
+  });
+  const markerDots = dotGroups.map(group => group.querySelector("circle"));
+  bindSingleMarkTooltip(markerDots, tooltip, index => {
+    const s = markerSeries[index];
+    const info = aurocCodeInfo.get(s.marker.code);
+    return `<strong>${info.label}</strong> ${info.description}<br>${modelDisplayName(s.model)} · ${s.datasetLabel}<br>AUROC ${s.marker.auroc.toFixed(4)}`;
+  });
+
+  const legend = document.createElement("div");
+  legend.className = "auroc-family-legend";
+  const legendButtons = new Map();
+  MODEL_FAMILIES.forEach((family) => {
+    const members = family.models.filter(model => kdeModels.includes(model));
+    if (members.length === 0) return;
+    const group = document.createElement("div");
+    group.className = "auroc-family";
+    const heading = document.createElement("span");
+    heading.className = "auroc-family-label";
+    heading.textContent = family.label;
+    group.appendChild(heading);
+    members.forEach((model) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "chart-highlight-action";
+      button.setAttribute("aria-pressed", "false");
+      button.title = modelFullName(model);
+      const marker = document.createElement("span");
+      marker.className = "chart-highlight-marker";
+      marker.style.color = modelColor(model);
+      marker.textContent = "●";
+      button.append(marker, document.createTextNode(modelDisplayName(model)));
+      group.appendChild(button);
+      legendButtons.set(model, button);
+    });
+    legend.appendChild(group);
+  });
+  container.appendChild(legend);
+
+  const targets = new Map(kdeModels.map(model => [model, []]));
+  lineSeries.forEach((s, index) => targets.get(s.model).push(lineGroups[index]));
+  markerSeries.forEach((s, index) => targets.get(s.model).push(dotGroups[index]));
+  bindHighlightGroups({
+    groupKeys: kdeModels,
+    targetsByGroup: targets,
+    actionsByGroup: legendButtons,
+    labelForGroup: model => `Highlight ${modelDisplayName(model)}`,
+  });
+
+  const hint = document.createElement("div");
+  hint.className = "chart-highlight-hint";
+  hint.textContent = kdeDataset === "both"
+    ? "Solid curves: Baseline. Dashed curves: + Environment. Hover or select a model to highlight it; select it again or press Esc to clear. Dashed grey line: chance (AUROC 0.5)."
+    : "Hover or select a model to highlight it; select it again or press Esc to clear. Dashed grey line: chance (AUROC 0.5).";
+  container.appendChild(hint);
+  return container;
+}
+```
+
+```{ojs}
+//| echo: false
+
+kdeTable = {
+  const { series, selectedCode } = kdeSeries;
+  const table = document.createElement("table");
+  table.className = "auroc-summary-table";
+  const codeInfo = selectedCode ? aurocCodeInfo.get(selectedCode) : null;
+  const columns = ["Model", "Family", "n codes", "Baseline median (IQR)", "+ Environment median (IQR)", "Δ median"];
+  if (selectedCode) columns.push(`${codeInfo.label} Baseline`, `${codeInfo.label} + Environment`);
+  table.innerHTML = `<caption>Per-model summary of test AUROC over ${kdeChapter === "all" ? "all chapters" : `chapter ${aurocChapterLabel(kdeChapter)}`}${selectedCode ? `, with the AUROC of ${codeInfo.label} (${codeInfo.description})` : ""}.</caption>`;
+  const head = table.createTHead().insertRow();
+  columns.forEach((column) => {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = column;
+    head.appendChild(th);
+  });
+  const body = table.createTBody();
+  const rowsFor = (datasetKey, model) => {
+    const dataset = aurocData.datasets.get(datasetKey);
+    const rows = dataset.rows.filter(d => d.model === model && (kdeChapter === "all" || d.chapter === kdeChapter));
+    return rows;
+  };
+  const cell = (tr, text, numeric) => {
+    const td = tr.insertCell();
+    td.textContent = text;
+    if (numeric) td.className = "is-numeric";
+  };
+  kdeModels.forEach((model) => {
+    const base = rowsFor("baseline", model);
+    const env = rowsFor("plus_env", model);
+    const baseStats = boxStats(base.map(d => d.auroc));
+    const envStats = boxStats(env.map(d => d.auroc));
+    const tr = body.insertRow();
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = modelDisplayName(model);
+    th.title = modelFullName(model);
+    tr.appendChild(th);
+    cell(tr, modelFamily(model).label);
+    cell(tr, String(baseStats.n), true);
+    cell(tr, `${aurocFormat(baseStats.median)} (${aurocFormat(baseStats.q1)}–${aurocFormat(baseStats.q3)})`, true);
+    cell(tr, `${aurocFormat(envStats.median)} (${aurocFormat(envStats.q1)}–${aurocFormat(envStats.q3)})`, true);
+    const delta = envStats.median - baseStats.median;
+    cell(tr, `${delta >= 0 ? "+" : ""}${aurocFormat(delta)}`, true);
+    if (selectedCode) {
+      cell(tr, base.find(d => d.code === selectedCode).auroc.toFixed(4), true);
+      cell(tr, env.find(d => d.code === selectedCode).auroc.toFixed(4), true);
+    }
+  });
+  // The wrapper scrolls horizontally on narrow screens, so it is a focusable
+  // region: keyboard users can reach it and scroll it.
+  const wrapper = document.createElement("div");
+  wrapper.className = "auroc-table-scroll";
+  wrapper.tabIndex = 0;
+  wrapper.setAttribute("role", "region");
+  wrapper.setAttribute("aria-label", "Per-model AUROC summary table");
+  wrapper.appendChild(table);
+  return wrapper;
+}
+```
+
+## AUROC by ICD-10 Chapter and Model {#auroc-chapter-matrix}
+
+Codes are grouped by their WHO ICD-10 chapter, resolved from the full three-character category rather than the leading letter (chapter I spans A and B, chapters II and III share D, and VII and VIII share H). Each cell is a Tukey box plot of one model's per-code AUROC within one chapter: the box spans the interquartile range, the white line is the median, whiskers reach the furthest codes within 1.5 × IQR, and dots are outlying codes. Columns are grouped by model family; scroll horizontally to see all 17 models.
+
+::: {.auroc-controls}
+
+```{ojs}
+//| echo: false
+
+viewof boxDataset = Inputs.radio(["baseline", "plus_env"], {
+  label: "Inputs",
+  format: aurocDatasetLabel,
+  value: ["baseline", "plus_env"].includes(aurocPreset) ? aurocPreset : "baseline",
+})
+```
+
+```{ojs}
+//| echo: false
+
+viewof boxFamilies = Inputs.checkbox(MODEL_FAMILIES.map(f => f.key), {
+  label: "Model families",
+  format: key => MODEL_FAMILIES.find(f => f.key === key).label,
+  value: MODEL_FAMILIES.map(f => f.key),
+})
+```
+
+:::
+
+```{ojs}
+//| echo: false
+
+viewof boxChapters = Inputs.checkbox(aurocData.chapters.map(c => c.key), {
+  label: "ICD-10 chapters",
+  format: key => `${aurocChapterLabel(key)} (${aurocData.chapters.find(c => c.key === key).count})`,
+  value: aurocData.chapters.map(c => c.key),
+})
+```
+
+```{ojs}
+//| echo: false
+
+boxMatrix = {
+  const dataset = aurocData.datasets.get(boxDataset);
+  const models = aurocData.models.filter(model => boxFamilies.includes(modelFamily(model).key));
+  const chapters = aurocData.chapters.filter(c => boxChapters.includes(c.key));
+  const container = document.createElement("div");
+  container.className = "auroc-section";
+
+  const titleDiv = document.createElement("div");
+  titleDiv.innerHTML = `<strong style="font-size:1.1rem;color:#2c3e50;">AUROC by ICD-10 Chapter × Model</strong><br><span style="font-size:0.9rem;color:#6c757d;">${chapters.length} chapters × ${models.length} models · ${dataset.label} inputs · ${chapters.reduce((sum, c) => sum + c.count, 0)} codes</span>`;
+  titleDiv.style.marginBottom = "8px";
+  container.appendChild(titleDiv);
+
+  if (models.length === 0 || chapters.length === 0) {
+    const note = document.createElement("p");
+    note.className = "chart-highlight-hint";
+    note.textContent = "Select at least one model family and one chapter to draw the matrix.";
+    container.appendChild(note);
+    return container;
+  }
+
+  const chapterKeys = chapters.map(c => c.key);
+  const rows = dataset.rows.filter(d => models.includes(d.model) && boxChapters.includes(d.chapter));
+  const cells = summariseCells(rows);
+  const cellById = new Map(cells.map(c => [`${c.chapter}|${c.model}`, c]));
+  const outliers = cells.flatMap(c => c.outlierRows.map(row => ({ ...row, id: `${row.chapter}|${row.model}|${row.code}` })));
+  const outlierById = new Map(outliers.map(o => [o.id, o]));
+
+  const colWidth = 100;
+  const rowHeight = 34;
+  const marginTop = 44;
+  const marginBottom = 28;
+  const labelWidth = 236;
+  const facet = { fx: "model", fy: "chapter" };
+  const xDomain = [Math.floor(d3.min(rows, d => d.auroc) * 10) / 10, 1];
+  const cellId = d => `${d.chapter}|${d.model}`;
+
+  const labels = Plot.plot({
+    className: "auroc-chart",
+    width: labelWidth,
+    height: marginTop + marginBottom + rowHeight * chapters.length,
+    marginTop,
+    marginBottom,
+    marginLeft: labelWidth - 6,
+    marginRight: 6,
+    x: { axis: null, domain: xDomain },
+    y: { axis: null, domain: [0, 1] },
+    fx: { axis: null, domain: [models[0]] },
+    fy: { label: null, domain: chapterKeys, tickFormat: key => `${aurocChapterLabel(key)} (${chapters.find(c => c.key === key).count})` },
+    marks: [Plot.dot(cells.filter(c => c.model === models[0]), { x: "median", y: () => 0.5, r: 0, ...facet })],
+  });
+
+  const chart = Plot.plot({
+    className: "auroc-chart",
+    width: colWidth * models.length + 12,
+    height: marginTop + marginBottom + rowHeight * chapters.length,
+    marginTop,
+    marginBottom,
+    marginLeft: 6,
+    marginRight: 6,
+    style: { overflow: "visible" },
+    x: { domain: xDomain, ticks: [0.5, 0.75, 1], tickFormat: d => d.toFixed(2), tickSize: 3, label: null },
+    y: { axis: null, domain: [0, 1] },
+    fx: { axis: "top", label: null, domain: models, tickFormat: modelDisplayName, padding: 0.12 },
+    fy: { axis: null, domain: chapterKeys },
+    marks: [
+      Plot.frame({ stroke: "#d9e2ec", strokeOpacity: 0.7 }),
+      Plot.ruleX([0.5], { stroke: "#9aa5b1", strokeDasharray: "2,3" }),
+      Plot.ruleY(cells, { x1: "whiskerLow", x2: "whiskerHigh", y: () => 0.5, stroke: d => modelColor(d.model), strokeWidth: 1, ariaLabel: cellId, ...facet }),
+      Plot.rect(cells, { x1: "q1", x2: "q3", y1: () => 0.22, y2: () => 0.78, fill: d => modelColor(d.model), fillOpacity: 0.85, ariaLabel: cellId, ...facet }),
+      Plot.ruleX(cells, { x: "median", y1: () => 0.18, y2: () => 0.82, stroke: "#fff", strokeWidth: 2, ariaLabel: cellId, ...facet }),
+      Plot.dot(outliers, { x: "auroc", y: () => 0.5, r: 2, fill: d => modelColor(d.model), fillOpacity: 0.75, ariaLabel: "id", ...facet }),
+    ],
+  });
+
+  // The row labels sit in their own sticky column so they stay visible while
+  // the 17 model columns scroll. The wrapper carries the background because
+  // the site's dark theme makes every chart svg transparent.
+  const labelColumn = document.createElement("div");
+  labelColumn.className = "auroc-box-labels";
+  labelColumn.appendChild(labels);
+  chart.classList.add("auroc-box-cells");
+  // The matrix scrolls horizontally, so it is a focusable region: keyboard
+  // users can reach it and scroll it with the arrow keys.
+  const scroller = document.createElement("div");
+  scroller.className = "auroc-box-matrix";
+  scroller.tabIndex = 0;
+  scroller.setAttribute("role", "region");
+  scroller.setAttribute("aria-label", `AUROC box plots for ${chapters.length} ICD-10 chapters and ${models.length} models, scroll horizontally to see every model`);
+  scroller.append(labelColumn, chart);
+  container.appendChild(scroller);
+
+  const tooltip = createChartTooltip(container);
+  const boxes = [...chart.querySelectorAll('g[aria-label="rect"] rect[aria-label]')];
+  const dots = [...chart.querySelectorAll('g[aria-label="dot"] circle[aria-label]')];
+  const whiskers = [...chart.querySelectorAll('g[aria-label="rule"] line[aria-label]')];
+  if (boxes.length !== cells.length || dots.length !== outliers.length || whiskers.length !== cells.length * 2) {
+    throw new Error("Box matrix marks do not match the summarised cells");
+  }
+  const boxCells = boxes.map(box => cellById.get(box.getAttribute("aria-label")));
+  const dotRows = dots.map(dot => outlierById.get(dot.getAttribute("aria-label")));
+  const whiskerCells = whiskers.map(line => cellById.get(line.getAttribute("aria-label")));
+  if (boxCells.includes(undefined) || dotRows.includes(undefined) || whiskerCells.includes(undefined)) {
+    throw new Error("Box matrix marks carry unknown cell labels");
+  }
+  const describeCell = c => {
+    const chapter = chapterByKey(c.chapter);
+    return `<strong>${modelDisplayName(c.model)}</strong> · ${modelFamily(c.model).label}<br>${chapter.numeral}. ${chapter.title}<br>${dataset.label} · n = ${c.n} codes<br>Median ${aurocFormat(c.median)} · IQR [${aurocFormat(c.q1)}, ${aurocFormat(c.q3)}]<br>Whiskers [${aurocFormat(c.whiskerLow)}, ${aurocFormat(c.whiskerHigh)}] · ${c.outliers.length} outlier${c.outliers.length === 1 ? "" : "s"}<br>Mean ${aurocFormat(c.mean)} · range [${aurocFormat(c.min)}, ${aurocFormat(c.max)}]`;
+  };
+  bindSingleMarkTooltip(boxes, tooltip, index => describeCell(boxCells[index]));
+  bindSingleMarkTooltip(whiskers, tooltip, index => describeCell(whiskerCells[index]));
+  bindSingleMarkTooltip(dots, tooltip, index => {
+    const row = dotRows[index];
+    const info = aurocCodeInfo.get(row.code);
+    const chapter = chapterByKey(row.chapter);
+    return `<strong>${info.label}</strong> ${info.description}<br>${modelDisplayName(row.model)} · ${chapter.numeral}. ${chapter.short}<br>AUROC ${row.auroc.toFixed(4)} (outlier)`;
+  });
+
+  const legend = document.createElement("div");
+  legend.className = "auroc-family-legend";
+  const legendButtons = new Map();
+  MODEL_FAMILIES.forEach((family) => {
+    const members = family.models.filter(model => models.includes(model));
+    if (members.length === 0) return;
+    const group = document.createElement("div");
+    group.className = "auroc-family";
+    const heading = document.createElement("span");
+    heading.className = "auroc-family-label";
+    heading.textContent = family.label;
+    group.appendChild(heading);
+    members.forEach((model) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "chart-highlight-action";
+      button.setAttribute("aria-pressed", "false");
+      button.title = modelFullName(model);
+      const marker = document.createElement("span");
+      marker.className = "chart-highlight-marker";
+      marker.style.color = modelColor(model);
+      marker.textContent = "■";
+      button.append(marker, document.createTextNode(modelDisplayName(model)));
+      group.appendChild(button);
+      legendButtons.set(model, button);
+    });
+    legend.appendChild(group);
+  });
+  container.appendChild(legend);
+
+  // Every mark of a model dims together. The marks themselves are not made
+  // focusable (there are hundreds); the legend buttons and a click on a box
+  // drive the highlight instead.
+  const elementsByModel = new Map(models.map(model => [model, []]));
+  boxes.forEach((box, index) => elementsByModel.get(boxCells[index].model).push(box));
+  whiskers.forEach((line, index) => elementsByModel.get(whiskerCells[index].model).push(line));
+  dots.forEach((dot, index) => elementsByModel.get(dotRows[index].model).push(dot));
+  const controller = createHighlightController(models, (active) => {
+    models.forEach((model) => {
+      const opacity = highlightOpacity(model, active);
+      elementsByModel.get(model).forEach(element => { element.style.opacity = opacity; });
+      const button = legendButtons.get(model);
+      button.classList.toggle("is-active", model === active);
+      button.classList.toggle("is-muted", active !== null && model !== active);
+      button.setAttribute("aria-pressed", String(controller.pinned() === model));
+    });
+  });
+  models.forEach(model => bindHighlightTarget(legendButtons.get(model), model, controller));
+  boxes.forEach((box, index) => {
+    box.style.cursor = "pointer";
+    box.addEventListener("click", () => controller.toggle(boxCells[index].model));
+  });
+
+  const hint = document.createElement("div");
+  hint.className = "chart-highlight-hint";
+  hint.textContent = "Hover a box, whisker or outlier for its statistics. Hover or select a model in the legend, or click a box, to highlight that model across every chapter; select it again or press Esc to clear.";
+  container.appendChild(hint);
+  return container;
+}
+```
+
+## Evaluation Metrics Comparison
 
 ```{ojs}
 //| echo: false
 
 evalData = {
   const text = await FileAttachment("data/evaluation_metrics.csv").text();
-  return d3.csvParse(text, d3.autoType);
+  // Model names pass through the shared registry so this chart spells them
+  // the same way as the AUROC charts above.
+  return d3.csvParse(text, d3.autoType).map(d => ({ ...d, model: modelDisplayName(d.model) }));
 }
 ```
 
@@ -159,7 +700,7 @@ evalChart = {
     return vb - va;
   });
 
-  const proposedModel = "ALIGATEHR-Gen";
+  const proposedModel = modelDisplayName("ALIGATEHR-Gen");
   const grayScale = ["#888","#aaa","#666","#999","#bbb","#777","#ccc","#555","#ddd"];
   const modelColors = {};
   let gi = 0;

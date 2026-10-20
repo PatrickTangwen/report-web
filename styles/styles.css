@@ -192,12 +192,12 @@ figcaption {
   fill: #a0a0a0 !important;
 }
 
-.quarto-dark .cell-output-display svg line,
-.quarto-dark .cell-output-display svg [aria-label*="grid"] line {
+.quarto-dark .cell-output-display svg:not(.auroc-chart) line,
+.quarto-dark .cell-output-display svg:not(.auroc-chart) [aria-label*="grid"] line {
   stroke: #495057 !important;
 }
 
-.quarto-dark .cell-output-display svg [aria-label*="rule"] line {
+.quarto-dark .cell-output-display svg:not(.auroc-chart) [aria-label*="rule"] line {
   stroke: #e0e0e0 !important;
 }
 
@@ -1095,6 +1095,188 @@ figcaption {
 
   .embedding-multi-region-overview {
     transition: none;
+  }
+}
+
+/* Per-code AUROC charts (Performance page): density curves, chapter × model
+   box-plot matrix, family-grouped legends and the summary table. */
+.auroc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2rem;
+  align-items: flex-start;
+}
+
+.auroc-controls > .cell {
+  flex: 0 1 auto;
+  margin-bottom: 0;
+}
+
+.auroc-section {
+  width: 100%;
+  max-width: 1000px;
+}
+
+.auroc-chart {
+  max-width: 100%;
+  height: auto;
+}
+
+.auroc-family-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  margin-top: 0.75rem;
+  font-family: "Source Sans Pro", sans-serif;
+  font-size: 0.85rem;
+}
+
+.auroc-family {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.3rem;
+  padding: 0.25rem 0.45rem 0.25rem 0.55rem;
+  border-left: 3px solid #d9e2ec;
+}
+
+.auroc-family-label {
+  flex: 1 1 100%;
+  color: #526d82;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auroc-box-matrix {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.auroc-box-matrix:focus-visible,
+.auroc-table-scroll:focus-visible {
+  outline: 3px solid rgba(44, 90, 160, 0.35);
+  outline-offset: 2px;
+}
+
+.auroc-box-matrix svg {
+  flex: 0 0 auto;
+  max-width: none;
+  display: block;
+}
+
+.auroc-box-labels {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  flex: 0 0 auto;
+  background: #fff;
+  box-shadow: 4px 0 8px -6px rgba(26, 39, 52, 0.35);
+}
+
+.auroc-box-cells [aria-label="fx-axis tick label"] text,
+.auroc-box-cells [aria-label="x-axis tick label"] text {
+  font-size: 10.5px;
+}
+
+.auroc-box-cells [aria-label="fx-axis tick label"] text {
+  font-weight: 600;
+}
+
+.auroc-table-scroll {
+  max-width: 1000px;
+  overflow-x: auto;
+}
+
+.auroc-summary-table {
+  width: 100%;
+  margin: 0.75rem 0 0;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.auroc-summary-table caption {
+  caption-side: top;
+  padding: 0 0 0.4rem;
+  color: #6c757d;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.auroc-summary-table th,
+.auroc-summary-table td {
+  padding: 0.3rem 0.55rem;
+  border-bottom: 1px solid #e3e9f0;
+  white-space: nowrap;
+}
+
+.auroc-summary-table thead th {
+  background: rgba(44, 90, 160, 0.08);
+  font-weight: 600;
+}
+
+.auroc-summary-table tbody th {
+  background: none;
+  font-weight: 600;
+  text-align: left;
+}
+
+.auroc-summary-table .is-numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.quarto-dark .cell-output-display .auroc-chart [aria-label$="grid"] line,
+.quarto-dark .cell-output-display .auroc-chart [aria-label$="tick"] line {
+  stroke: #495057;
+}
+
+.quarto-dark .cell-output-display .auroc-chart [aria-label="frame"] rect {
+  stroke: #3a434d;
+}
+
+.quarto-dark .auroc-family {
+  border-left-color: #495057;
+}
+
+.quarto-dark .cell-output-display .auroc-family-label {
+  color: #a9bacb !important;
+}
+
+.quarto-dark .auroc-box-matrix {
+  border-color: #495057;
+  background: #212529;
+}
+
+.quarto-dark .auroc-box-labels {
+  background: #212529;
+  box-shadow: 4px 0 8px -6px rgba(0, 0, 0, 0.6);
+}
+
+.quarto-dark .cell-output-display .auroc-summary-table caption {
+  color: #a9bacb !important;
+}
+
+.quarto-dark .auroc-summary-table th,
+.quarto-dark .auroc-summary-table td {
+  border-bottom-color: #3a434d;
+}
+
+.quarto-dark .auroc-summary-table thead th {
+  background: rgba(90, 143, 212, 0.18);
+}
+
+@media (max-width: 768px) {
+  .auroc-controls {
+    flex-direction: column;
+    gap: 0;
   }
 }
 
